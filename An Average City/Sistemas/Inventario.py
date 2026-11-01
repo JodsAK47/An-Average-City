@@ -20,6 +20,17 @@ class Consumivel:
             alvo_final.hp = min(alvo_final.max_hp, alvo_final.hp + (self.rec_hp * fator))
             alvo_final.mp = min(alvo_final.max_mp, alvo_final.mp + (self.rec_mp * fator))
             self.quantidade -= 1
+
+            try:
+                from Sistemas.GerenciadorAudio import tocar_sfx
+                nome_norm = (self.nome or "").lower()
+                if any(termo in nome_norm for termo in ["marmita", "comida", "refeicao", "refeição", "alimento", "pao", "pão"]):
+                    tocar_sfx("Comer.wav")
+                else:
+                    tocar_sfx("Beber.wav")
+            except Exception:
+                pass
+
             from Sistemas.Conquistas import sistema_conquistas
             sistema_conquistas.desbloquear("alquimista")
 
@@ -141,6 +152,16 @@ MAPA_SPRITES_ITENS = {
     "amuleto das dez sombras": "Amuleto Sombrio.png",
     "amuleto das sombras": "Amuleto Sombrio.png",
     "amuleto sombrio": "Amuleto Sombrio.png",
+
+    # Cartão do Clube / Member Card
+    "member card": "MemberCard.png",
+    "membercard": "MemberCard.png",
+    "cartao do clube": "MemberCard.png",
+    "cartão do clube": "MemberCard.png",
+    "cartao de membro": "MemberCard.png",
+    "cartão de membro": "MemberCard.png",
+    "cartao": "MemberCard.png",
+    "cartão": "MemberCard.png",
 }
 
 ARTES_OFICIAIS_INVENTARIO = {
@@ -249,10 +270,10 @@ def carregar_sprite_item(item_ou_nome, tamanho=(32, 32)):
     if chave in _CACHE_SPRITES_ITENS:
         return _CACHE_SPRITES_ITENS[chave]
 
-    from Sistemas.Recursos import caminho_imagem
+    from Sistemas.Recursos import caminho_imagem, caminho_item
     import pygame
 
-    caminho = caminho_imagem(nome_arquivo)
+    caminho = caminho_item(nome_arquivo)
     surf_orig = None
     if caminho and os.path.exists(caminho) and os.path.isfile(caminho):
         try:

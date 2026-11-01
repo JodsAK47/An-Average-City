@@ -1,6 +1,6 @@
 import pygame
 from typing import Tuple, Optional
-from Sistemas.SistemaUI import Botao, TelaBase
+from Sistemas.SistemaUI import Botao, TelaBase, desenhar_painel_container
 from Sistemas.Fontes import obter_fonte
 from Sistemas.Configuracoes import sistema_config, RESOLUCOES_DISPONIVEIS
 
@@ -275,11 +275,10 @@ class GerenciadorConfiguracoesTela(TelaBase):
         rect_sub = txt_sub.get_rect(center=(self.largura // 2, 68))
         self.tela.blit(txt_sub, rect_sub)
 
-        pygame.draw.rect(self.tela, PAINEL, self.rect_audio, border_radius=8)
-        pygame.draw.rect(self.tela, BORDA_PAINEL, self.rect_audio, width=2, border_radius=8)
+        desenhar_painel_container(self.tela, self.rect_audio, "painel_base.png", fallback_cor=PAINEL, borda_cor=BORDA_PAINEL)
 
         rect_cab_audio = pygame.Rect(self.rect_audio.x, self.rect_audio.y, self.rect_audio.width, 42)
-        pygame.draw.rect(self.tela, PAINEL_TOPO, rect_cab_audio, border_top_left_radius=8, border_top_right_radius=8)
+        desenhar_painel_container(self.tela, rect_cab_audio, "painel_topo.png", fallback_cor=PAINEL_TOPO, borda_cor=BORDA_PAINEL, margem=10)
         txt_cab_audio = self.fonte_secao.render("🔊 ÁUDIO & SOM", True, TEXTO_AMARELO)
         self.tela.blit(txt_cab_audio, (rect_cab_audio.x + 16, rect_cab_audio.y + 12))
 
@@ -320,11 +319,10 @@ class GerenciadorConfiguracoesTela(TelaBase):
         txt_dica_audio2 = self.fonte_dica.render("• O volume da música é atualizado em tempo real.", True, TEXTO_CINZA)
         self.tela.blit(txt_dica_audio2, (self.rect_audio.x + 20, self.rect_audio.bottom - 55))
 
-        pygame.draw.rect(self.tela, PAINEL, self.rect_video, border_radius=8)
-        pygame.draw.rect(self.tela, BORDA_PAINEL, self.rect_video, width=2, border_radius=8)
+        desenhar_painel_container(self.tela, self.rect_video, "painel_base.png", fallback_cor=PAINEL, borda_cor=BORDA_PAINEL)
 
         rect_cab_video = pygame.Rect(self.rect_video.x, self.rect_video.y, self.rect_video.width, 42)
-        pygame.draw.rect(self.tela, PAINEL_TOPO, rect_cab_video, border_top_left_radius=8, border_top_right_radius=8)
+        desenhar_painel_container(self.tela, rect_cab_video, "painel_topo.png", fallback_cor=PAINEL_TOPO, borda_cor=BORDA_PAINEL, margem=10)
         txt_cab_video = self.fonte_secao.render("🖥️ VÍDEO & RESOLUÇÃO", True, TEXTO_AMARELO)
         self.tela.blit(txt_cab_video, (rect_cab_video.x + 16, rect_cab_video.y + 12))
 
@@ -334,8 +332,7 @@ class GerenciadorConfiguracoesTela(TelaBase):
         self.btn_res_ant.desenhar(self.tela)
         self.btn_res_prox.desenhar(self.tela)
 
-        pygame.draw.rect(self.tela, BARRA_FUNDO, self.rect_display_res, border_radius=6)
-        pygame.draw.rect(self.tela, BORDA_AZUL, self.rect_display_res, width=2, border_radius=6)
+        desenhar_painel_container(self.tela, self.rect_display_res, "painel_card.png", fallback_cor=BARRA_FUNDO, borda_cor=BORDA_AZUL, margem=8)
         txt_res_atual = self.fonte_valor.render(sistema_config.obter_texto_resolucao_atual(), True, TEXTO_AMARELO)
         self.tela.blit(txt_res_atual, txt_res_atual.get_rect(center=self.rect_display_res.center))
 
@@ -366,8 +363,5 @@ class GerenciadorConfiguracoesTela(TelaBase):
             altura_caixa = txt_fb.get_height() + 16
             rect_fb = pygame.Rect((self.largura - largura_caixa) // 2, 642, largura_caixa, altura_caixa)
 
-            overlay = pygame.Surface((largura_caixa, altura_caixa), pygame.SRCALPHA)
-            overlay.fill((16, 22, 30, 230))
-            pygame.draw.rect(overlay, self.cor_feedback, overlay.get_rect(), width=2, border_radius=6)
-            self.tela.blit(overlay, rect_fb.topleft)
+            desenhar_painel_container(self.tela, rect_fb, "painel_retorno.png", fallback_cor=(16, 22, 30), borda_cor=self.cor_feedback, margem=8)
             self.tela.blit(txt_fb, (rect_fb.x + 16, rect_fb.y + 8))

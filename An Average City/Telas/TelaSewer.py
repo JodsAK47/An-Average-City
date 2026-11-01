@@ -3,7 +3,7 @@ import pygame
 from Sistemas.SistemaUI import Botao, TelaBase
 from Sistemas.Fontes import obter_fonte
 import os
-from Sistemas.Recursos import caminho_imagem, caminho_cenario
+from Sistemas.Recursos import caminho_imagem, caminho_cenario, caminho_item
 from Sistemas.SaveSystem import save_global
 
 COR_FUNDO = (12, 16, 20)
@@ -84,7 +84,7 @@ class GerenciadorSewerTela(TelaBase):
         self.sprite_card_chao = None
         self.sprite_card_modal = None
         try:
-            card_bruto = pygame.image.load(caminho_imagem("MemberCard.png")).convert_alpha()
+            card_bruto = pygame.image.load(caminho_item("MemberCard.png")).convert_alpha()
             mini = pygame.transform.scale(card_bruto, (largura_card_chao, altura_card_chao))
             self.sprite_card_chao = pygame.transform.rotate(mini, -10)
             self.sprite_card_modal = pygame.transform.scale(card_bruto, (270, 180))

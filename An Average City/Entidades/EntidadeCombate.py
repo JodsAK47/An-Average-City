@@ -37,6 +37,7 @@ class EntidadeCombate(pygame.sprite.Sprite):
         self.turnos_veneno = 0
         self.bloqueando = False
         self.recuperando = False
+        self.focado = False
         self.god_mode = False
         self.efeitos_ativos = {}
 
@@ -105,6 +106,7 @@ class EntidadeCombate(pygame.sprite.Sprite):
         self.atordoado = False
         self.bloqueando = False
         self.recuperando = False
+        self.focado = False
 
     def executar_turno(self, contexto: Any = None):
         """

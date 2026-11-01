@@ -8,9 +8,10 @@ from .Recursos import (
     caminho_conquista,
     caminho_musica,
     caminho_fonte,
+    caminho_sfx,
     caminho_vfx,
 )
-from .Fontes import obter_fonte, quebrar_texto
+from .Fontes import obter_fonte, obter_fonte_manga, quebrar_texto
 from .SaveSystem import GerenciadorSave, save_global
 from .Conquistas import Conquista, SistemaConquistas, sistema_conquistas
 from .Inventario import (
@@ -45,6 +46,9 @@ from .GerenciadorAudio import (
     EstadoMusica,
     GerenciadorMusica,
     gerenciador_musica,
+    GerenciadorSFX,
+    gerenciador_sfx,
+    tocar_sfx,
 )
 from .SistemaEfeitos import (
     CONFIG_EFEITOS,
@@ -68,8 +72,10 @@ __all__ = [
     "caminho_conquista",
     "caminho_musica",
     "caminho_fonte",
+    "caminho_sfx",
     "caminho_vfx",
     "obter_fonte",
+    "obter_fonte_manga",
     "quebrar_texto",
     "GerenciadorSave",
     "save_global",
@@ -109,6 +115,9 @@ __all__ = [
     "EstadoMusica",
     "GerenciadorMusica",
     "gerenciador_musica",
+    "GerenciadorSFX",
+    "gerenciador_sfx",
+    "tocar_sfx",
     "CONFIG_EFEITOS",
     "obter_efeitos_ativos",
     "carregar_icone_efeito",

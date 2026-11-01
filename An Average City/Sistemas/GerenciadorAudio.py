@@ -8,13 +8,13 @@ import enum
 import sys
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 
 import pygame
 
 from .Configuracoes import sistema_config
 from .Constantes import Verso, obter_musica_combate
-from .Recursos import caminho_musica
+from .Recursos import caminho_musica, caminho_sfx
 
 
 def _log_seguro(msg: str):
@@ -275,3 +275,69 @@ class GerenciadorMusica:
 
 # Instância global do gerenciador de música
 gerenciador_musica = GerenciadorMusica()
+
+
+class GerenciadorSFX:
+    """
+    Gerenciador global para carregamento e reprodução de efeitos sonoros (SFX).
+    Realiza cache de objetos pygame.mixer.Sound e aplica o volume de SFX
+    definido nas configurações do sistema.
+    """
+
+    def __init__(self):
+        self._sons: Dict[str, pygame.mixer.Sound] = {}
+
+    def obter_som(self, nome_arquivo: str) -> Optional[pygame.mixer.Sound]:
+        """Carrega e armazena em cache o efeito sonoro."""
+        if not pygame.mixer.get_init():
+            return None
+        nome_chave = Path(nome_arquivo).name.lower()
+        if nome_chave in self._sons:
+            return self._sons[nome_chave]
+
+        caminho = caminho_sfx(nome_arquivo)
+        if Path(caminho).exists():
+            try:
+                snd = pygame.mixer.Sound(caminho)
+                self._sons[nome_chave] = snd
+                return snd
+            except Exception as e:
+                _log_seguro(f"[Aviso] Nao foi possivel carregar SFX '{nome_arquivo}': {e}")
+                return None
+        return None
+
+    def tocar(self, nome_arquivo: str, volume_relativo: float = 1.0) -> Optional[pygame.mixer.Channel]:
+        """
+        Reproduz um efeito sonoro com o volume configurado para SFX.
+        Retorna o canal de reprodução ou None se desativado/mudo.
+        """
+        if not pygame.mixer.get_init():
+            return None
+        try:
+            if sistema_config.esta_mutado():
+                return None
+            vol_base = sistema_config.obter_volume_sfx_efetivo()
+            vol = max(0.0, min(1.0, float(vol_base * volume_relativo)))
+            if vol <= 0.0:
+                return None
+        except Exception:
+            return None
+
+        snd = self.obter_som(nome_arquivo)
+        if snd is not None:
+            try:
+                snd.set_volume(vol)
+                return snd.play()
+            except Exception as e:
+                _log_seguro(f"[Aviso] Erro ao reproduzir SFX '{nome_arquivo}': {e}")
+                return None
+        return None
+
+    def limpar_cache(self):
+        """Limpa o cache de sons carregados."""
+        self._sons.clear()
+
+
+# Instância global do gerenciador de efeitos sonoros (SFX)
+gerenciador_sfx = GerenciadorSFX()
+tocar_sfx = gerenciador_sfx.tocar

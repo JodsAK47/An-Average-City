@@ -2,7 +2,7 @@ import math
 from typing import Callable, Optional, Any, Dict, List, Tuple
 import pygame
 from Sistemas.Fontes import obter_fonte
-from Sistemas.Recursos import caminho_botao, caminho_imagem
+from Sistemas.Recursos import caminho_botao, caminho_imagem, caminho_container
 
 class Botao:
 
@@ -126,6 +126,12 @@ class Botao:
                 self.pressionado = False
                 if self.alternado:
                     self.ativo = not self.ativo
+
+                try:
+                    from Sistemas.GerenciadorAudio import tocar_sfx
+                    tocar_sfx("Interface.wav", volume_relativo=0.6)
+                except Exception:
+                    pass
 
                 if self.acao is not None:
                     resultado = self.acao()
@@ -419,3 +425,114 @@ class GerenciadorTelas:
         if tela is not None:
             if hasattr(tela, 'desenhar'):
                 tela.desenhar()
+
+
+# ==============================================================================
+# SISTEMA DE CONTAINERS 8-BIT COM 9-SLICE
+# ==============================================================================
+
+_CACHE_CONTAINERS_RAW: Dict[str, Optional[pygame.Surface]] = {}
+_CACHE_PAINEIS_9SLICE: Dict[Tuple[str, int, int, int], pygame.Surface] = {}
+
+def obter_painel_container(
+    nome_sprite: str = "painel_base.png",
+    largura: int = 100,
+    altura: int = 100,
+    margem: int = 14
+) -> Optional[pygame.Surface]:
+    """
+    Retorna uma Surface do container 8-bit redimensionada via 9-slice.
+    Os cantos e detalhes pixel-art são preservados sem distorção.
+    Resultados são cacheados em memória para alta performance (60 FPS estáveis).
+    """
+    if largura <= 0 or altura <= 0:
+        return None
+
+    chave = (nome_sprite, largura, altura, margem)
+    if chave in _CACHE_PAINEIS_9SLICE:
+        return _CACHE_PAINEIS_9SLICE[chave]
+
+    if nome_sprite not in _CACHE_CONTAINERS_RAW:
+        try:
+            import os
+            caminho = caminho_container(nome_sprite)
+            if not os.path.exists(caminho):
+                caminho = caminho_imagem(nome_sprite)
+            img = pygame.image.load(caminho)
+            if pygame.display.get_surface() is not None:
+                img = img.convert_alpha()
+            _CACHE_CONTAINERS_RAW[nome_sprite] = img
+        except Exception as e:
+            print(f"[Aviso] Nao foi possivel carregar sprite container '{nome_sprite}': {e}")
+            _CACHE_CONTAINERS_RAW[nome_sprite] = None
+
+    base = _CACHE_CONTAINERS_RAW.get(nome_sprite)
+    if base is None:
+        return None
+
+    ow, oh = base.get_size()
+    mx = min(margem, ow // 3, max(1, largura // 2))
+    my = min(margem, oh // 3, max(1, altura // 2))
+
+    surf = pygame.Surface((largura, altura), pygame.SRCALPHA)
+
+    # Cantos
+    tl = base.subsurface((0, 0, mx, my))
+    tr = base.subsurface((ow - mx, 0, mx, my))
+    bl = base.subsurface((0, oh - my, mx, my))
+    br = base.subsurface((ow - mx, oh - my, mx, my))
+
+    surf.blit(tl, (0, 0))
+    surf.blit(tr, (largura - mx, 0))
+    surf.blit(bl, (0, altura - my))
+    surf.blit(br, (largura - mx, altura - my))
+
+    # Bordas
+    if largura > 2 * mx:
+        t = pygame.transform.scale(base.subsurface((mx, 0, ow - 2 * mx, my)), (largura - 2 * mx, my))
+        b = pygame.transform.scale(base.subsurface((mx, oh - my, ow - 2 * mx, my)), (largura - 2 * mx, my))
+        surf.blit(t, (mx, 0))
+        surf.blit(b, (mx, altura - my))
+
+    if altura > 2 * my:
+        l = pygame.transform.scale(base.subsurface((0, my, mx, oh - 2 * my)), (mx, altura - 2 * my))
+        r = pygame.transform.scale(base.subsurface((ow - mx, my, mx, oh - 2 * my)), (mx, altura - 2 * my))
+        surf.blit(l, (0, my))
+        surf.blit(r, (largura - mx, my))
+
+    # Centro
+    if largura > 2 * mx and altura > 2 * my:
+        c = pygame.transform.scale(base.subsurface((mx, my, ow - 2 * mx, oh - 2 * my)), (largura - 2 * mx, altura - 2 * my))
+        surf.blit(c, (mx, my))
+
+    if pygame.display.get_surface() is not None:
+        surf = surf.convert_alpha()
+
+    _CACHE_PAINEIS_9SLICE[chave] = surf
+    return surf
+
+def desenhar_painel_container(
+    tela: pygame.Surface,
+    rect: Any,
+    nome_sprite: str = "painel_base.png",
+    fallback_cor: Optional[Tuple[int, int, int]] = None,
+    borda_cor: Optional[Tuple[int, int, int]] = None,
+    margem: int = 14
+) -> None:
+    """
+    Desenha um container estilizado no retângulo especificado usando 9-slice do sprite 8-bit.
+    Se o sprite não puder ser carregado, renderiza com cores sólidas de fallback.
+    """
+    if not isinstance(rect, pygame.Rect):
+        rect = pygame.Rect(rect)
+    if rect.width <= 0 or rect.height <= 0:
+        return
+
+    painel = obter_painel_container(nome_sprite, rect.width, rect.height, margem)
+    if painel is not None:
+        tela.blit(painel, rect.topleft)
+    else:
+        if fallback_cor is not None:
+            pygame.draw.rect(tela, fallback_cor, rect, border_radius=6)
+        if borda_cor is not None:
+            pygame.draw.rect(tela, borda_cor, rect, width=2, border_radius=6)

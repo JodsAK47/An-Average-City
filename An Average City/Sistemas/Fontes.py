@@ -11,6 +11,15 @@ def obter_fonte(tamanho):
     except (pygame.error, FileNotFoundError):
         return pygame.font.SysFont(["consolas", "courier"], tamanho, bold=True)
 
+def obter_fonte_manga(tamanho):
+    """Retorna a fonte Manga estilizada para títulos e introduções."""
+    if not pygame.font.get_init():
+        pygame.font.init()
+    try:
+        return pygame.font.Font(caminho_fonte("Manga.ttf"), tamanho)
+    except (pygame.error, FileNotFoundError):
+        return pygame.font.SysFont(["consolas", "arial", "courier"], tamanho, bold=True)
+
 def quebrar_texto(texto, fonte, largura_maxima):
     palavras = texto.split()
     linhas = []

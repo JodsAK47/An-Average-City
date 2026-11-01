@@ -19,6 +19,7 @@ class Habilidade:
         verso="Nenhum",
         is_ultimate=False,
         minion=None,
+        estilo=None,
     ):
         self.nome = nome
         self.tipo = tipo
@@ -32,6 +33,7 @@ class Habilidade:
         self.verso = verso
         self.is_ultimate = is_ultimate
         self.minion = minion
+        self.estilo = estilo
 
     def custo_para(self, entidade=None):
         if callable(self.custo_mp):
@@ -64,6 +66,7 @@ def carregar_habilidades_jogador():
                     verso=v.get("verso", "Nenhum"),
                     is_ultimate=False,
                     minion=v.get("minion"),
+                    estilo=v["estilo"],
                 )
                 banco_habilidades[k] = hab
 

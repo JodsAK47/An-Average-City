@@ -146,7 +146,10 @@ class Minion(EntidadeCombate):
             img_escala = pygame.transform.scale(self.imagem_original, (largura_desejada, altura_desejada))
             # aliados e skins ficam virados para a direita; inimigos são forçados para a esquerda
             if getattr(self, "is_minion", False):
-                self.imagem = img_escala
+                if getattr(self, "inverter_horizontal", False):
+                    self.imagem = pygame.transform.flip(img_escala, True, False)
+                else:
+                    self.imagem = img_escala
             elif getattr(self, "is_player", False):
                 self.imagem = img_escala
             else:

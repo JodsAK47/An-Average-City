@@ -1,5 +1,5 @@
 import pygame
-from Sistemas.SistemaUI import Botao, TelaBase
+from Sistemas.SistemaUI import Botao, TelaBase, desenhar_painel_container
 from Sistemas.Fontes import obter_fonte
 from Sistemas.SaveSystem import save_global
 from Sistemas.Conquistas import sistema_conquistas
@@ -22,7 +22,7 @@ def carregar_arvores():
             return dados
     except FileNotFoundError:
         print("⚠️ Erro: arquivo arvores.json não encontrado.")
-        return {"Sobrevivente": [], "Agente": [], "Feiticeiro": []}
+        return {"Sobrevivente": [], "Agente": [], "Feiticeiro": [], "Invocador": []}
 
 ARVORE_POR_VERSO = carregar_arvores()
 
@@ -323,10 +323,230 @@ class GerenciadorVerso(TelaBase):
             linhas.append(linha)
         return linhas
 
+    def _desenhar_container_retorno(self):
+        """
+        Desenha um container estilizado na parte superior da árvore de habilidades
+        para exibir mensagens de retorno, feedback e status em relação à skilltree.
+        """
+        rect_container = pygame.Rect(335, 55, 330, 125)
+        desab_atual = self.habilidades_desabilitadas.get(self.verso_atual, set())
+
+        tag_status = "ÁRVORE DE HABILIDADES"
+        cor_borda = (80, 95, 120)
+        cor_tag_bg = (32, 40, 56)
+        cor_tag_txt = (175, 205, 235)
+        cor_texto = TEXTO
+        texto_principal = self.aviso
+
+        if self.aviso:
+            aviso_lower = self.aviso.lower()
+            if any(term in aviso_lower for term in ["desbloqueado", "habilitada", "ultimate desbloqueada"]):
+                tag_status = "SUCESSO"
+                cor_borda = (42, 185, 95)
+                cor_tag_bg = (20, 60, 35)
+                cor_tag_txt = (130, 255, 180)
+                cor_texto = (225, 255, 235)
+            elif any(term in aviso_lower for term in ["desabilitada", "selecione", "desbloqueie"]):
+                tag_status = "AVISO"
+                cor_borda = (215, 75, 75)
+                cor_tag_bg = (65, 25, 25)
+                cor_tag_txt = (255, 175, 175)
+                cor_texto = (255, 225, 225)
+            elif "jogador" in aviso_lower:
+                tag_status = "INSTRUÇÃO"
+                cor_borda = (75, 160, 240)
+                cor_tag_bg = (25, 45, 75)
+                cor_tag_txt = (150, 215, 255)
+                cor_texto = (230, 245, 255)
+        elif self.habilidade_foco:
+            hab = self.habilidade_foco
+            hab_id = hab["id"]
+            if hab_id in self.habilidades_desbloqueadas:
+                if hab_id in desab_atual:
+                    tag_status = "TALENTO DESABILITADO"
+                    cor_borda = (205, 60, 60)
+                    cor_tag_bg = (60, 25, 25)
+                    cor_tag_txt = (255, 170, 170)
+                    cor_texto = (255, 220, 220)
+                    texto_principal = f"'{hab['nome']}' está inativo no momento."
+                else:
+                    tag_status = "TALENTO ATIVO"
+                    cor_borda = (42, 175, 88)
+                    cor_tag_bg = (20, 60, 35)
+                    cor_tag_txt = (130, 255, 180)
+                    cor_texto = (225, 255, 235)
+                    texto_principal = f"'{hab['nome']}' está liberado e pronto para o combate."
+            else:
+                pode = all(req in self.habilidades_desbloqueadas for req in hab.get("req", []))
+                if not pode:
+                    tag_status = "TALENTO BLOQUEADO"
+                    cor_borda = (80, 90, 108)
+                    cor_tag_bg = (38, 44, 56)
+                    cor_tag_txt = (160, 170, 185)
+                    cor_texto = TEXTO_SECUNDARIO
+                    texto_principal = "Requer o desbloqueio da habilidade anterior."
+                elif self.pontos < hab.get("preco", 0):
+                    tag_status = "PONTOS INSUFICIENTES"
+                    cor_borda = (215, 175, 35)
+                    cor_tag_bg = (60, 50, 18)
+                    cor_tag_txt = (255, 220, 95)
+                    cor_texto = (255, 245, 215)
+                    texto_principal = f"Custo: {hab.get('preco', 0)} pts (você possui {self.pontos} pts)."
+                else:
+                    tag_status = "DISPONÍVEL"
+                    cor_borda = (245, 205, 50)
+                    cor_tag_bg = (65, 55, 20)
+                    cor_tag_txt = (255, 235, 110)
+                    cor_texto = (255, 255, 230)
+                    texto_principal = f"Pronto para desbloquear por {hab.get('preco', 0)} pontos."
+        else:
+            tag_status = "ÁRVORE DE HABILIDADES"
+            texto_principal = "Clique em um talento da árvore para inspecionar, desbloquear ou alternar status."
+
+        # Caixa principal do container com sprite 8-bit
+        desenhar_painel_container(self.tela, rect_container, "painel_retorno.png", fallback_cor=(22, 28, 38), borda_cor=cor_borda, margem=10)
+
+        # Tag/Badge superior
+        txt_tag = self.fonte_micro.render(tag_status, True, cor_tag_txt)
+        largura_tag = txt_tag.get_width() + 16
+        rect_tag = pygame.Rect(rect_container.centerx - largura_tag // 2, rect_container.y + 10, largura_tag, 20)
+        pygame.draw.rect(self.tela, cor_tag_bg, rect_tag, border_radius=4)
+        pygame.draw.rect(self.tela, cor_borda, rect_tag, width=1, border_radius=4)
+        self.tela.blit(txt_tag, (rect_tag.centerx - txt_tag.get_width() // 2, rect_tag.centery - txt_tag.get_height() // 2))
+
+        # Texto do retorno com quebra de linha
+        linhas = self._quebrar_texto(texto_principal, self.fonte_desc, rect_container.width - 24)
+        total_h = len(linhas) * 20
+        y_ini = rect_tag.bottom + max(8, (rect_container.bottom - rect_tag.bottom - total_h) // 2)
+
+        for i, linha in enumerate(linhas[:3]):
+            txt_rend = self.fonte_desc.render(linha, True, cor_texto)
+            self.tela.blit(txt_rend, (rect_container.centerx - txt_rend.get_width() // 2, y_ini + i * 20))
+
+    def _desenhar_card_perfil_habilidade(self):
+        """
+        Desenha o container à direita como um card de perfil elegante,
+        exibindo apenas o nome da habilidade, a moldura/imagem de perfil e a descrição.
+        """
+        rect_card = pygame.Rect(700, 40, 280, 465)
+        desenhar_painel_container(self.tela, rect_card, "painel_detalhes.png", fallback_cor=PAINEL_CLARO, borda_cor=BORDA, margem=14)
+
+        cor_verso = CORES_VERSO.get(self.verso_atual, AZUL_DESTAQUE)
+
+        if self.habilidade_foco:
+            hab = self.habilidade_foco
+            nome_hab = hab["nome"].upper()
+            desc_hab = hab.get("desc", "")
+            hab_id = hab.get("id", "??")
+
+            # 1. Nome da Habilidade
+            linhas_nome = self._quebrar_texto(nome_hab, self.fonte_titulo, 250)
+            y_nome = 56
+            for l in linhas_nome[:2]:
+                txt_l = self.fonte_titulo.render(l, True, TEXTO)
+                self.tela.blit(txt_l, txt_l.get_rect(centerx=840, top=y_nome))
+                y_nome += 22
+
+            # Linha decorativa abaixo do nome
+            pygame.draw.line(self.tela, cor_verso, (735, y_nome + 4), (945, y_nome + 4), 2)
+
+            # 2. Imagem / Moldura estilo Card de Perfil
+            rect_foto = pygame.Rect(740, y_nome + 12, 200, 150)
+            desenhar_painel_container(self.tela, rect_foto, "painel_card.png", fallback_cor=(20, 26, 36), borda_cor=BORDA, margem=8)
+
+            # Tenta carregar imagem real da habilidade se existir no disco
+            imagem_carregada = None
+            nomes_tentativas = [
+                hab.get("arquivo_imagem"),
+                hab.get("imagem"),
+                f"{hab_id}.png",
+                f"{hab['nome']}.png",
+            ]
+            for n_tentativa in nomes_tentativas:
+                if n_tentativa:
+                    try:
+                        p = caminho_imagem(n_tentativa)
+                        if os.path.exists(p) and os.path.isfile(p):
+                            img_bruta = pygame.image.load(p).convert_alpha()
+                            imagem_carregada = pygame.transform.smoothscale(img_bruta, (180, 130))
+                            break
+                    except Exception:
+                        pass
+
+            if imagem_carregada is not None:
+                self.tela.blit(imagem_carregada, imagem_carregada.get_rect(center=rect_foto.center))
+            else:
+                # Placeholder visual estilo Card de Perfil (ainda não adicionada)
+                pygame.draw.circle(self.tela, (30, 38, 52), rect_foto.center, 44)
+                pygame.draw.circle(self.tela, cor_verso, rect_foto.center, 44, 3)
+                pygame.draw.circle(self.tela, (45, 56, 75), rect_foto.center, 36)
+
+                # ID do talento no centro do medalhão
+                txt_id_card = self.fonte_titulo.render(hab_id, True, (245, 248, 252))
+                self.tela.blit(txt_id_card, txt_id_card.get_rect(center=rect_foto.center))
+
+                # Pequena tarja informativa na base da foto
+                rect_tarja = pygame.Rect(rect_foto.x + 10, rect_foto.bottom - 24, rect_foto.width - 20, 18)
+                pygame.draw.rect(self.tela, (28, 36, 48), rect_tarja, border_radius=4)
+                pygame.draw.rect(self.tela, (60, 72, 92), rect_tarja, width=1, border_radius=4)
+                txt_em_breve = self.fonte_micro.render("CARD DE HABILIDADE", True, (150, 165, 185))
+                self.tela.blit(txt_em_breve, txt_em_breve.get_rect(center=rect_tarja.center))
+
+            # 3. Descrição da Habilidade
+            y_desc = rect_foto.bottom + 14
+            txt_label_desc = self.fonte_micro.render("DESCRIÇÃO DA HABILIDADE", True, cor_verso)
+            self.tela.blit(txt_label_desc, (735, y_desc))
+            pygame.draw.line(self.tela, (60, 72, 92), (735 + txt_label_desc.get_width() + 8, y_desc + 7), (945, y_desc + 7), 1)
+
+            deslocamento_y = y_desc + 18
+            for linha in self._quebrar_texto(desc_hab, self.fonte_desc, 230):
+                txt_desc = self.fonte_desc.render(linha, True, TEXTO_SECUNDARIO)
+                self.tela.blit(txt_desc, (735, deslocamento_y))
+                deslocamento_y += 20
+
+        else:
+            # Estado sem habilidade selecionada: exibe o card de perfil do próprio Verso
+            nome_verso = self.verso_atual.upper()
+            txt_nome = self.fonte_titulo.render(nome_verso, True, cor_verso)
+            self.tela.blit(txt_nome, txt_nome.get_rect(centerx=840, top=58))
+
+            pygame.draw.line(self.tela, cor_verso, (735, 84), (945, 84), 2)
+
+            rect_foto = pygame.Rect(740, 96, 200, 150)
+            desenhar_painel_container(self.tela, rect_foto, "painel_card.png", fallback_cor=(20, 26, 36), borda_cor=BORDA, margem=8)
+
+            imagem_verso = self.imagens_por_verso.get(self.verso_atual)
+            if imagem_verso is not None:
+                sprite = pygame.transform.smoothscale(imagem_verso, (130, 130))
+                self.tela.blit(sprite, sprite.get_rect(center=rect_foto.center))
+            else:
+                pygame.draw.circle(self.tela, cor_verso, rect_foto.center, 44)
+
+            y_desc = rect_foto.bottom + 14
+            txt_label_desc = self.fonte_micro.render("SOBRE O VERSO", True, cor_verso)
+            self.tela.blit(txt_label_desc, (735, y_desc))
+            pygame.draw.line(self.tela, (60, 72, 92), (735 + txt_label_desc.get_width() + 8, y_desc + 7), (945, y_desc + 7), 1)
+
+            descricoes = {
+                "Sobrevivente": "Resiliente e adaptável. Especialista em sobrevivência, defesa e resistência.",
+                "Agente": "Ágil, preciso e letal. Focado em velocidade, ataques críticos e táticas avançadas.",
+                "Feiticeiro": "Místico e destruidor. Canaliza energia arcana e conjura magias de alto impacto.",
+            }
+            desc = descricoes.get(self.verso_atual, "Selecione uma habilidade na árvore para ver seu perfil.")
+            deslocamento_y = y_desc + 18
+            for linha in self._quebrar_texto(desc, self.fonte_desc, 230):
+                txt_desc = self.fonte_desc.render(linha, True, TEXTO_SECUNDARIO)
+                self.tela.blit(txt_desc, (735, deslocamento_y))
+                deslocamento_y += 20
+
+            dica = "Clique nas orbes para inspecionar cada talento."
+            txt_dica = self.fonte_micro.render(dica, True, (130, 150, 175))
+            self.tela.blit(txt_dica, (735, deslocamento_y + 10))
+
     def desenhar(self):
         self.tela.fill(FUNDO)
 
-        pygame.draw.rect(self.tela, PAINEL_CLARO, (40, 40, 260, 260))
+        desenhar_painel_container(self.tela, (40, 40, 260, 260), "painel_detalhes.png", fallback_cor=PAINEL_CLARO, margem=12)
         txt_carac = self.fonte_desc.render("VERSO", True, TEXTO)
         self.tela.blit(txt_carac, (170 - txt_carac.get_width()//2, 50))
 
@@ -344,7 +564,7 @@ class GerenciadorVerso(TelaBase):
         txt_nome_verso = self.fonte_desc.render(nome_verso, True, TEXTO)
         self.tela.blit(txt_nome_verso, (170 - txt_nome_verso.get_width()//2, 260))
 
-        pygame.draw.rect(self.tela, PAINEL_CLARO, (40, 320, 260, 440))
+        desenhar_painel_container(self.tela, (40, 320, 260, 440), "painel_base.png", fallback_cor=PAINEL_CLARO, margem=14)
         txt_arvores = self.fonte_desc.render("Arvores de Habilidades", True, TEXTO)
         self.tela.blit(txt_arvores, (170 - txt_arvores.get_width()//2, 340))
 
@@ -365,7 +585,9 @@ class GerenciadorVerso(TelaBase):
             if borda:
                 pygame.draw.circle(self.tela, destaque_por_verso.get(nome, (255, 255, 255)), rect.center, 40, 5)
 
-        pygame.draw.rect(self.tela, PAINEL, (320, 40, 360, 720))
+        desenhar_painel_container(self.tela, (320, 40, 360, 720), "painel_base.png", fallback_cor=PAINEL, borda_cor=BORDA, margem=16)
+
+        self._desenhar_container_retorno()
 
         arvore_ativa = self.obter_arvore_ativa()
         desab_atual = self.habilidades_desabilitadas.get(self.verso_atual, set())
@@ -431,75 +653,20 @@ class GerenciadorVerso(TelaBase):
             if self.habilidade_foco == hab:
                 pygame.draw.circle(self.tela, (255, 255, 255), (x, y), 40, 3)
 
-        if self.aviso:
-            txt_aviso = self.fonte_titulo.render(self.aviso, True, TEXTO)
-            self.tela.blit(txt_aviso, (500 - txt_aviso.get_width()//2, 60))
 
-        pygame.draw.rect(self.tela, PAINEL_CLARO, (700, 40, 280, 500), border_radius=8)
-        pygame.draw.rect(self.tela, BORDA, (700, 40, 280, 500), width=3, border_radius=8)
 
-        if self.habilidade_foco:
-            txt_nome = self.fonte_titulo.render(self.habilidade_foco["nome"].upper(), True, TEXTO)
-            self.tela.blit(txt_nome, txt_nome.get_rect(centerx=840, top=62))
-
-            deslocamento_y = 120
-            for linha in self._quebrar_texto(self.habilidade_foco["desc"], self.fonte_desc, 240):
-                txt_desc = self.fonte_desc.render(linha, True, TEXTO_SECUNDARIO)
-                self.tela.blit(txt_desc, txt_desc.get_rect(centerx=840, top=deslocamento_y))
-                deslocamento_y += 22
-
-            if self.habilidade_foco["id"] in self.habilidades_desbloqueadas:
-                if self.habilidade_foco["id"] in desab_atual:
-                    texto_estado = "DESABILITADA"
-                    cor_estado = (255, 95, 95)
-                else:
-                    texto_estado = "LIBERADO"
-                    cor_estado = (85, 235, 135)
-            else:
-                pode = all(req in self.habilidades_desbloqueadas for req in self.habilidade_foco.get("req", []))
-                if not pode:
-                    texto_estado = "DESBLOQUEAR ANTERIOR"
-                    cor_estado = (150, 160, 175)
-                elif self.pontos < self.habilidade_foco.get("preco", 0):
-                    texto_estado = "SEM DINHEIRO O BASTANTE"
-                    cor_estado = (255, 215, 75)
-                else:
-                    texto_estado = "DISPONÍVEL PARA DESBLOQUEAR"
-                    cor_estado = (255, 235, 95)
-
-            txt_estado = self.fonte_desc.render(texto_estado, True, cor_estado)
-            self.tela.blit(txt_estado, txt_estado.get_rect(centerx=840, top=deslocamento_y + 18))
-
-        else:
-            txt_nome = self.fonte_titulo.render(self.verso_atual.upper(), True, CORES_VERSO.get(self.verso_atual, TEXTO))
-            self.tela.blit(txt_nome, txt_nome.get_rect(centerx=840, top=62))
-
-            descricoes = {
-                "Sobrevivente": "Resiliente e adaptável. Especialista em sobrevivência, defesa e resistência.",
-                "Agente": "Ágil, preciso e letal. Focado em velocidade, ataques críticos e táticas avançadas.",
-                "Feiticeiro": "Místico e destruidor. Canaliza energia arcana e conjura magias de alto impacto.",
-            }
-            desc = descricoes.get(self.verso_atual, "Selecione uma habilidade para ver detalhes.")
-            deslocamento_y = 110
-            for linha in self._quebrar_texto(desc, self.fonte_desc, 240):
-                txt_desc = self.fonte_desc.render(linha, True, TEXTO_SECUNDARIO)
-                self.tela.blit(txt_desc, txt_desc.get_rect(centerx=840, top=deslocamento_y))
-                deslocamento_y += 22
-
-            dica = "Clique nas habilidades para inspecionar."
-            txt_dica = self.fonte_desc.render(dica, True, (140, 160, 180))
-            self.tela.blit(txt_dica, txt_dica.get_rect(centerx=840, top=deslocamento_y + 15))
+        self._desenhar_card_perfil_habilidade()
 
         if self.modo == "menu":
-            pygame.draw.rect(self.tela, FUNDO, (712, 470, 256, 40))
-            txt_pontos = self.fonte_titulo.render(f"PONTOS: {self.pontos}", True, TEXTO)
-            self.tela.blit(txt_pontos, txt_pontos.get_rect(center=(840, 490)))
+            rect_pontos = pygame.Rect(720, 514, 240, 36)
+            desenhar_painel_container(self.tela, rect_pontos, "painel_topo.png", fallback_cor=FUNDO, borda_cor=BORDA, margem=8)
+            txt_pontos = self.fonte_titulo.render(f"PONTOS: {self.pontos}", True, (255, 215, 60))
+            self.tela.blit(txt_pontos, txt_pontos.get_rect(center=rect_pontos.center))
             self.botao_comprar.desenhar(self.tela)
 
         # Mini-painel de Legenda no rodapé da coluna esquerda
         rect_legenda = pygame.Rect(50, 642, 240, 110)
-        pygame.draw.rect(self.tela, FUNDO, rect_legenda, border_radius=6)
-        pygame.draw.rect(self.tela, BORDA, rect_legenda, width=1, border_radius=6)
+        desenhar_painel_container(self.tela, rect_legenda, "painel_card.png", fallback_cor=FUNDO, borda_cor=BORDA, margem=8)
 
         txt_leg_tit = self.fonte_desc.render("LEGENDA DAS ORBES:", True, TEXTO)
         self.tela.blit(txt_leg_tit, (58, 646))

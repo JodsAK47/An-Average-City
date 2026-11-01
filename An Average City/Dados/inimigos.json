@@ -99,7 +99,7 @@
     {
         "max_hp": 45,
         "max_mp": 10,
-        "arquivo_imagem": "Maldicao1.png",
+        "arquivo_imagem": "Hound.png",
         "nome": "Carrapato Sombrio",
         "ataques": [
             "Mordida",

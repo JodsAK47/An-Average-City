@@ -1,26 +1,26 @@
 {
     "Sobrevivente": [
-        {"id": "S1", "nome": "Sobreviver não é covardia", "desc": "Sua chance de fugir de um combate é 100%\nCusto 10", "preco": 10, "pos": [500, 150], "req": []},
-        {"id": "S2", "nome": "Gerenciamento de recursos", "desc": "Itens que te recuperam fazem isso em dobro, e seus equipamentos usam metade dos materiais para serem melhorados\nCusto 20", "preco": 20, "pos": [500, 270], "req": ["S1"]},
-        {"id": "S3", "nome": "Junto As Sombras", "desc": "Se torna Imune a Efeitos negativos\nCusto 50", "preco": 50, "pos": [500, 390], "req": ["S2"]},
-        {"id": "S4", "nome": "Mestre Constante", "desc": "Desbloqueia a ultimate do verso\nCusto 100", "preco": 100, "pos": [500, 510], "req": ["S3"]}
+        {"id": "S1", "nome": "Sobreviver não é covardia", "desc": "Sua chance de fugir de um combate é 100%\nCusto 10", "preco": 10, "pos": [500, 240], "req": []},
+        {"id": "S2", "nome": "Gerenciamento de recursos", "desc": "Itens que te recuperam fazem isso em dobro, e seus equipamentos usam metade dos materiais para serem melhorados\nCusto 20", "preco": 20, "pos": [500, 360], "req": ["S1"]},
+        {"id": "S3", "nome": "Junto As Sombras", "desc": "Se torna Imune a Efeitos negativos\nCusto 50", "preco": 50, "pos": [500, 480], "req": ["S2"]},
+        {"id": "S4", "nome": "Mestre Constante", "desc": "Desbloqueia a ultimate do verso\nCusto 100", "preco": 100, "pos": [500, 600], "req": ["S3"]}
     ],
     "Agente": [
-        {"id": "A1", "nome": "Precisão Mortal", "desc": "Aumenta a precisão em 0.05 para todos os ataques\nCusto 10", "preco": 10, "pos": [500, 150], "req": []},
-        {"id": "A2", "nome": "Critico Aprimorado", "desc": "Aumenta a chance de crítico em 10% e o dano crítico para o triplo\nCusto 20", "preco": 20, "pos": [500, 270], "req": ["A1"]},
-        {"id": "A3", "nome": "Mudança de posição rapida", "desc": "A chance de inimigos errarem você é maior\nCusto 50", "preco": 50, "pos": [500, 390], "req": ["A2"]},
-        {"id": "A4", "nome": "Ultimate Pronta", "desc": "Desbloqueia a ultimate do verso\nCusto 100", "preco": 100, "pos": [500, 510], "req": ["A3"]}
+        {"id": "A1", "nome": "Precisão Mortal", "desc": "Aumenta a precisão em 0.05 para todos os ataques\nCusto 10", "preco": 10, "pos": [500, 240], "req": []},
+        {"id": "A2", "nome": "Critico Aprimorado", "desc": "Aumenta a chance de crítico em 10% e o dano crítico para o triplo\nCusto 20", "preco": 20, "pos": [500, 360], "req": ["A1"]},
+        {"id": "A3", "nome": "Mudança de posição rapida", "desc": "A chance de inimigos errarem você é maior\nCusto 50", "preco": 50, "pos": [500, 480], "req": ["A2"]},
+        {"id": "A4", "nome": "Ultimate Pronta", "desc": "Desbloqueia a ultimate do verso\nCusto 100", "preco": 100, "pos": [500, 600], "req": ["A3"]}
     ],
     "Feiticeiro": [
-        {"id": "F1", "nome": "Fluxo de Energia", "desc": "Você recupera 2 pontos de mana ao invez de 1\nCusto 10", "preco": 10, "pos": [500, 150], "req": []},
-        {"id": "F2", "nome": "Dominio Simples", "desc": "Recupere 2 Pontos PM Ao Usar Recuperar\nCusto 20", "preco": 20, "pos": [500, 270], "req": ["F1"]},
-        {"id": "F3", "nome": "Energia Reversa", "desc": "Cura 10% do HP máximo ao Recuperar\nCusto 50", "preco": 50, "pos": [500, 390], "req": ["F2"]},
-        {"id": "F4", "nome": "Técnica Maxima", "desc": "Desbloqueia a ultimate do verso\nCusto 100", "preco": 100, "pos": [500, 510], "req": ["F3"]}
+        {"id": "F1", "nome": "Fluxo de Energia", "desc": "Você recupera 2 pontos de mana ao invez de 1\nCusto 10", "preco": 10, "pos": [500, 240], "req": []},
+        {"id": "F2", "nome": "Dominio Simples", "desc": "Ao Usar Foco, ganhe +2 PM e anule o dano extra recebido\nCusto 20", "preco": 20, "pos": [500, 360], "req": ["F1"]},
+        {"id": "F3", "nome": "Energia Reversa", "desc": "Cura 10% do HP máximo ao Usar Foco\nCusto 50", "preco": 50, "pos": [500, 480], "req": ["F2"]},
+        {"id": "F4", "nome": "Técnica Maxima", "desc": "Desbloqueia a ultimate do verso\nCusto 100", "preco": 100, "pos": [500, 600], "req": ["F3"]}
     ],
     "Invocador": [
-        {"id": "I1", "nome": "Vínculo Espiritual", "desc": "Seus minions recebem +25% de HP máximo e +2 em todos os atributos\nCusto 10", "preco": 10, "pos": [500, 150], "req": []},
-        {"id": "I2", "nome": "Comando Tático", "desc": "Aumenta a precisão dos minions em 10% e recupera 1 PM ao crítico ou abate deles\nCusto 20", "preco": 20, "pos": [500, 270], "req": ["I1"]},
-        {"id": "I3", "nome": "Exército de Sombras", "desc": "Aumenta o limite de minions em campo de 2 para 3 e minions absorvem 25% do seu dano\nCusto 50", "preco": 50, "pos": [500, 390], "req": ["I2"]},
-        {"id": "I4", "nome": "Mestre Invocador", "desc": "Desbloqueia a ultimate de Invocador e aumenta o dano dos minions em 20%\nCusto 100", "preco": 100, "pos": [500, 510], "req": ["I3"]}
+        {"id": "I1", "nome": "Vínculo Espiritual", "desc": "Seus minions recebem +25% de HP máximo e +2 em todos os atributos\nCusto 10", "preco": 10, "pos": [500, 240], "req": []},
+        {"id": "I2", "nome": "Comando Tático", "desc": "Aumenta a precisão dos minions em 10% e recupera 1 PM ao crítico ou abate deles\nCusto 20", "preco": 20, "pos": [500, 360], "req": ["I1"]},
+        {"id": "I3", "nome": "Exército de Sombras", "desc": "Aumenta o limite de minions em campo de 2 para 3 e minions absorvem 25% do seu dano\nCusto 50", "preco": 50, "pos": [500, 480], "req": ["I2"]},
+        {"id": "I4", "nome": "Mestre Invocador", "desc": "Desbloqueia a ultimate de Invocador e aumenta o dano dos minions em 20%\nCusto 100", "preco": 100, "pos": [500, 600], "req": ["I3"]}
     ]
 }

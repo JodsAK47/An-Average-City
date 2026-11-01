@@ -1,4 +1,5 @@
 from .TelaMenu import GerenciadorMenu
+from .TelaIntro import GerenciadorIntro
 from .TelaCombate import GerenciadorJogo
 from .TelaGameOver import GerenciadorGameOver
 from .TelaClasses import GerenciadorClasses
@@ -21,6 +22,7 @@ TelaConfiguracoes = GerenciadorConfiguracoesTela
 
 __all__ = [
     "GerenciadorMenu",
+    "GerenciadorIntro",
     "GerenciadorJogo",
     "GerenciadorGameOver",
     "GerenciadorClasses",

@@ -125,8 +125,8 @@
     "Drone Caçador": {
         "nome": "Drone Caçador",
         "verso": "Agente",
-        "arquivo_imagem": "Cyborg Skin.png",
-        "inverter_horizontal": false,
+        "arquivo_imagem": "Drone.png",
+        "inverter_horizontal": true,
         "max_hp": 32,
         "max_mp": 14,
         "descricao": "Drone tático equipado com feixes térmicos e pulso EMP.",
@@ -166,7 +166,7 @@
     "Cão Divino": {
         "nome": "Cão Divino",
         "verso": "Feiticeiro",
-        "arquivo_imagem": "pixil_sombra.png",
+        "arquivo_imagem": "Cachorro.png",
         "inverter_horizontal": false,
         "max_hp": 34,
         "max_mp": 10,
@@ -207,8 +207,8 @@
     "Nue": {
         "nome": "Nue",
         "verso": "Feiticeiro",
-        "arquivo_imagem": "Passaro_Olhudo.png",
-        "inverter_horizontal": true,
+        "arquivo_imagem": "Nue.png",
+        "inverter_horizontal": false,
         "max_hp": 38,
         "max_mp": 15,
         "descricao": "Shikigami alado envolto em relâmpagos amaldiçoados.",
@@ -289,7 +289,7 @@
     "Pequeno Santuário": {
         "nome": "Pequeno Santuário",
         "verso": "Feiticeiro",
-        "arquivo_imagem": "Santuario.PNG",
+        "arquivo_imagem": "Santuario.png",
         "inverter_horizontal": false,
         "max_hp": 100,
         "max_mp": 0,

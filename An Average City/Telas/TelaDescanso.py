@@ -1,5 +1,5 @@
 import pygame
-from Sistemas.SistemaUI import Botao, TelaBase
+from Sistemas.SistemaUI import Botao, TelaBase, desenhar_painel_container
 from Entidades.Personagem import personagem
 from Sistemas.Fontes import obter_fonte
 from Sistemas.Inventario import inventario_global, carregar_sprite_item, eh_arte_placeholder, obter_arquivo_imagem_item
@@ -264,7 +264,7 @@ class TelaDescanso(TelaBase):
 
     def desenhar(self, posicao_mouse=None):
         self.tela.fill((25, 30, 42))
-        pygame.draw.rect(self.tela, (38, 46, 62), (24, 24, self.largura - 48, self.altura - 48))
+        desenhar_painel_container(self.tela, (24, 24, self.largura - 48, self.altura - 48), "painel_base.png", fallback_cor=(38, 46, 62), margem=16)
         self.tela.blit(self.fonte_titulo.render("DESCANSO", True, (240, 220, 150)), (48, 42))
 
         self.btn_pausa.desenhar(self.tela)
@@ -278,9 +278,9 @@ class TelaDescanso(TelaBase):
             self.tela.blit(texto, texto.get_rect(center=rect.center))
 
         paineis = (pygame.Rect(48, 110, 245, 565), pygame.Rect(315, 110, 335, 565), pygame.Rect(672, 110, 280, 565))
-        for painel in paineis:
-            pygame.draw.rect(self.tela, (48, 57, 75), painel)
-            pygame.draw.rect(self.tela, (91, 103, 126), painel, 2)
+        sprites_paineis = ("painel_detalhes.png", "painel_base.png", "painel_detalhes.png")
+        for painel, sprite_p in zip(paineis, sprites_paineis):
+            desenhar_painel_container(self.tela, painel, sprite_p, fallback_cor=(48, 57, 75), borda_cor=(91, 103, 126), margem=14)
 
         self.tela.blit(self.fonte_secao.render("CRIACAO", True, (235, 220, 170)), (68, 132))
         self.tela.blit(self.fonte_menor.render("Receitas e materiais", True, (170, 180, 195)), (68, 163))
@@ -306,8 +306,7 @@ class TelaDescanso(TelaBase):
 
             # Card com sprite do equipamento alvo
             card_eq = pygame.Rect(68, 296, 205, 46)
-            pygame.draw.rect(self.tela, (34, 42, 58), card_eq, border_radius=6)
-            pygame.draw.rect(self.tela, (255, 215, 60), card_eq, width=1, border_radius=6)
+            desenhar_painel_container(self.tela, card_eq, "painel_ouro.png", fallback_cor=(34, 42, 58), borda_cor=(255, 215, 60), margem=8)
 
             sprite_alvo = carregar_sprite_item(eq_alvo, tamanho=(36, 36))
             self.tela.blit(sprite_alvo, (card_eq.x + 5, card_eq.y + 5))
@@ -346,8 +345,10 @@ class TelaDescanso(TelaBase):
                 cor_borda = (65, 78, 102)
                 borda_w = 1
 
-            pygame.draw.rect(self.tela, cor_fundo, slot, border_radius=4)
-            pygame.draw.rect(self.tela, cor_borda, slot, width=borda_w, border_radius=4)
+            sprite_slot = "painel_ouro.png" if selecionado else "painel_card.png"
+            desenhar_painel_container(self.tela, slot, sprite_slot, fallback_cor=cor_fundo, borda_cor=cor_borda, margem=6)
+            if hover and not selecionado:
+                pygame.draw.rect(self.tela, (145, 175, 215), slot, width=1, border_radius=4)
 
             if indice < len(itens_do_inventario):
                 item = itens_do_inventario[indice]
@@ -421,8 +422,10 @@ class TelaDescanso(TelaBase):
                 cor_borda = (65, 78, 102)
                 borda_w = 1
 
-            pygame.draw.rect(self.tela, cor_fundo, slot, border_radius=4)
-            pygame.draw.rect(self.tela, cor_borda, slot, width=borda_w, border_radius=4)
+            sprite_slot = "painel_ouro.png" if selecionado else "painel_card.png"
+            desenhar_painel_container(self.tela, slot, sprite_slot, fallback_cor=cor_fundo, borda_cor=cor_borda, margem=6)
+            if hover and not selecionado:
+                pygame.draw.rect(self.tela, (145, 175, 215), slot, width=1, border_radius=4)
 
             if indice < len(slots_eq):
                 rotulo_slot, eq = slots_eq[indice]
@@ -561,12 +564,8 @@ class TelaDescanso(TelaBase):
         x = self.largura - largura_popup - 24
         y = 16
 
-        surf_popup = pygame.Surface((largura_popup, altura_popup), pygame.SRCALPHA)
-        surf_popup.fill((22, 28, 42, 245))
-        self.tela.blit(surf_popup, (x, y))
-
-        pygame.draw.rect(self.tela, (76, 175, 120), (x, y, largura_popup, altura_popup), width=2, border_radius=8)
-        pygame.draw.rect(self.tela, (40, 85, 60), (x + 2, y + 2, largura_popup - 4, 22), border_top_left_radius=6, border_top_right_radius=6)
+        desenhar_painel_container(self.tela, (x, y, largura_popup, altura_popup), "painel_retorno.png", fallback_cor=(22, 28, 42), borda_cor=(76, 175, 120), margem=10)
+        pygame.draw.rect(self.tela, (40, 85, 60), (x + 4, y + 4, largura_popup - 8, 20), border_radius=4)
 
         txt_titulo = self.fonte_menor.render("FIM DA BATALHA", True, (255, 220, 130))
         self.tela.blit(txt_titulo, (x + 10, y + 6))

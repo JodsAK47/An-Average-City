@@ -9,6 +9,7 @@ if str(DIRETORIO_RAIZ) not in sys.path:
 import pygame
 from Telas import (
     GerenciadorMenu,
+    GerenciadorIntro,
     GerenciadorJogo,
     GerenciadorGameOver,
     GerenciadorClasses,
@@ -56,6 +57,7 @@ if tela_real is None:
 pygame.display.set_caption("Menu RPG")
 relogio = pygame.time.Clock()
 
+intro_tela = GerenciadorIntro(tela)
 menu_tela = GerenciadorMenu(tela)
 jogo_tela = GerenciadorJogo(tela)
 game_over_tela = GerenciadorGameOver(tela)
@@ -91,9 +93,9 @@ def tocar_musica(nome_arquivo, fade_out_ms=600, fade_in_ms=800, verso=None):
         verso=verso,
     )
 
-tocar_musica("Menu.mp3", fade_out_ms=0, fade_in_ms=800)
+intro_tela.iniciar(tocar_trilha=True)
 
-estado = "menu"
+estado = "intro"
 rodando = True
 
 def reiniciar_para_menu():
@@ -670,7 +672,17 @@ def tratar_eventos_vitoria(evento, posicao_mouse):
         return reiniciar_para_menu()
     return None
 
+def tratar_eventos_intro(evento, posicao_mouse):
+    global estado
+    resultado = intro_tela.atualizar_eventos(evento, posicao_mouse)
+    if resultado == "menu":
+        tocar_musica("Menu.mp3", fade_out_ms=600, fade_in_ms=800)
+        estado = "menu"
+        return "menu"
+    return None
+
 DISTRIBUIDOR_EVENTOS = {
+    "intro": tratar_eventos_intro,
     "menu": tratar_eventos_menu,
     "jogo": tratar_eventos_jogo,
     "pausa": tratar_eventos_pausa,
@@ -692,6 +704,12 @@ DISTRIBUIDOR_EVENTOS = {
 
 def atualizar_estado_atual(posicao_mouse, estado_clique_mouse):
     global estado
+    if estado == "intro":
+        resultado_intro = intro_tela.atualizar(posicao_mouse, estado_clique_mouse)
+        if resultado_intro == "menu":
+            tocar_musica("Menu.mp3", fade_out_ms=600, fade_in_ms=800)
+            estado = "menu"
+        return
     if estado == "jogo":
         resultado_jogo = jogo_tela.atualizar(posicao_mouse, estado_clique_mouse)
         if resultado_jogo == "pausa":
@@ -797,6 +815,7 @@ def atualizar_estado_atual(posicao_mouse, estado_clique_mouse):
         return
 
     telas_atualizacao = {
+        "intro": intro_tela,
         "menu": menu_tela,
         "classes": classes_tela,
         "verso": verso_tela,
@@ -819,6 +838,7 @@ def atualizar_estado_atual(posicao_mouse, estado_clique_mouse):
 
 def desenhar_estado_atual(posicao_mouse):
     telas_desenho = {
+        "intro": intro_tela.desenhar,
         "menu": menu_tela.desenhar,
         "classes": classes_tela.desenhar,
         "verso": verso_tela.desenhar,
@@ -883,7 +903,7 @@ def loop_principal():
         desenhar_estado_atual(posicao_mouse)
 
         sistema_conquistas.atualizar_notificacoes()
-        if not esta_em_cutscene():
+        if not esta_em_cutscene() and estado != "intro":
             sistema_conquistas.desenhar_notificacao(tela)
 
         tela_redimensionada = pygame.transform.scale(tela, (nova_largura, nova_altura))

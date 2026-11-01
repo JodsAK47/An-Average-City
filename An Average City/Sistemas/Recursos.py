@@ -104,7 +104,10 @@ def caminho_imagem(nome_arquivo: str) -> str:
 
     # 4. Busca nas subpastas conhecidas mais frequentes
     nome_base = Path(nome_str).name
-    subpastas_comuns = ["Cenarios", "Inimigos", "Minions", "Ataques", "De_Buffs", "Botoes", "Inventario", "Conquistas"]
+    subpastas_comuns = [
+        "Cenarios", "Inimigos", "Minions", "Ataques", "De_Buffs",
+        "Botoes", "Inventario", "Itens", "Item", "Items", "Containers", "Conquistas"
+    ]
     for sub in subpastas_comuns:
         tentativa = pasta_sprites / sub / nome_base
         if tentativa.exists() and tentativa.is_file():
@@ -153,6 +156,25 @@ def caminho_imagem(nome_arquivo: str) -> str:
     fallback = str(pasta_sprites / nome_str)
     return fallback
 
+def caminho_item(nome_arquivo: str = "") -> str:
+    """
+    Retorna o caminho de um item na subpasta Inventario ou Itens,
+    ou através do localizador inteligente de imagens de sprites.
+    """
+    if not nome_arquivo:
+        for pasta in ["Inventario", "Itens", "Item", "Items"]:
+            p = DIRETORIO_PROJETO / "Sprites" / pasta
+            if p.exists():
+                return str(p)
+        return caminho_recurso("Sprites", "Inventario")
+
+    for pasta in ["Inventario", "Itens", "Item", "Items"]:
+        direto = DIRETORIO_PROJETO / "Sprites" / pasta / nome_arquivo
+        if direto.exists() and direto.is_file():
+            return str(direto)
+
+    return caminho_imagem(nome_arquivo)
+
 def caminho_cenario(nome_arquivo: str = "") -> str:
     """Retorna o caminho de um cenário na subpasta Cenarios ou através do localizador de imagens."""
     if not nome_arquivo:
@@ -179,10 +201,47 @@ def caminho_botao(nome_arquivo: str) -> str:
     # Usa o localizador inteligente
     return caminho_imagem(nome_arquivo)
 
-def caminho_vfx(nome_arquivo: str) -> str:
-    """Retorna o caminho de VFX ou ataques."""
+def caminho_sfx(nome_arquivo: str = "") -> str:
+    """
+    Retorna o caminho de efeitos sonoros (SFX) na pasta SFX.
+    Suporta resolução insensível a maiúsculas/minúsculas.
+    """
     if not nome_arquivo:
-        return caminho_recurso("VFX")
+        return caminho_recurso("SFX")
+
+    pasta_sfx = DIRETORIO_PROJETO / "SFX"
+    direto = pasta_sfx / nome_arquivo
+    if direto.exists():
+        return str(direto)
+
+    # Busca insensível a maiúsculas/minúsculas na pasta SFX
+    if pasta_sfx.exists():
+        nome_lower = nome_arquivo.lower()
+        for f in pasta_sfx.iterdir():
+            if f.is_file() and f.name.lower() == nome_lower:
+                return str(f)
+
+    # Fallback para VFX (se existir)
+    pasta_vfx = DIRETORIO_PROJETO / "VFX"
+    if pasta_vfx.exists():
+        tentativa_vfx = pasta_vfx / nome_arquivo
+        if tentativa_vfx.exists():
+            return str(tentativa_vfx)
+
+    return caminho_recurso("SFX", nome_arquivo)
+
+def caminho_vfx(nome_arquivo: str = "") -> str:
+    """
+    Retorna o caminho de VFX, ataques ou efeitos sonoros.
+    Para efeitos sonoros, redireciona para caminho_sfx.
+    """
+    if not nome_arquivo:
+        pasta_sfx = DIRETORIO_PROJETO / "SFX"
+        return str(pasta_sfx) if pasta_sfx.exists() else caminho_recurso("VFX")
+
+    extensao = Path(nome_arquivo).suffix.lower()
+    if extensao in (".wav", ".mp3", ".ogg"):
+        return caminho_sfx(nome_arquivo)
 
     pasta_vfx = DIRETORIO_PROJETO / "VFX"
     direto = pasta_vfx / nome_arquivo
@@ -193,6 +252,18 @@ def caminho_vfx(nome_arquivo: str) -> str:
     tentativa_ataque = pasta_ataques / nome_arquivo
     if tentativa_ataque.exists():
         return str(tentativa_ataque)
+
+    return caminho_imagem(nome_arquivo)
+
+def caminho_container(nome_arquivo: str = "") -> str:
+    """Retorna o caminho de um sprite de container na subpasta Containers ou através do localizador de imagens."""
+    if not nome_arquivo:
+        return caminho_recurso("Sprites", "Containers")
+
+    pasta_containers = DIRETORIO_PROJETO / "Sprites" / "Containers"
+    direto = pasta_containers / nome_arquivo
+    if direto.exists():
+        return str(direto)
 
     return caminho_imagem(nome_arquivo)
 

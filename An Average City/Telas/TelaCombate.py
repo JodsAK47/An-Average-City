@@ -20,7 +20,8 @@ from Sistemas.Constantes import (
 from Gameplay.Habilidades import banco_habilidades, obter_ultimate
 from Sistemas.Fontes import obter_fonte, quebrar_texto
 from Gameplay.GeracaoFases import GeradorFase, BANCO_INIMIGOS, _criar_inimigo_a_partir_template, executar_efeito_evento
-from Sistemas.Recursos import caminho_imagem, caminho_vfx
+from Sistemas.Recursos import caminho_imagem, caminho_sfx, caminho_vfx
+from Sistemas.GerenciadorAudio import tocar_sfx
 from Sistemas.SistemaEfeitos import (
     obter_efeitos_ativos,
     desenhar_icones_entidade,
@@ -202,7 +203,8 @@ class GerenciadorJogo(TelaBase):
         y_btn = 640
         h_btn = 46
         self.btn_ataque    = Botao(hud_x + 25 + 0 * (largura_btn + gap), y_btn, largura_btn, h_btn, "ATAQUE", (140, 25, 25), (190, 40, 40), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
-        self.btn_recuperar = Botao(hud_x + 25 + 1 * (largura_btn + gap), y_btn, largura_btn, h_btn, "RECUP", (25, 120, 45), (40, 170, 65), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
+        self.btn_foco      = Botao(hud_x + 25 + 1 * (largura_btn + gap), y_btn, largura_btn, h_btn, "FOCO", (25, 120, 45), (40, 170, 65), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
+        self.btn_recuperar = self.btn_foco
         self.btn_bloquear  = Botao(hud_x + 25 + 2 * (largura_btn + gap), y_btn, largura_btn, h_btn, "BLOQ", (150, 120, 20), (200, 160, 30), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
         self.btn_fugir     = Botao(hud_x + 25 + 3 * (largura_btn + gap), y_btn, largura_btn, h_btn, "FUGIR", (60, 60, 75), (95, 95, 115), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
         self.btn_voltar    = Botao(hud_x + 25 + 3 * (largura_btn + gap), y_btn, largura_btn, h_btn, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
@@ -264,15 +266,25 @@ class GerenciadorJogo(TelaBase):
         self.mensagem_log = "A batalha começou!"
         self.ataque_jogador_ativo = None
 
-        # Carregamento do som de VFX de corte
+        # Carregamento do som de SFX de corte
         self.snd_corte = None
         try:
             if pygame.mixer.get_init():
-                caminho_som_corte = caminho_vfx("corte.wav")
+                caminho_som_corte = caminho_sfx("corte.wav")
                 if os.path.exists(caminho_som_corte):
                     self.snd_corte = pygame.mixer.Sound(caminho_som_corte)
         except Exception as e:
-            print(f"[Aviso] Nao foi possivel carregar VFX corte.wav: {e}")
+            print(f"[Aviso] Nao foi possivel carregar SFX corte.wav: {e}")
+
+        # Carregamento do som de SFX de foco
+        self.snd_foco = None
+        try:
+            if pygame.mixer.get_init():
+                caminho_som_foco = caminho_sfx("Foco.wav")
+                if os.path.exists(caminho_som_foco):
+                    self.snd_foco = pygame.mixer.Sound(caminho_som_foco)
+        except Exception as e:
+            print(f"[Aviso] Nao foi possivel carregar SFX Foco.wav: {e}")
 
         # Carregamento do sprite visual de corte
         self.img_vfx_corte = None
@@ -297,7 +309,7 @@ class GerenciadorJogo(TelaBase):
         self.canal_spike = None
         try:
             if pygame.mixer.get_init():
-                caminho_snd_spike = caminho_vfx("Spike Beep.mp3")
+                caminho_snd_spike = caminho_sfx("Spike Beep.mp3")
                 if os.path.exists(caminho_snd_spike):
                     self.snd_spike_beep = pygame.mixer.Sound(caminho_snd_spike)
         except Exception as e:
@@ -307,7 +319,7 @@ class GerenciadorJogo(TelaBase):
         self.snd_desarmar = None
         try:
             if pygame.mixer.get_init():
-                caminho_snd_desarmar = caminho_vfx("Desarmar.mp3")
+                caminho_snd_desarmar = caminho_sfx("Desarmar.mp3")
                 if os.path.exists(caminho_snd_desarmar):
                     self.snd_desarmar = pygame.mixer.Sound(caminho_snd_desarmar)
         except Exception as e:
@@ -338,7 +350,24 @@ class GerenciadorJogo(TelaBase):
                 self.snd_corte.set_volume(max(0.0, min(1.0, vol)))
                 self.snd_corte.play()
             except Exception as e:
-                print(f"[Aviso] Erro ao reproduzir VFX de corte: {e}")
+                print(f"[Aviso] Erro ao reproduzir SFX de corte: {e}")
+        else:
+            tocar_sfx("corte.wav", volume_relativo=volume_relativo)
+
+    def tocar_sfx_corte(self, volume_relativo=1.0):
+        self.tocar_vfx_corte(volume_relativo=volume_relativo)
+
+    def tocar_sfx_soco(self, volume_relativo=1.0):
+        tocar_sfx("Soco.wav", volume_relativo=volume_relativo)
+
+    def tocar_sfx_mordida(self, volume_relativo=1.0):
+        tocar_sfx("Mordida.wav", volume_relativo=volume_relativo)
+
+    def tocar_sfx_acerto(self, volume_relativo=1.0):
+        tocar_sfx("Acerto.wav", volume_relativo=volume_relativo)
+
+    def tocar_sfx_dano(self, volume_relativo=1.0):
+        tocar_sfx("Dano.wav", volume_relativo=volume_relativo)
 
     def tocar_som_desarmar(self, volume_relativo=1.0):
         if getattr(self, "snd_desarmar", None) is not None:
@@ -1366,6 +1395,7 @@ class GerenciadorJogo(TelaBase):
 
         personagem.bloqueando = False
         personagem.recuperando = False
+        personagem.focado = False
         self.turno_jogador_iniciado = False
         self.indice_turno = 0
         self.timer_inimigo = 0
@@ -1556,6 +1586,14 @@ class GerenciadorJogo(TelaBase):
             self.mensagem_log = f"🐾 {minion.nome} usou {hab.nome}, mas ERROU!"
             return self.mensagem_log
 
+        nome_hab_minion = (hab.nome or "").lower()
+        if "mordida" in nome_hab_minion:
+            self.tocar_sfx_mordida(volume_relativo=0.85)
+        elif "soco" in nome_hab_minion:
+            self.tocar_sfx_soco(volume_relativo=0.85)
+        elif "corte" in nome_hab_minion:
+            self.tocar_vfx_corte(volume_relativo=0.85)
+
         alvo_principal = alvo_forcado if (alvo_forcado in inimigos_vivos) else random.choice(inimigos_vivos)
         alvos = inimigos_vivos if hab.em_area else [alvo_principal]
 
@@ -1644,10 +1682,15 @@ class GerenciadorJogo(TelaBase):
 
         jogador_ativo.mp = max(0, jogador_ativo.mp - custo_mp)
 
-        if "corte" in hab.nome.lower() or "clivagem" in hab.nome.lower() or "desmantelar" in hab.nome.lower():
+        nome_hab_lower = hab.nome.lower()
+        if "corte" in nome_hab_lower or "clivagem" in nome_hab_lower or "desmantelar" in nome_hab_lower:
             self.tocar_vfx_corte(volume_relativo=0.9)
             if alvo_principal:
                 self.disparar_vfx_corte_alvo(alvo_principal)
+        elif "soco" in nome_hab_lower or "flash negro" in nome_hab_lower or "colisão 24 frames" in nome_hab_lower:
+            self.tocar_sfx_soco(volume_relativo=0.9)
+        elif "mordida" in nome_hab_lower:
+            self.tocar_sfx_mordida(volume_relativo=0.9)
 
         if hab.nome in ("Plantar Spike", "Spike"):
             self.plantar_spike(dono=jogador_ativo)
@@ -1736,6 +1779,8 @@ class GerenciadorJogo(TelaBase):
                 msg += f"{self.nome_exibicao(jogador_ativo)} invocou {minion_invocado.nome} contra o alvo {texto_alvo}! ({dano_final} dano)"
             else:
                 msg += f"{self.nome_exibicao(jogador_ativo)} usou {hab.nome} no alvo {texto_alvo}! ({dano_final} dano)"
+
+            self.tocar_sfx_acerto(volume_relativo=0.85)
 
             for alvo in alvos:
                 alvo.hp -= dano_final
@@ -1987,6 +2032,7 @@ class GerenciadorJogo(TelaBase):
                     self.turno_jogador_iniciado = True
                     jogador_atual.bloqueando = False
                     jogador_atual.recuperando = False
+                    jogador_atual.focado = False
                     self.mensagem_log = "Seu Turno!" if jogador_atual == personagem else "Turno do Jogador 2!"
                     if jogador_atual.mp < jogador_atual.max_mp:
                         ganho_passivo = 2 if self.tem_talento(jogador_atual, "F1") else 1
@@ -2067,10 +2113,12 @@ class GerenciadorJogo(TelaBase):
                         self.acertos_centro_esquiva += 1
                         self.reducao_esquiva += 0.33
                         self.mensagem_log = "✨ Centro acertado!"
+                        self.tocar_sfx_acerto(volume_relativo=1.0)
                     elif distancia <= 80:
                         self.acertos_esquiva += 1
                         self.reducao_esquiva += 0.16
                         self.mensagem_log = "💨 Lateral acertada!"
+                        self.tocar_sfx_acerto(volume_relativo=0.7)
                     else:
                         self.mensagem_log = "❌ Errou o tempo!"
 
@@ -2091,6 +2139,8 @@ class GerenciadorJogo(TelaBase):
                     dano_tomado = max(1, dano_tomado - absorvido)
 
                 alvo_esquivando.hp = max(0, alvo_esquivando.hp - dano_tomado)
+                if dano_tomado > 0:
+                    self.tocar_sfx_dano(volume_relativo=0.85)
 
                 if condicoes_evitadas:
                     if self.acertos_centro_esquiva >= 2:
@@ -2220,14 +2270,19 @@ class GerenciadorJogo(TelaBase):
                         self.clique_anterior = clique_agora
                         return None
 
+                    nome_golpe_lower = (hab_usada.nome or "").lower()
                     eh_ataque_corte = (
                         "sukuna" in nome_inimigo.lower()
-                        or "clivagem" in hab_usada.nome.lower()
-                        or "desmantelar" in hab_usada.nome.lower()
-                        or "corte" in hab_usada.nome.lower()
+                        or "clivagem" in nome_golpe_lower
+                        or "desmantelar" in nome_golpe_lower
+                        or "corte" in nome_golpe_lower
                     )
                     if eh_ataque_corte:
                         self.tocar_vfx_corte(volume_relativo=0.9)
+                    elif "soco" in nome_golpe_lower:
+                        self.tocar_sfx_soco(volume_relativo=0.9)
+                    elif "mordida" in nome_golpe_lower:
+                        self.tocar_sfx_mordida(volume_relativo=0.9)
 
                     bonus_inimigo = self.calcular_bonus_atributo(entidade_atual, hab_usada.tipo)
                     dano_inimigo = hab_usada.dano + bonus_inimigo
@@ -2263,6 +2318,8 @@ class GerenciadorJogo(TelaBase):
                             if eh_ataque_corte:
                                 self.disparar_vfx_corte_alvo(alvo_minion)
                             alvo_minion.receber_dano(dano_inimigo)
+                            if dano_inimigo > 0:
+                                self.tocar_sfx_dano(volume_relativo=0.8)
                             efeitos_aplicados = []
                             if efeitos_ataque and random.random() < chance_efeito:
                                 efeitos_aplicados = self.aplicar_efeitos_controle(alvo_minion, efeitos_ataque)
@@ -2292,8 +2349,9 @@ class GerenciadorJogo(TelaBase):
                         self.iniciar_cooldown_feedback(75, self.avancar_turno)
                     else:
 
-                        if alvo_jogador.recuperando:
-                            dano_inimigo += max(1, int(dano_inimigo * 0.10))
+                        if alvo_jogador.recuperando or getattr(alvo_jogador, "focado", False):
+                            if not self.tem_talento(alvo_jogador, "F2"):
+                                dano_inimigo += max(1, int(dano_inimigo * 0.30))
 
                         if alvo_jogador.bloqueando:
                             dano_reduzido = max(1, int(dano_inimigo * 0.5))
@@ -2301,6 +2359,8 @@ class GerenciadorJogo(TelaBase):
                                 dano_reduzido = 0
                             alvo_jogador.hp -= dano_reduzido
                             alvo_jogador.hp = max(0, alvo_jogador.hp)
+                            if dano_reduzido > 0:
+                                self.tocar_sfx_dano(volume_relativo=0.75)
                             self.mensagem_log = f"🛡️ DEFESA do alvo {self.nome_exibicao(alvo_jogador)}! {dano_reduzido} dano."
                             self.iniciar_cooldown_feedback(75, self.avancar_turno)
                         else:
@@ -2721,7 +2781,7 @@ class GerenciadorJogo(TelaBase):
 
     def _desenhar_menu_principal(self):
         self.btn_ataque.desenhar(self.tela)
-        self.btn_recuperar.desenhar(self.tela)
+        self.btn_foco.desenhar(self.tela)
         self.btn_bloquear.desenhar(self.tela)
         if getattr(self, "spike", None) is not None and self.spike.ativa and not self.spike.desarmada:
             self.btn_desarmar_spike.desenhar(self.tela)
@@ -2735,6 +2795,48 @@ class GerenciadorJogo(TelaBase):
 
     def _desenhar_menu_selecionar_alvo(self):
         self.btn_voltar.desenhar(self.tela)
+
+    def executar_foco(self, jogador_atual=None):
+        """
+        Executa a ação Foco para o jogador:
+        Recupera PM (com bônus de F1 e F2), cura HP se tiver F3, ativa o estado Foco
+        e exibe o log de retorno atualizado.
+        """
+        if getattr(self, "snd_foco", None):
+            try:
+                from Sistemas.Configuracoes import sistema_config
+                self.snd_foco.set_volume(sistema_config.obter_volume_sfx_efetivo())
+                self.snd_foco.play()
+            except Exception:
+                pass
+        if jogador_atual is None:
+            jogador_atual = self.jogadores[self.indice_jogador_ativo] if hasattr(self, "jogadores") and self.jogadores else personagem
+        pm_rec = 2 if self.tem_talento(jogador_atual, "F1") else 1
+        if self.tem_talento(jogador_atual, "F2"):
+            pm_rec += 2
+        jogador_atual.mp = min(jogador_atual.max_mp, jogador_atual.mp + pm_rec)
+        jogador_atual.recuperando = True
+        jogador_atual.focado = True
+
+        hp_rec = 0
+        if self.tem_talento(jogador_atual, "F3"):
+            hp_rec = max(1, int(jogador_atual.max_hp * 0.10))
+            jogador_atual.hp = min(jogador_atual.max_hp, jogador_atual.hp + hp_rec)
+
+        txt_hp = f" e +{hp_rec} HP" if hp_rec > 0 else ""
+        if self.tem_talento(jogador_atual, "F2"):
+            txt_dano = "sem penalidade de dano (F2)!"
+        else:
+            txt_dano = "mas sofrerá +30% dano!"
+        self.mensagem_log = f"🧘 FOCO: +{pm_rec} PM{txt_hp}, {txt_dano}"
+        self.iniciar_cooldown_feedback(50, self.avancar_turno)
+        return {"pm": pm_rec, "hp": hp_rec}
+
+    def focar(self, jogador_atual=None):
+        return self.executar_foco(jogador_atual)
+
+    def recuperar(self, jogador_atual=None):
+        return self.executar_foco(jogador_atual)
 
     def _processar_menu_principal(self, jogador_atual, posicao_mouse, estado_clique_mouse, clicou):
         nome_turno = "Seu Turno!" if jogador_atual == personagem else "Turno do Jogador 2!"
@@ -2752,7 +2854,7 @@ class GerenciadorJogo(TelaBase):
             self.mensagem_log = nome_turno
 
         self.btn_ataque.atualizar(posicao_mouse, estado_clique_mouse)
-        self.btn_recuperar.atualizar(posicao_mouse, estado_clique_mouse)
+        self.btn_foco.atualizar(posicao_mouse, estado_clique_mouse)
         self.btn_bloquear.atualizar(posicao_mouse, estado_clique_mouse)
 
         spike_ativa = (getattr(self, "spike", None) is not None and self.spike.ativa and not self.spike.desarmada)
@@ -2773,21 +2875,8 @@ class GerenciadorJogo(TelaBase):
         if self.btn_ataque.clicado(posicao_mouse):
             self.gerar_botoes_ataque(jogador_atual)
             self.menu_acoes_estado = "ataques"
-        elif self.btn_recuperar.clicado(posicao_mouse):
-            pm_rec = 2 if self.tem_talento(jogador_atual, "F1") else 1
-            if self.tem_talento(jogador_atual, "F2"):
-                pm_rec += 2
-            jogador_atual.mp = min(jogador_atual.max_mp, jogador_atual.mp + pm_rec)
-            jogador_atual.recuperando = True
-
-            hp_rec = 0
-            if self.tem_talento(jogador_atual, "F3"):
-                hp_rec = max(1, int(jogador_atual.max_hp * 0.10))
-                jogador_atual.hp = min(jogador_atual.max_hp, jogador_atual.hp + hp_rec)
-
-            txt_hp = f" e +{hp_rec} HP" if hp_rec > 0 else ""
-            self.mensagem_log = f"🧘 RECUPERAR: +{pm_rec} PM{txt_hp}, mas sofrerá +10% dano!"
-            self.iniciar_cooldown_feedback(50, self.avancar_turno)
+        elif self.btn_foco.clicado(posicao_mouse) or self.btn_recuperar.clicado(posicao_mouse):
+            self.executar_foco(jogador_atual)
         elif self.btn_bloquear.clicado(posicao_mouse):
             jogador_atual.bloqueando = True
             self.mensagem_log = "🛡️ BLOQUEAR: Dano reduzido em 50%!"

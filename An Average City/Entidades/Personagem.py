@@ -28,6 +28,7 @@ class Personagem(EntidadeCombate):
         self.atordoado = False
         self.bloqueando = False
         self.recuperando = False
+        self.focado = False
         self.is_player = True
         self.talentos = set()
         self.god_mode = False

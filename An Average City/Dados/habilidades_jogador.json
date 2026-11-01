@@ -2,6 +2,7 @@
   "habilidades": {
     "Machadada": {
       "nome": "Machadada",
+      "estilo": 1,
       "tipo": "Físico",
       "dano": 5,
       "custo_mp": 0,
@@ -11,6 +12,7 @@
     },
     "HamBat": {
       "nome": "HamBat",
+      "estilo": 2,
       "tipo": "Físico",
       "dano": 8,
       "custo_mp": 3,
@@ -23,6 +25,7 @@
     },
     "Tentaculo Das Sombras": {
       "nome": "Tentaculo Das Sombras",
+      "estilo": 1,
       "tipo": "Magia",
       "dano": 5,
       "custo_mp": 2,
@@ -35,6 +38,7 @@
     },
     "Chamas Das Trevas": {
       "nome": "Chamas Das Trevas",
+      "estilo": 2,
       "tipo": "Magia",
       "dano": 10,
       "custo_mp": 4,
@@ -46,6 +50,7 @@
     },
     "Boomerang": {
       "nome": "Boomerang",
+      "estilo": 1,
       "tipo": "Distância",
       "dano": 6,
       "custo_mp": 0,
@@ -55,6 +60,7 @@
     },
     "Estilingada de Vidro": {
       "nome": "Estilingada de Vidro",
+      "estilo": 2,
       "tipo": "Distância",
       "dano": 11,
       "custo_mp": 1,
@@ -65,6 +71,7 @@
     },
     "Invocar Abelha": {
       "nome": "Invocar Abelha",
+      "estilo": 1,
       "tipo": "Invocador",
       "dano": 0,
       "custo_mp": 2,
@@ -75,6 +82,7 @@
     },
     "Invocar Pássaro Olhudo": {
       "nome": "Invocar Pássaro Olhudo",
+      "estilo": 2,
       "tipo": "Invocador",
       "dano": 0,
       "custo_mp": 4,
@@ -85,6 +93,7 @@
     },
     "Flash Negro": {
       "nome": "Flash Negro",
+      "estilo": 1,
       "tipo": "Físico",
       "dano": 8,
       "custo_mp": 1,
@@ -94,6 +103,7 @@
     },
     "Colisão 24 Frames": {
       "nome": "Colisão 24 Frames",
+      "estilo": 2,
       "tipo": "Físico",
       "dano": 12,
       "custo_mp": 3,
@@ -106,6 +116,7 @@
     },
     "Azul": {
       "nome": "Azul",
+      "estilo": 1,
       "tipo": "Magia",
       "dano": 5,
       "custo_mp": 1,
@@ -117,6 +128,7 @@
     },
     "Vermelho": {
       "nome": "Vermelho",
+      "estilo": 2,
       "tipo": "Magia",
       "dano": 10,
       "custo_mp": 4,
@@ -127,6 +139,7 @@
     },
     "Disparo Lazer": {
       "nome": "Disparo Lazer",
+      "estilo": 1,
       "tipo": "Distância",
       "dano": 9,
       "custo_mp": 2,
@@ -138,6 +151,7 @@
     },
     "La Jullyet": {
       "nome": "La Jullyet",
+      "estilo": 2,
       "tipo": "Distância",
       "dano": 20,
       "custo_mp": 3,
@@ -149,6 +163,7 @@
     },
     "Cães Divinos": {
       "nome": "Cães Divinos",
+      "estilo": 1,
       "tipo": "Invocador",
       "dano": 0,
       "custo_mp": 2,
@@ -159,6 +174,7 @@
     },
     "Invocar Nue": {
       "nome": "Invocar Nue",
+      "estilo": 2,
       "tipo": "Invocador",
       "dano": 0,
       "custo_mp": 4,
@@ -169,6 +185,7 @@
     },
     "Facada": {
       "nome": "Facada",
+      "estilo": 1,
       "tipo": "Físico",
       "dano": 9,
       "custo_mp": 0,
@@ -178,6 +195,7 @@
     },
     "Segura o Regue": {
       "nome": "Segura o Regue",
+      "estilo": 2,
       "tipo": "Físico",
       "dano": 7,
       "custo_mp": 0,
@@ -190,6 +208,7 @@
     },
     "Head Hunter": {
       "nome": "Head Hunter",
+      "estilo": 1,
       "tipo": "Distância",
       "dano": 6,
       "custo_mp": 2,
@@ -202,6 +221,7 @@
     },
     "Tour de Force": {
       "nome": "Tour de Force",
+      "estilo": 2,
       "tipo": "Distância",
       "dano": 11,
       "custo_mp": 4,
@@ -211,6 +231,7 @@
     },
     "Domo Compressado": {
       "nome": "Domo Compressado",
+      "estilo": 1,
       "tipo": "Magia",
       "dano": 14,
       "custo_mp": 0,
@@ -220,6 +241,7 @@
     },
     "Mare Dagua": {
       "nome": "Mare Dagua",
+      "estilo": 2,
       "tipo": "Magia",
       "dano": 10,
       "custo_mp": 2,
@@ -232,6 +254,7 @@
     },
     "Implantar Torreta": {
       "nome": "Implantar Torreta",
+      "estilo": 1,
       "tipo": "Invocador",
       "dano": 0,
       "custo_mp": 2,
@@ -242,6 +265,7 @@
     },
     "Drone de Assalto": {
       "nome": "Drone de Assalto",
+      "estilo": 2,
       "tipo": "Invocador",
       "dano": 0,
       "custo_mp": 4,

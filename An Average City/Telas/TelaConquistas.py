@@ -1,5 +1,5 @@
 import pygame
-from Sistemas.SistemaUI import Botao, TelaBase
+from Sistemas.SistemaUI import Botao, TelaBase, desenhar_painel_container
 from Sistemas.Fontes import obter_fonte
 from Sistemas.Recursos import caminho_botao
 from Sistemas.Conquistas import sistema_conquistas
@@ -103,8 +103,7 @@ class GerenciadorConquistasTela(TelaBase):
     def desenhar(self):
         self.tela.fill(FUNDO)
 
-        pygame.draw.rect(self.tela, PAINEL, (40, 20, 920, 55), border_radius=8)
-        pygame.draw.rect(self.tela, BORDA_DESBLOQUEADA, (40, 20, 920, 55), width=2, border_radius=8)
+        desenhar_painel_container(self.tela, (40, 20, 920, 55), "painel_topo.png", fallback_cor=PAINEL, borda_cor=BORDA_DESBLOQUEADA)
 
         txt_titulo = self.fonte_titulo.render("SALA DE CONQUISTAS", True, OURO)
         self.tela.blit(txt_titulo, (60, 32))
@@ -115,8 +114,7 @@ class GerenciadorConquistasTela(TelaBase):
         txt_progresso = self.fonte_desc.render(f"Progresso: {desbloqueadas}/{total} ({porcentagem}%)", True, TEXTO_BRANCO)
         self.tela.blit(txt_progresso, (960 - 40 - txt_progresso.get_width(), 36))
 
-        pygame.draw.rect(self.tela, PAINEL, self.rect_lista, border_radius=8)
-        pygame.draw.rect(self.tela, BORDA_DESBLOQUEADA, self.rect_lista, width=2, border_radius=8)
+        desenhar_painel_container(self.tela, self.rect_lista, "painel_base.png", fallback_cor=PAINEL, borda_cor=BORDA_DESBLOQUEADA)
 
         superficie_clip = self.tela.subsurface(self.rect_lista)
 
@@ -134,10 +132,8 @@ class GerenciadorConquistasTela(TelaBase):
 
                 cor_fundo_card = CARD_DESBLOQUEADO if esta_ativa else CARD_BLOQUEADO
                 cor_borda = BORDA_SELECIONADA if selecionada else (BORDA_DESBLOQUEADA if esta_ativa else BORDA_BLOQUEADA)
-                largura_borda = 3 if selecionada else 1
-
-                pygame.draw.rect(superficie_clip, cor_fundo_card, retangulo_card_local, border_radius=8)
-                pygame.draw.rect(superficie_clip, cor_borda, retangulo_card_local, width=largura_borda, border_radius=8)
+                sprite_card = "painel_ouro.png" if selecionada else ("painel_card.png" if esta_ativa else "painel_base.png")
+                desenhar_painel_container(superficie_clip, retangulo_card_local, sprite_card, fallback_cor=cor_fundo_card, borda_cor=cor_borda, margem=8)
 
                 icone_surf = c.obter_icone(desbloqueada=esta_ativa, tamanho=(52, 52))
                 superficie_clip.blit(icone_surf, (retangulo_card_local.x + 10, retangulo_card_local.y + 12))
@@ -164,8 +160,7 @@ class GerenciadorConquistasTela(TelaBase):
             rect_polegar = pygame.Rect(self.rect_lista.right - 10, self.rect_lista.y + 8 + pos_y_polegar, 5, polegar_h)
             pygame.draw.rect(self.tela, OURO, rect_polegar, border_radius=3)
 
-        pygame.draw.rect(self.tela, PAINEL_DETALHES, self.rect_detalhes, border_radius=8)
-        pygame.draw.rect(self.tela, BORDA_DESBLOQUEADA, self.rect_detalhes, width=2, border_radius=8)
+        desenhar_painel_container(self.tela, self.rect_detalhes, "painel_detalhes.png", fallback_cor=PAINEL_DETALHES, borda_cor=BORDA_DESBLOQUEADA)
 
         if self.conquista_selecionada:
             c = self.conquista_selecionada
@@ -173,8 +168,8 @@ class GerenciadorConquistasTela(TelaBase):
 
             frame_icone = pygame.Rect(self.rect_detalhes.centerx - 70, self.rect_detalhes.y + 30, 140, 140)
             cor_moldura = OURO if esta_ativa else BORDA_BLOQUEADA
-            pygame.draw.rect(self.tela, (20, 24, 32), frame_icone, border_radius=12)
-            pygame.draw.rect(self.tela, cor_moldura, frame_icone, width=3, border_radius=12)
+            sprite_moldura = "painel_ouro.png" if esta_ativa else "painel_card.png"
+            desenhar_painel_container(self.tela, frame_icone, sprite_moldura, fallback_cor=(20, 24, 32), borda_cor=cor_moldura, margem=10)
 
             icone_grande = c.obter_icone(desbloqueada=esta_ativa, tamanho=(110, 110))
             rect_icone_grande = icone_grande.get_rect(center=frame_icone.center)
@@ -202,8 +197,7 @@ class GerenciadorConquistasTela(TelaBase):
             y_cursor += 22
 
             retangulo_caixa_desc = pygame.Rect(self.rect_detalhes.x + 30, y_cursor, self.rect_detalhes.width - 60, 130)
-            pygame.draw.rect(self.tela, (25, 30, 42), retangulo_caixa_desc, border_radius=6)
-            pygame.draw.rect(self.tela, BORDA_BLOQUEADA, retangulo_caixa_desc, width=1, border_radius=6)
+            desenhar_painel_container(self.tela, retangulo_caixa_desc, "painel_card.png", fallback_cor=(25, 30, 42), borda_cor=BORDA_BLOQUEADA, margem=8)
 
             y_texto_desc = retangulo_caixa_desc.y + 12
             for linha in self._quebrar_texto(c.como_liberar, self.fonte_desc, retangulo_caixa_desc.width - 24):

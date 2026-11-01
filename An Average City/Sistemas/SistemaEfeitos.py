@@ -63,12 +63,21 @@ CONFIG_EFEITOS: Dict[str, Dict[str, Any]] = {
     },
     "recuperando": {
         "id": "recuperando",
-        "nome": "Recuperando",
+        "nome": "Foco",
         "tipo": "buff",
         "arquivo": "Regeneracao.png",
         "cor": (90, 255, 150),
         "tag": "BUFF",
-        "descricao": "Meditação e foco: Regenerando PM a cada rodada, porém vulnerável (+10% dano sofrido).",
+        "descricao": "Estado de Foco ativo: Regenera PM na rodada, porém vulnerável (+30% dano sofrido, anulado com F2).",
+    },
+    "foco": {
+        "id": "recuperando",
+        "nome": "Foco",
+        "tipo": "buff",
+        "arquivo": "Regeneracao.png",
+        "cor": (90, 255, 150),
+        "tag": "BUFF",
+        "descricao": "Estado de Foco ativo: Regenera PM na rodada, porém vulnerável (+30% dano sofrido, anulado com F2).",
     },
     "god_mode": {
         "id": "god_mode",
@@ -176,8 +185,8 @@ def obter_efeitos_ativos(entidade: Any) -> List[Dict[str, Any]]:
         info = dict(CONFIG_EFEITOS["bloqueio"])
         efeitos.append(info)
 
-    # 6. Recuperando (Buff)
-    if getattr(entidade, "recuperando", False):
+    # 6. Foco / Recuperando (Buff)
+    if getattr(entidade, "recuperando", False) or getattr(entidade, "focado", False):
         info = dict(CONFIG_EFEITOS["recuperando"])
         efeitos.append(info)
 

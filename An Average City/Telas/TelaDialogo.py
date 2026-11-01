@@ -42,6 +42,11 @@ class GerenciadorDialogo(TelaBase):
         self.indice_atual = 0
         self.ativo = True
         self._preparar_no_atual()
+        try:
+            from Sistemas.GerenciadorAudio import tocar_sfx
+            tocar_sfx("Dialogo.wav", volume_relativo=0.8)
+        except Exception:
+            pass
 
     def _preparar_no_atual(self):
         no_atual = self.dados[self.indice_atual]
@@ -106,6 +111,11 @@ class GerenciadorDialogo(TelaBase):
         return None
 
     def _avancar_ou_retornar(self, retorno):
+        try:
+            from Sistemas.GerenciadorAudio import tocar_sfx
+            tocar_sfx("Dialogo.wav", volume_relativo=0.8)
+        except Exception:
+            pass
         self.indice_atual += 1
         if self.indice_atual < len(self.dados):
             self._preparar_no_atual()

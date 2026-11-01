@@ -57,6 +57,12 @@ class GerenciadorSave:
 
             with open(ARQUIVO_SAVE, "w", encoding="utf-8") as f:
                 json.dump(dados, f, ensure_ascii=False, indent=4)
+
+            try:
+                from Sistemas.GerenciadorAudio import tocar_sfx
+                tocar_sfx("Save.wav")
+            except Exception:
+                pass
         except Exception as e:
             print(f"⚠️ Erro ao salvar em save.json: {e}")
 

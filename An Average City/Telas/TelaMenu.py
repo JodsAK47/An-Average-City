@@ -91,9 +91,9 @@ class GerenciadorMenu(TelaBase):
         self.botoes = {
             "jogar": Botao(x_botao, y_inicial_botoes + 0 * espacamento_botoes, largura_botao, altura_botao, "JOGAR", (0, 200, 0), (0, 255, 0), 198, 52, cor_texto=(0, 0, 0), fonte_tamanho=22, sprite_base_path=sprite_jogar_base, sprite_hover_path=sprite_jogar_hover, sprite_clique_path=sprite_jogar_clique),
             "classe": Botao(x_botao, y_inicial_botoes + 1 * espacamento_botoes, largura_botao, altura_botao, "VERSO", (200, 200, 0), (255, 255, 0), 198, 52, cor_texto=(0, 0, 0), fonte_tamanho=22, sprite_base_path=sprite_classe_base, sprite_hover_path=sprite_classe_hover, sprite_clique_path=sprite_classe_clique),
-            "conquistas": Botao(x_botao, y_inicial_botoes + 2 * espacamento_botoes, largura_botao, altura_botao, "CONQUISTAS", (135, 50, 195), (175, 80, 235), 198, 52, cor_texto=(255, 255, 255), fonte_tamanho=17, sprite_base_path=sprite_conquistas_base, sprite_hover_path=sprite_conquistas_hover, sprite_clique_path=sprite_conquistas_clique),
-            "config": Botao(x_botao, y_inicial_botoes + 3 * espacamento_botoes, largura_botao, altura_botao, "OPÇÕES", (0, 120, 210), (0, 160, 250), 198, 52, cor_texto=(255, 255, 255), fonte_tamanho=18, sprite_base_path=sprite_config_base, sprite_hover_path=sprite_config_hover, sprite_clique_path=sprite_config_clique),
-            "sair": Botao(x_botao, y_inicial_botoes + 4 * espacamento_botoes, largura_botao, altura_botao, "SAIR", (200, 0, 0), (255, 0, 0), 198, 52, cor_texto=(255, 255, 255), fonte_tamanho=22, sprite_base_path=sprite_sair_base, sprite_hover_path=sprite_sair_hover, sprite_clique_path=sprite_sair_clique),
+            "conquistas": Botao(x_botao, y_inicial_botoes + 2 * espacamento_botoes, largura_botao, altura_botao, "CONQUISTAS", (135, 50, 195), (175, 80, 235), 198, 52, cor_texto=(0, 0, 0), fonte_tamanho=17, sprite_base_path=sprite_conquistas_base, sprite_hover_path=sprite_conquistas_hover, sprite_clique_path=sprite_conquistas_clique),
+            "config": Botao(x_botao, y_inicial_botoes + 3 * espacamento_botoes, largura_botao, altura_botao, "OPÇÕES", (0, 120, 210), (0, 160, 250), 198, 52, cor_texto=(0, 0, 0), fonte_tamanho=18, sprite_base_path=sprite_config_base, sprite_hover_path=sprite_config_hover, sprite_clique_path=sprite_config_clique),
+            "sair": Botao(x_botao, y_inicial_botoes + 4 * espacamento_botoes, largura_botao, altura_botao, "SAIR", (200, 0, 0), (255, 0, 0), 198, 52, cor_texto=(0, 0, 0), fonte_tamanho=22, sprite_base_path=sprite_sair_base, sprite_hover_path=sprite_sair_hover, sprite_clique_path=sprite_sair_clique),
         }
         self.botao_jogar = self.botoes["jogar"]
         self.botao_classe = self.botoes["classe"]
@@ -108,7 +108,7 @@ class GerenciadorMenu(TelaBase):
         self.switch_2p = Botao(
             x_sw, y_sw, largura_sw, altura_sw, "",
             (120, 120, 120), (180, 180, 180), largura_sw, altura_sw,
-            cor_texto=(255, 255, 255), fonte_tamanho=22,
+            cor_texto=(0, 0, 0), fonte_tamanho=22,
             sprite_base_path="SOFF.png",
             sprite_hover_path="SOFF.png",
             sprite_clique_path="SON.png",
@@ -124,12 +124,12 @@ class GerenciadorMenu(TelaBase):
 
         self.botao_salvar = Botao(
             25, y_sr, largura_sr, altura_sr, "SALVAR", (30, 140, 70), (40, 180, 90), 104, 44,
-            cor_texto=(255, 255, 255), fonte_tamanho=13,
+            cor_texto=(0, 0, 0), fonte_tamanho=13,
             sprite_base_path="BVERDEM.png", sprite_hover_path="BVERDG.png", sprite_clique_path="BVERDEP.png"
         )
         self.botao_reset = Botao(
             135, y_sr, largura_sr, altura_sr, "RESET", (160, 40, 40), (200, 50, 50), 104, 44,
-            cor_texto=(255, 255, 255), fonte_tamanho=13,
+            cor_texto=(0, 0, 0), fonte_tamanho=13,
             sprite_base_path="BREDM.png", sprite_hover_path="BREDG.png", sprite_clique_path="BREDP.png"
         )
 
