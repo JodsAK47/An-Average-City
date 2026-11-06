@@ -9,6 +9,7 @@ from Entidades.Spike import Spike
 from Sistemas.SistemaUI import Botao, TelaBase
 from Gameplay.MinigameSpike import MinigameSpike
 from Gameplay.MinigameEsquiva import MinigameEsquiva
+from Gameplay.MinigamesAtaque import GerenciadorMinigameAtaque
 from Sistemas.Constantes import (
     Verso,
     Classe,
@@ -184,7 +185,7 @@ class GerenciadorJogo(TelaBase):
 
         self.esquiva_x = 0
         self.esquiva_dir = 1
-        self.esquiva_vel = 10
+        self.esquiva_vel = 4.8
         self.barras_esquiva = []
         self.rodada_esquiva = 0
         self.espera_esquiva = 0
@@ -196,6 +197,10 @@ class GerenciadorJogo(TelaBase):
         self.atacante_nome = ""
         self.efeitos_pendentes = []
         self.chance_efeito_pendente = 0.0
+        self.minigame_esquiva = MinigameEsquiva(total_rodadas=3, tela=self.tela)
+
+        self.minigame_ataque = GerenciadorMinigameAtaque(self.tela)
+        self.minigames_ataque_ativos = True
 
         hud_x = (self.tela.get_width() - 640) // 2
         largura_btn = 125
@@ -1540,10 +1545,11 @@ class GerenciadorJogo(TelaBase):
         if getattr(entidade, 'is_player', False):
             from Sistemas.Inventario import inventario_global
             agilidade += inventario_global.obter_bonus_atributo("Agi")
-        reducao = max(0.0, agilidade * 0.001)
-        vel = max(2.5, self.esquiva_vel * (1 - reducao))
+        # Redução balanceada de velocidade por ponto de agilidade (até -35% de velocidade)
+        reducao = min(0.35, max(0.0, agilidade * 0.015))
+        vel = max(2.8, self.esquiva_vel * (1.0 - reducao))
         if self.tem_talento(entidade, "A3"):
-            vel = max(2.0, vel * 0.85)
+            vel = max(2.4, vel * 0.85)
         return vel
 
     def executar_turno_minion(self, minion, alvo_forcado=None):
@@ -1671,7 +1677,16 @@ class GerenciadorJogo(TelaBase):
         self.mensagem_log = f"⚔️ O Santuário desfere CORTES em área! (-{dano_aplicado} HP) [Duração: {santuario.duracao}/4]"
         self.iniciar_cooldown_feedback(65, self.avancar_turno)
 
-    def executar_ataque_jogador(self, nome_habilidade, alvo_principal=None, jogador_ativo=None):
+    def executar_ataque_jogador(
+        self,
+        nome_habilidade,
+        alvo_principal=None,
+        jogador_ativo=None,
+        multiplicador_minigame=1.0,
+        feedback_minigame="",
+        chance_erro_minigame=None,
+        desempenho_minigame=None
+    ):
         jogador_ativo = jogador_ativo or personagem
         hab = banco_habilidades.get(nome_habilidade)
         if not hab:
@@ -1698,7 +1713,7 @@ class GerenciadorJogo(TelaBase):
             self.mensagem_log = f"💣 ULTIMATE! {self.nome_exibicao(jogador_ativo)} plantou a Spike! (Detona em 50s!)"
             self.menu_acoes_estado = "principal"
             self.ataque_selecionado = None
-            self.iniciar_cooldown_feedback(75, self.avancar_turno)
+            self.iniciar_cooldown_feedback(35, self.avancar_turno)
             return
 
         if hab.nome == "Santuário Malevolente" or getattr(hab, "minion", None) == "Pequeno Santuário":
@@ -1709,10 +1724,29 @@ class GerenciadorJogo(TelaBase):
             self.mensagem_log = f"⛩️ EXPANSÃO DE DOMÍNIO! {self.nome_exibicao(jogador_ativo)} manifestou o Santuário Malevolente!"
             self.menu_acoes_estado = "principal"
             self.ataque_selecionado = None
-            self.iniciar_cooldown_feedback(75, self.avancar_turno)
+            self.iniciar_cooldown_feedback(35, self.avancar_turno)
             return
 
         if getattr(hab, "minion", None) or hab.tipo == "Invocador":
+            errou_invocacao = False
+            if chance_erro_minigame is not None:
+                chance_invoc = float(chance_erro_minigame)
+                if self.tem_talento(jogador_ativo, "A1"):
+                    chance_invoc = max(0.0, chance_invoc - 0.05)
+                if getattr(jogador_ativo, 'god_mode', False):
+                    chance_invoc = 0.0
+                errou_invocacao = (random.random() < chance_invoc)
+
+            if errou_invocacao:
+                nome_minion_alvo = getattr(hab, "minion", "minion")
+                self.mensagem_log = f"💨 {self.nome_exibicao(jogador_ativo)} tentou invocar {nome_minion_alvo}, mas a invocação FALHOU!"
+                if feedback_minigame:
+                    self.mensagem_log += f" [{feedback_minigame}]"
+                self.menu_acoes_estado = "principal"
+                self.ataque_selecionado = None
+                self.iniciar_cooldown_feedback(75, self.avancar_turno)
+                return
+
             if getattr(hab, "minion", None):
                 minion_invocado = self.invocar_minion(hab.minion, dono=jogador_ativo)
                 if getattr(hab, "is_ultimate", False):
@@ -1725,9 +1759,16 @@ class GerenciadorJogo(TelaBase):
             else:
                 self.mensagem_log = f"✨ {self.nome_exibicao(jogador_ativo)} invocou {minion_invocado.nome if minion_invocado else 'seu minion'}!"
 
+            if feedback_minigame:
+                self.mensagem_log += f" [{feedback_minigame}]"
+            if minion_invocado and multiplicador_minigame > 1.0:
+                bonus_hp = int(minion_invocado.max_hp * (multiplicador_minigame - 1.0))
+                minion_invocado.max_hp += bonus_hp
+                minion_invocado.hp += bonus_hp
+
             self.menu_acoes_estado = "principal"
             self.ataque_selecionado = None
-            self.iniciar_cooldown_feedback(75, self.avancar_turno)
+            self.iniciar_cooldown_feedback(35, self.avancar_turno)
             return
 
         dano_base = hab.dano
@@ -1737,6 +1778,8 @@ class GerenciadorJogo(TelaBase):
         dano_base = int(dano_base * mult_verso)
 
         dano_final = dano_base + self.calcular_bonus_atributo(jogador_ativo, hab.tipo)
+        if multiplicador_minigame != 1.0:
+            dano_final = max(1, int(dano_final * multiplicador_minigame))
 
         tem_a2 = self.tem_talento(jogador_ativo, "A2")
         chance_crit_base = 0.15 if tem_a2 else 0.05
@@ -1757,9 +1800,21 @@ class GerenciadorJogo(TelaBase):
             from Sistemas.Conquistas import sistema_conquistas
             sistema_conquistas.desbloquear("critico_devastador")
 
-        precisao_final = 1.0 if getattr(jogador_ativo, 'god_mode', False) else hab.precisao
-        if self.tem_talento(jogador_ativo, "A1"):
-            precisao_final = min(1.0, precisao_final + 0.05)
+        # Chance de errar baseada no desempenho do minigame de ataque
+        if chance_erro_minigame is not None:
+            chance_erro_final = float(chance_erro_minigame)
+            if self.tem_talento(jogador_ativo, "A1"):
+                chance_erro_final = max(0.0, chance_erro_final - 0.05)
+            if getattr(jogador_ativo, 'god_mode', False):
+                chance_erro_final = 0.0
+            errou = (random.random() < chance_erro_final)
+            if errou:
+                critico = False
+        else:
+            precisao_final = 1.0 if getattr(jogador_ativo, 'god_mode', False) else hab.precisao
+            if self.tem_talento(jogador_ativo, "A1"):
+                precisao_final = min(1.0, precisao_final + 0.05)
+            errou = (not critico and random.random() > precisao_final)
 
         if alvo_principal is None and inimigos_vivos:
             alvo_principal = inimigos_vivos[0]
@@ -1767,11 +1822,13 @@ class GerenciadorJogo(TelaBase):
         self.alvo_destaque = alvos if hab.em_area else alvo_principal
         texto_alvo = "EM ÁREA (TODOS OS INIMIGOS)" if hab.em_area else (self.nome_exibicao(alvo_principal) if alvo_principal else "alvo")
 
-        if not critico and random.random() > precisao_final:
+        if not critico and errou:
             if minion_invocado is not None:
                 self.mensagem_log = f"✨ {self.nome_exibicao(jogador_ativo)} invocou {minion_invocado.nome} contra o alvo {texto_alvo}, mas o golpe errou!"
             else:
                 self.mensagem_log = f"💨 {self.nome_exibicao(jogador_ativo)} tentou {hab.nome} no alvo {texto_alvo}, mas ERROU!"
+            if feedback_minigame:
+                self.mensagem_log += f" [{feedback_minigame}]"
         else:
             msg = f"⚡ GOD MODE! " if getattr(jogador_ativo, 'god_mode', False) else (f"🎯 CRÍTICO! " if critico else f"💥 ")
             efeitos_aplicados = []
@@ -1779,6 +1836,9 @@ class GerenciadorJogo(TelaBase):
                 msg += f"{self.nome_exibicao(jogador_ativo)} invocou {minion_invocado.nome} contra o alvo {texto_alvo}! ({dano_final} dano)"
             else:
                 msg += f"{self.nome_exibicao(jogador_ativo)} usou {hab.nome} no alvo {texto_alvo}! ({dano_final} dano)"
+
+            if feedback_minigame:
+                msg += f" [{feedback_minigame}]"
 
             self.tocar_sfx_acerto(volume_relativo=0.85)
 
@@ -1817,7 +1877,49 @@ class GerenciadorJogo(TelaBase):
 
         self.menu_acoes_estado = "principal"
         self.ataque_selecionado = None
-        self.iniciar_cooldown_feedback(75, self.avancar_turno)
+        cd_frames = 35 if (desempenho_minigame is not None or chance_erro_minigame is not None) else 75
+        self.iniciar_cooldown_feedback(cd_frames, self.avancar_turno)
+
+    def iniciar_minigame_ataque(self, hab, alvo=None, jogador_ativo=None):
+        """Dispara o minigame interativo correspondente ao ataque do jogador."""
+        if getattr(hab, "is_ultimate", False):
+            self.executar_ataque_jogador(hab.nome, alvo_principal=alvo, jogador_ativo=jogador_ativo)
+            return
+
+        self.alvo_destaque = alvo
+        self.menu_acoes_estado = "minigame_ataque"
+        self.minigame_ataque.iniciar(hab, alvo=alvo, jogador_ativo=jogador_ativo)
+
+    def finalizar_minigame_ataque(self, resultado):
+        """Conclui o minigame de ataque e repassa multiplicadores e precisão baseados no desempenho."""
+        mult = resultado.get("multiplicador", 1.0)
+        feedback = resultado.get("feedback", "")
+        desempenho = resultado.get("desempenho", 1.0)
+        chance_erro = resultado.get("chance_erro", 0.0)
+        shake = resultado.get("screen_shake", False)
+        if shake:
+            self.disparar_screen_shake(duracao=16, intensidade=6)
+
+        hab = self.minigame_ataque.hab
+        alvo = self.minigame_ataque.alvo
+        jogador = self.minigame_ataque.jogador_ativo
+
+        self.executar_ataque_jogador(
+            hab.nome,
+            alvo_principal=alvo,
+            jogador_ativo=jogador,
+            multiplicador_minigame=mult,
+            feedback_minigame=feedback,
+            chance_erro_minigame=chance_erro,
+            desempenho_minigame=desempenho
+        )
+
+    def processar_evento(self, evento, posicao_mouse):
+        """Encaminha eventos de entrada (clique e teclas) aos minigames ativos."""
+        if self.menu_acoes_estado == "minigame_ataque" and getattr(self, "minigame_ataque", None) and self.minigame_ataque.esta_ativo():
+            self.minigame_ataque.processar_evento(evento, posicao_mouse)
+        elif self.menu_acoes_estado == "esquivando" and getattr(self, "minigame_esquiva", None) and self.minigame_esquiva.esta_ativo():
+            self.minigame_esquiva.processar_evento(evento, posicao_mouse)
 
     def atualizar(self, posicao_mouse, estado_clique_mouse):
         self.tempo_animacao += 0.04
@@ -2011,6 +2113,63 @@ class GerenciadorJogo(TelaBase):
             self.clique_anterior = clique_agora
             return "pausa"
 
+        # 1. Processamento prioritário dos minigames ativos (executa a cada frame sem travar)
+        if self.menu_acoes_estado == "minigame_ataque":
+            teclas = pygame.key.get_pressed()
+            resultado = self.minigame_ataque.atualizar(posicao_mouse, estado_clique_mouse, teclas)
+            if resultado and resultado.get("concluido"):
+                self.finalizar_minigame_ataque(resultado)
+            self.clique_anterior = clique_agora
+            return None
+
+        if self.menu_acoes_estado == "esquivando":
+            resultado_esquiva = self.minigame_esquiva.atualizar(clicou=clicou)
+            self.barras_esquiva = self.minigame_esquiva.barras
+            self.acertos_esquiva = self.minigame_esquiva.acertos
+            self.acertos_centro_esquiva = self.minigame_esquiva.acertos_centro
+            self.reducao_esquiva = self.minigame_esquiva.reducao
+            if self.minigame_esquiva.ultimo_feedback:
+                self.mensagem_log = self.minigame_esquiva.ultimo_feedback
+
+            if resultado_esquiva and resultado_esquiva.get("concluido"):
+                alvo_esquivando = getattr(self, 'alvo_jogador_pendente', personagem)
+                condicoes_evitadas = resultado_esquiva.get("evitou_tudo", False)
+                dano_tomado = resultado_esquiva.get("dano_tomado", 0)
+
+                minions_guarda = self.obter_minions_vivos(alvo_esquivando)
+                if dano_tomado > 1 and self.tem_talento(alvo_esquivando, "I3") and minions_guarda:
+                    absorvido = max(1, int(dano_tomado * 0.25))
+                    minions_guarda[0].receber_dano(absorvido)
+                    dano_tomado = max(1, dano_tomado - absorvido)
+
+                alvo_esquivando.hp = max(0, alvo_esquivando.hp - dano_tomado)
+                if dano_tomado > 0:
+                    self.tocar_sfx_dano(volume_relativo=0.85)
+
+                if condicoes_evitadas:
+                    if self.acertos_centro_esquiva >= 2:
+                        from Sistemas.Conquistas import sistema_conquistas
+                        sistema_conquistas.desbloquear("mestre_esquiva")
+                    if dano_tomado <= 1 and self.dano_pendente > 1:
+                        self.mensagem_log = f"✨ Esquiva completa! Apenas {dano_tomado} dano."
+                    else:
+                        self.mensagem_log = f"💨 Esquiva concluída! {dano_tomado} dano."
+                else:
+                    msg_base = f"❌ Esquiva incompleta! {dano_tomado} dano."
+                    if self.efeitos_pendentes and random.random() < self.chance_efeito_pendente:
+                        if self.tem_talento(alvo_esquivando, "S3"):
+                            msg_base += " (Imune a efeitos!)"
+                        else:
+                            efeitos_aplicados = self.aplicar_efeitos_controle(alvo_esquivando, self.efeitos_pendentes)
+                            if efeitos_aplicados:
+                                msg_base += f" {' '.join(efeitos_aplicados)}"
+                    self.mensagem_log = msg_base
+                self.menu_acoes_estado = "principal"
+                self.barras_esquiva = []
+                self.iniciar_cooldown_feedback(35, self.avancar_turno)
+            self.clique_anterior = clique_agora
+            return None
+
         if entidade_atual == personagem or (getattr(self, 'personagem2', None) is not None and entidade_atual == self.personagem2):
             jogador_atual = entidade_atual
             efeito_controle = self.obter_efeito_controle(jogador_atual)
@@ -2095,300 +2254,235 @@ class GerenciadorJogo(TelaBase):
             self.clique_anterior = clique_agora
             return None
 
-        if self.menu_acoes_estado == "esquivando":
-            for barra in self.barras_esquiva:
-                if barra["ativa"]:
-                    barra["x"] += barra["velocidade"]
-                    if barra["x"] >= 400:
-                        barra["ativa"] = False
-                        self.mensagem_log = "❌ Barra perdida!"
-
-            if clicou:
-                barras_visiveis = [b for b in self.barras_esquiva if b["ativa"] and b["x"] > 0]
-                if barras_visiveis:
-                    barra_alvo = max(barras_visiveis, key=lambda b: b["x"])
-                    distancia = abs(barra_alvo["x"] - 200)
-                    barra_alvo["ativa"] = False
-                    if distancia <= 20:
-                        self.acertos_centro_esquiva += 1
-                        self.reducao_esquiva += 0.33
-                        self.mensagem_log = "✨ Centro acertado!"
-                        self.tocar_sfx_acerto(volume_relativo=1.0)
-                    elif distancia <= 80:
-                        self.acertos_esquiva += 1
-                        self.reducao_esquiva += 0.16
-                        self.mensagem_log = "💨 Lateral acertada!"
-                        self.tocar_sfx_acerto(volume_relativo=0.7)
-                    else:
-                        self.mensagem_log = "❌ Errou o tempo!"
-
-            if all(not b["ativa"] for b in self.barras_esquiva):
-                alvo_esquivando = getattr(self, 'alvo_jogador_pendente', personagem)
-                total_acertos = self.acertos_esquiva + self.acertos_centro_esquiva
-                condicoes_evitadas = total_acertos == self.total_rodadas_esquiva or self.acertos_centro_esquiva >= (self.total_rodadas_esquiva - 1)
-
-                reducao_total = min(0.99, self.reducao_esquiva)
-                dano_tomado = max(1, int(self.dano_pendente * (1 - reducao_total)))
-                if getattr(alvo_esquivando, 'god_mode', False):
-                    dano_tomado = 0
-
-                minions_guarda = self.obter_minions_vivos(alvo_esquivando)
-                if dano_tomado > 1 and self.tem_talento(alvo_esquivando, "I3") and minions_guarda:
-                    absorvido = max(1, int(dano_tomado * 0.25))
-                    minions_guarda[0].receber_dano(absorvido)
-                    dano_tomado = max(1, dano_tomado - absorvido)
-
-                alvo_esquivando.hp = max(0, alvo_esquivando.hp - dano_tomado)
-                if dano_tomado > 0:
-                    self.tocar_sfx_dano(volume_relativo=0.85)
-
-                if condicoes_evitadas:
-                    if self.acertos_centro_esquiva >= 2:
-                        from Sistemas.Conquistas import sistema_conquistas
-                        sistema_conquistas.desbloquear("mestre_esquiva")
-                    if dano_tomado == 1 and self.dano_pendente > 1:
-                        self.mensagem_log = f"✨ Esquiva completa! Apenas {dano_tomado} dano."
-                    else:
-                        self.mensagem_log = f"💨 Esquiva concluída! {dano_tomado} dano."
-                else:
-                    msg_base = f"❌ Esquiva incompleta! {dano_tomado} dano."
-                    if self.efeitos_pendentes and random.random() < self.chance_efeito_pendente:
-                        if self.tem_talento(alvo_esquivando, "S3"):
-                            msg_base += " (Imune a efeitos!)"
-                        else:
-                            efeitos_aplicados = self.aplicar_efeitos_controle(alvo_esquivando, self.efeitos_pendentes)
-                            if efeitos_aplicados:
-                                msg_base += f" {' '.join(efeitos_aplicados)}"
-                    self.mensagem_log = msg_base
-                self.menu_acoes_estado = "principal"
-                self.barras_esquiva = []
-                self.iniciar_cooldown_feedback(75, self.avancar_turno)
+        # Turno do Inimigo
+        nome_inimigo = entidade_atual.nome
+        efeito_controle = self.obter_efeito_controle(entidade_atual)
+        if efeito_controle:
+            if self.timer_inimigo == 0:
+                status = "CONGELADO" if efeito_controle == "Congelar" else "ATORDOADO"
+                icone = "❄️" if efeito_controle == "Congelar" else "💫"
+                self.mensagem_log = f"{icone} {nome_inimigo} {status}!"
+            self.timer_inimigo += 1
+            if self.timer_inimigo >= self.tempo_espera_inimigo:
+                self.limpar_efeitos_controle(entidade_atual)
+                self.iniciar_cooldown_feedback(45, self.avancar_turno)
         else:
-            nome_inimigo = entidade_atual.nome
-            efeito_controle = self.obter_efeito_controle(entidade_atual)
-            if efeito_controle:
-                if self.timer_inimigo == 0:
-                    status = "CONGELADO" if efeito_controle == "Congelar" else "ATORDOADO"
-                    icone = "❄️" if efeito_controle == "Congelar" else "💫"
-                    self.mensagem_log = f"{icone} {nome_inimigo} {status}!"
-                self.timer_inimigo += 1
-                if self.timer_inimigo >= self.tempo_espera_inimigo:
-                    self.limpar_efeitos_controle(entidade_atual)
-                    self.iniciar_cooldown_feedback(45, self.avancar_turno)
-            else:
-                if self.timer_inimigo == 0:
-                    self.mensagem_log = f"⚠️ Turno de {nome_inimigo}..."
-                    if entidade_atual.mp < getattr(entidade_atual, "max_mp", 10):
-                        ganho_mp = 3 if getattr(entidade_atual, "tipo", "") == "chefe" else 1
-                        entidade_atual.mp = min(entidade_atual.max_mp, entidade_atual.mp + ganho_mp)
-                self.timer_inimigo += 1
-                if self.timer_inimigo >= self.tempo_espera_inimigo:
-                    eh_confinamento = (
-                        "confinamento" in nome_inimigo.lower()
-                        or getattr(entidade_atual, "eh_confinamento", False)
-                        or "Confinamento" in getattr(entidade_atual, "ataques", [])
-                    )
+            if self.timer_inimigo == 0:
+                self.mensagem_log = f"⚠️ Turno de {nome_inimigo}..."
+                if entidade_atual.mp < getattr(entidade_atual, "max_mp", 10):
+                    ganho_mp = 3 if getattr(entidade_atual, "tipo", "") == "chefe" else 1
+                    entidade_atual.mp = min(entidade_atual.max_mp, entidade_atual.mp + ganho_mp)
+            self.timer_inimigo += 1
+            if self.timer_inimigo >= self.tempo_espera_inimigo:
+                eh_confinamento = (
+                    "confinamento" in nome_inimigo.lower()
+                    or getattr(entidade_atual, "eh_confinamento", False)
+                    or "Confinamento" in getattr(entidade_atual, "ataques", [])
+                )
 
-                    if eh_confinamento:
-                        carga_atual = getattr(entidade_atual, "carga_confinamento", 0) + 1
-                        max_c = getattr(entidade_atual, "max_carga_confinamento", 5)
-                        entidade_atual.carga_confinamento = carga_atual
+                if eh_confinamento:
+                    carga_atual = getattr(entidade_atual, "carga_confinamento", 0) + 1
+                    max_c = getattr(entidade_atual, "max_carga_confinamento", 5)
+                    entidade_atual.carga_confinamento = carga_atual
 
-                        if carga_atual < max_c:
-                            self.disparar_screen_shake(duracao=10, intensidade=3)
-                            self.mensagem_log = f"⚡ [CONFINAMENTO] O dispositivo está carregando... ({carga_atual}/{max_c} rodadas)!"
-                            self.iniciar_cooldown_feedback(55, self.avancar_turno)
-                            self.clique_anterior = clique_agora
-                            return None
-                        else:
-                            entidade_atual.carga_confinamento = 0
-                            self.disparar_screen_shake(duracao=40, intensidade=9)
-                            self.tocar_som_desarmar(volume_relativo=1.0)
-
-                            for jogador in self.obter_jogadores():
-                                if not getattr(jogador, "god_mode", False):
-                                    self.aplicar_efeito_controle(jogador, "Atordoar")
-                                    jogador.atordoado = True
-
-                            for minion in self.obter_minions_vivos():
-                                if getattr(minion, "dono", None) in self.obter_jogadores():
-                                    self.aplicar_efeito_controle(minion, "Atordoar")
-                                    minion.atordoado = True
-
-                            self.mensagem_log = "🚨 [CONFINAMENTO ATIVADO!] Onda de choque expansiva! TODOS OS OPONENTES FORAM ATORDOADOS!"
-                            self.iniciar_cooldown_feedback(75, self.avancar_turno)
-                            self.clique_anterior = clique_agora
-                            return None
-
-                    ataques_possiveis = [a for a in entidade_atual.ataques if entidade_atual.obter_habilidade(a).custo_mp <= entidade_atual.mp]
-                    if not ataques_possiveis:
-                        ataques_possiveis = [entidade_atual.ataques[0]] if entidade_atual.ataques else ["Soco"]
-
-                    santuario_ativo = any(getattr(e, "is_santuario", False) and e.hp > 0 for e in self.ordem_turnos)
-                    eh_sukuna = ("sukuna" in nome_inimigo.lower() or "Santuário Malevolente" in entidade_atual.ataques)
-                    eh_estraga_prazeres = ("estraga prazeres" in nome_inimigo.lower() or "Plantar Spike" in entidade_atual.ataques or "Spike" in entidade_atual.ataques)
-                    spike_ativa = (getattr(self, "spike", None) is not None and getattr(self.spike, "ativa", False))
-
-                    if eh_sukuna and not santuario_ativo and entidade_atual.mp >= 10:
-                        nome_golpe_inimigo = "Santuário Malevolente"
-                    elif eh_estraga_prazeres and not spike_ativa and entidade_atual.mp >= 10:
-                        nome_golpe_inimigo = "Plantar Spike"
+                    if carga_atual < max_c:
+                        self.disparar_screen_shake(duracao=10, intensidade=3)
+                        self.mensagem_log = f"⚡ [CONFINAMENTO] O dispositivo está carregando... ({carga_atual}/{max_c} rodadas)!"
+                        self.iniciar_cooldown_feedback(55, self.avancar_turno)
+                        self.clique_anterior = clique_agora
+                        return None
                     else:
-                        especiais = [a for a in ataques_possiveis if entidade_atual.obter_habilidade(a).custo_mp > 0 and a not in ("Santuário Malevolente", "Plantar Spike", "Spike")]
-                        if not especiais:
-                            especiais = [a for a in ataques_possiveis if a not in ("Santuário Malevolente", "Plantar Spike", "Spike")]
-                        if not especiais:
-                            especiais = ataques_possiveis
-                        if especiais and random.random() < 0.70:
-                            nome_golpe_inimigo = random.choice(especiais)
-                        else:
-                            nome_golpe_inimigo = random.choice(ataques_possiveis)
+                        entidade_atual.carga_confinamento = 0
+                        self.disparar_screen_shake(duracao=40, intensidade=9)
+                        self.tocar_som_desarmar(volume_relativo=1.0)
 
-                    hab_usada = entidade_atual.obter_habilidade(nome_golpe_inimigo)
+                        for jogador in self.obter_jogadores():
+                            if not getattr(jogador, "god_mode", False):
+                                self.aplicar_efeito_controle(jogador, "Atordoar")
+                                jogador.atordoado = True
 
-                    entidade_atual.mp -= hab_usada.custo_mp
-                    entidade_atual.mp = max(0, entidade_atual.mp)
-                    if entidade_atual.mp == 0:
-                        from Sistemas.Conquistas import sistema_conquistas
-                        sistema_conquistas.desbloquear("mana_esgotada")
+                        for minion in self.obter_minions_vivos():
+                            if getattr(minion, "dono", None) in self.obter_jogadores():
+                                self.aplicar_efeito_controle(minion, "Atordoar")
+                                minion.atordoado = True
 
-                    if nome_golpe_inimigo in ("Plantar Spike", "Spike"):
-                        self.plantar_spike(dono=entidade_atual)
-                        self.disparar_screen_shake(duracao=32, intensidade=6)
-                        self.mensagem_log = f"💣 ULTIMATE! {nome_inimigo} PLANTOU A SPIKE! Desarme-a antes que ela exploda!"
-                        self.iniciar_cooldown_feedback(65, self.avancar_turno)
-                        self.clique_anterior = clique_agora
-                        return None
-
-                    if nome_golpe_inimigo == "Santuário Malevolente" or getattr(hab_usada, "minion", None) == "Pequeno Santuário":
-                        santuario = self.invocar_santuario(dono=entidade_atual)
-                        self.disparar_animacao_cortes(duracao=38)
-                        self.disparar_screen_shake(duracao=38, intensidade=8)
-                        self.tocar_vfx_corte(volume_relativo=1.0)
-                        self.mensagem_log = f"⛩️ EXPANSÃO DE DOMÍNIO! {nome_inimigo} manifestou o Santuário Malevolente!"
-                        self.iniciar_cooldown_feedback(65, self.avancar_turno)
-                        self.clique_anterior = clique_agora
-                        return None
-
-                    nome_golpe_lower = (hab_usada.nome or "").lower()
-                    eh_ataque_corte = (
-                        "sukuna" in nome_inimigo.lower()
-                        or "clivagem" in nome_golpe_lower
-                        or "desmantelar" in nome_golpe_lower
-                        or "corte" in nome_golpe_lower
-                    )
-                    if eh_ataque_corte:
-                        self.tocar_vfx_corte(volume_relativo=0.9)
-                    elif "soco" in nome_golpe_lower:
-                        self.tocar_sfx_soco(volume_relativo=0.9)
-                    elif "mordida" in nome_golpe_lower:
-                        self.tocar_sfx_mordida(volume_relativo=0.9)
-
-                    bonus_inimigo = self.calcular_bonus_atributo(entidade_atual, hab_usada.tipo)
-                    dano_inimigo = hab_usada.dano + bonus_inimigo
-
-                    classe_inimigo = getattr(entidade_atual, "classe", None)
-                    if classe_inimigo and getattr(hab_usada, "tipo", None):
-                        c_norm = str(classe_inimigo).strip().lower()
-                        t_norm = str(hab_usada.tipo).strip().lower()
-                        eh_fisico = c_norm in ("físico", "fisico") and t_norm in ("físico", "fisico")
-                        eh_distancia = c_norm in ("distância", "distancia") and t_norm in ("distância", "distancia")
-                        eh_magia = c_norm == "magia" and t_norm == "magia"
-                        eh_invoc = c_norm in ("invocador", "invocação", "invocacao") and t_norm in ("invocador", "invocação", "invocacao")
-                        if c_norm == t_norm or eh_fisico or eh_distancia or eh_magia or eh_invoc:
-                            dano_inimigo = int(dano_inimigo * 1.25)
-
-                    sorte_inimigo = getattr(entidade_atual, "atributos", {}).get("Sor", 1)
-                    chance_crit_inimigo = min(1.0, 0.05 + (sorte_inimigo * 0.001))
-                    critico = False
-                    if random.random() < chance_crit_inimigo:
-                        critico = True
-                        dano_inimigo = int(dano_inimigo * 1.5)
-
-                    jogadores_vivos = [j for j in self.obter_jogadores() if j.hp > 0]
-                    minions_vivos = self.obter_minions_vivos()
-
-                    if minions_vivos and random.random() < 0.45:
-                        alvo_minion = random.choice(minions_vivos)
-                        self.alvo_destaque = alvo_minion
-                        efeitos_ataque, chance_efeito = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
-                        if not critico and random.random() > hab_usada.precisao:
-                            self.mensagem_log = f"💨 {nome_inimigo} atacou o alvo {alvo_minion.nome}, mas ERROU!"
-                        else:
-                            if eh_ataque_corte:
-                                self.disparar_vfx_corte_alvo(alvo_minion)
-                            alvo_minion.receber_dano(dano_inimigo)
-                            if dano_inimigo > 0:
-                                self.tocar_sfx_dano(volume_relativo=0.8)
-                            efeitos_aplicados = []
-                            if efeitos_ataque and random.random() < chance_efeito:
-                                efeitos_aplicados = self.aplicar_efeitos_controle(alvo_minion, efeitos_ataque)
-                            if alvo_minion.hp <= 0:
-                                self.mensagem_log = f"💥 {nome_inimigo} destruiu o alvo {alvo_minion.nome}! ({dano_inimigo} dano)"
-                            else:
-                                self.mensagem_log = f"🐾 {nome_inimigo} atacou o alvo {alvo_minion.nome}! ({dano_inimigo} dano)"
-                                if efeitos_aplicados:
-                                    self.mensagem_log += f" {' '.join(efeitos_aplicados)}"
+                        self.mensagem_log = "🚨 [CONFINAMENTO ATIVADO!] Onda de choque expansiva! TODOS OS OPONENTES FORAM ATORDOADOS!"
                         self.iniciar_cooldown_feedback(75, self.avancar_turno)
                         self.clique_anterior = clique_agora
                         return None
 
-                    if not jogadores_vivos:
-                        self.clique_anterior = clique_agora
-                        return None
-                    alvo_jogador = random.choice(jogadores_vivos)
-                    self.alvo_jogador_pendente = alvo_jogador
-                    self.alvo_destaque = alvo_jogador
+                ataques_possiveis = [a for a in entidade_atual.ataques if entidade_atual.obter_habilidade(a).custo_mp <= entidade_atual.mp]
+                if not ataques_possiveis:
+                    ataques_possiveis = [entidade_atual.ataques[0]] if entidade_atual.ataques else ["Soco"]
 
-                    precisao_inimigo = hab_usada.precisao
-                    if self.tem_talento(alvo_jogador, "A3"):
-                        precisao_inimigo = max(0.15, precisao_inimigo - 0.20)
+                santuario_ativo = any(getattr(e, "is_santuario", False) and e.hp > 0 for e in self.ordem_turnos)
+                eh_sukuna = ("sukuna" in nome_inimigo.lower() or "Santuário Malevolente" in entidade_atual.ataques)
+                eh_estraga_prazeres = ("estraga prazeres" in nome_inimigo.lower() or "Plantar Spike" in entidade_atual.ataques or "Spike" in entidade_atual.ataques)
+                spike_ativa = (getattr(self, "spike", None) is not None and getattr(self.spike, "ativa", False))
 
-                    if not critico and random.random() > precisao_inimigo:
-                        self.mensagem_log = f"💨 {nome_inimigo} usou {hab_usada.nome} no alvo {self.nome_exibicao(alvo_jogador)}, mas ERROU!"
+                if eh_sukuna and not santuario_ativo and entidade_atual.mp >= 10:
+                    nome_golpe_inimigo = "Santuário Malevolente"
+                elif eh_estraga_prazeres and not spike_ativa and entidade_atual.mp >= 10:
+                    nome_golpe_inimigo = "Plantar Spike"
+                else:
+                    especiais = [a for a in ataques_possiveis if entidade_atual.obter_habilidade(a).custo_mp > 0 and a not in ("Santuário Malevolente", "Plantar Spike", "Spike")]
+                    if not especiais:
+                        especiais = [a for a in ataques_possiveis if a not in ("Santuário Malevolente", "Plantar Spike", "Spike")]
+                    if not especiais:
+                        especiais = ataques_possiveis
+                    if especiais and random.random() < 0.70:
+                        nome_golpe_inimigo = random.choice(especiais)
+                    else:
+                        nome_golpe_inimigo = random.choice(ataques_possiveis)
+
+                hab_usada = entidade_atual.obter_habilidade(nome_golpe_inimigo)
+
+                entidade_atual.mp -= hab_usada.custo_mp
+                entidade_atual.mp = max(0, entidade_atual.mp)
+                if entidade_atual.mp == 0:
+                    from Sistemas.Conquistas import sistema_conquistas
+                    sistema_conquistas.desbloquear("mana_esgotada")
+
+                if nome_golpe_inimigo in ("Plantar Spike", "Spike"):
+                    self.plantar_spike(dono=entidade_atual)
+                    self.disparar_screen_shake(duracao=32, intensidade=6)
+                    self.mensagem_log = f"💣 ULTIMATE! {nome_inimigo} PLANTOU A SPIKE! Desarme-a antes que ela exploda!"
+                    self.iniciar_cooldown_feedback(65, self.avancar_turno)
+                    self.clique_anterior = clique_agora
+                    return None
+
+                if nome_golpe_inimigo == "Santuário Malevolente" or getattr(hab_usada, "minion", None) == "Pequeno Santuário":
+                    santuario = self.invocar_santuario(dono=entidade_atual)
+                    self.disparar_animacao_cortes(duracao=38)
+                    self.disparar_screen_shake(duracao=38, intensidade=8)
+                    self.tocar_vfx_corte(volume_relativo=1.0)
+                    self.mensagem_log = f"⛩️ EXPANSÃO DE DOMÍNIO! {nome_inimigo} manifestou o Santuário Malevolente!"
+                    self.iniciar_cooldown_feedback(65, self.avancar_turno)
+                    self.clique_anterior = clique_agora
+                    return None
+
+                nome_golpe_lower = (hab_usada.nome or "").lower()
+                eh_ataque_corte = (
+                    "sukuna" in nome_inimigo.lower()
+                    or "clivagem" in nome_golpe_lower
+                    or "desmantelar" in nome_golpe_lower
+                    or "corte" in nome_golpe_lower
+                )
+                if eh_ataque_corte:
+                    self.tocar_vfx_corte(volume_relativo=0.9)
+                elif "soco" in nome_golpe_lower:
+                    self.tocar_sfx_soco(volume_relativo=0.9)
+                elif "mordida" in nome_golpe_lower:
+                    self.tocar_sfx_mordida(volume_relativo=0.9)
+
+                bonus_inimigo = self.calcular_bonus_atributo(entidade_atual, hab_usada.tipo)
+                dano_inimigo = hab_usada.dano + bonus_inimigo
+
+                classe_inimigo = getattr(entidade_atual, "classe", None)
+                if classe_inimigo and getattr(hab_usada, "tipo", None):
+                    c_norm = str(classe_inimigo).strip().lower()
+                    t_norm = str(hab_usada.tipo).strip().lower()
+                    eh_fisico = c_norm in ("físico", "fisico") and t_norm in ("físico", "fisico")
+                    eh_distancia = c_norm in ("distância", "distancia") and t_norm in ("distância", "distancia")
+                    eh_magia = c_norm == "magia" and t_norm == "magia"
+                    eh_invoc = c_norm in ("invocador", "invocação", "invocacao") and t_norm in ("invocador", "invocação", "invocacao")
+                    if c_norm == t_norm or eh_fisico or eh_distancia or eh_magia or eh_invoc:
+                        dano_inimigo = int(dano_inimigo * 1.25)
+
+                sorte_inimigo = getattr(entidade_atual, "atributos", {}).get("Sor", 1)
+                chance_crit_inimigo = min(1.0, 0.05 + (sorte_inimigo * 0.001))
+                critico = False
+                if random.random() < chance_crit_inimigo:
+                    critico = True
+                    dano_inimigo = int(dano_inimigo * 1.5)
+
+                jogadores_vivos = [j for j in self.obter_jogadores() if j.hp > 0]
+                minions_vivos = self.obter_minions_vivos()
+
+                if minions_vivos and random.random() < 0.45:
+                    alvo_minion = random.choice(minions_vivos)
+                    self.alvo_destaque = alvo_minion
+                    efeitos_ataque, chance_efeito = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
+                    if not critico and random.random() > hab_usada.precisao:
+                        self.mensagem_log = f"💨 {nome_inimigo} atacou o alvo {alvo_minion.nome}, mas ERROU!"
+                    else:
+                        if eh_ataque_corte:
+                            self.disparar_vfx_corte_alvo(alvo_minion)
+                        alvo_minion.receber_dano(dano_inimigo)
+                        if dano_inimigo > 0:
+                            self.tocar_sfx_dano(volume_relativo=0.8)
+                        efeitos_aplicados = []
+                        if efeitos_ataque and random.random() < chance_efeito:
+                            efeitos_aplicados = self.aplicar_efeitos_controle(alvo_minion, efeitos_ataque)
+                        if alvo_minion.hp <= 0:
+                            self.mensagem_log = f"💥 {nome_inimigo} destruiu o alvo {alvo_minion.nome}! ({dano_inimigo} dano)"
+                        else:
+                            self.mensagem_log = f"🐾 {nome_inimigo} atacou o alvo {alvo_minion.nome}! ({dano_inimigo} dano)"
+                            if efeitos_aplicados:
+                                self.mensagem_log += f" {' '.join(efeitos_aplicados)}"
+                    self.iniciar_cooldown_feedback(75, self.avancar_turno)
+                    self.clique_anterior = clique_agora
+                    return None
+
+                if not jogadores_vivos:
+                    self.clique_anterior = clique_agora
+                    return None
+                alvo_jogador = random.choice(jogadores_vivos)
+                self.alvo_jogador_pendente = alvo_jogador
+                self.alvo_destaque = alvo_jogador
+
+                precisao_inimigo = hab_usada.precisao
+                if self.tem_talento(alvo_jogador, "A3"):
+                    precisao_inimigo = max(0.15, precisao_inimigo - 0.20)
+
+                if not critico and random.random() > precisao_inimigo:
+                    self.mensagem_log = f"💨 {nome_inimigo} usou {hab_usada.nome} no alvo {self.nome_exibicao(alvo_jogador)}, mas ERROU!"
+                    self.iniciar_cooldown_feedback(75, self.avancar_turno)
+                else:
+
+                    if alvo_jogador.recuperando or getattr(alvo_jogador, "focado", False):
+                        if not self.tem_talento(alvo_jogador, "F2"):
+                            dano_inimigo += max(1, int(dano_inimigo * 0.30))
+
+                    if alvo_jogador.bloqueando:
+                        dano_reduzido = max(1, int(dano_inimigo * 0.5))
+                        if getattr(alvo_jogador, 'god_mode', False):
+                            dano_reduzido = 0
+                        alvo_jogador.hp -= dano_reduzido
+                        alvo_jogador.hp = max(0, alvo_jogador.hp)
+                        if dano_reduzido > 0:
+                            self.tocar_sfx_dano(volume_relativo=0.75)
+                        self.mensagem_log = f"🛡️ DEFESA do alvo {self.nome_exibicao(alvo_jogador)}! {dano_reduzido} dano."
                         self.iniciar_cooldown_feedback(75, self.avancar_turno)
                     else:
+                        self.menu_acoes_estado = "esquivando"
+                        self.dano_pendente = dano_inimigo
+                        self.atacante_nome = nome_inimigo
+                        self.alvo_jogador_pendente = alvo_jogador
+                        self.alvo_destaque = alvo_jogador
+                        self.efeitos_pendentes, self.chance_efeito_pendente = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
+                        velocidade_base = self.velocidade_esquiva(alvo_jogador)
 
-                        if alvo_jogador.recuperando or getattr(alvo_jogador, "focado", False):
-                            if not self.tem_talento(alvo_jogador, "F2"):
-                                dano_inimigo += max(1, int(dano_inimigo * 0.30))
+                        self.minigame_esquiva.iniciar(
+                            velocidade_base=velocidade_base,
+                            dano_pendente=dano_inimigo,
+                            alvo=alvo_jogador,
+                            atacante_nome=nome_inimigo,
+                            efeitos=self.efeitos_pendentes,
+                            chance_efeito=self.chance_efeito_pendente,
+                            tela=self.tela
+                        )
+                        self.barras_esquiva = self.minigame_esquiva.barras
+                        self.rodada_esquiva = 0
+                        self.espera_esquiva = 0
+                        self.acertos_esquiva = 0
+                        self.acertos_centro_esquiva = 0
+                        self.reducao_esquiva = 0.0
 
-                        if alvo_jogador.bloqueando:
-                            dano_reduzido = max(1, int(dano_inimigo * 0.5))
-                            if getattr(alvo_jogador, 'god_mode', False):
-                                dano_reduzido = 0
-                            alvo_jogador.hp -= dano_reduzido
-                            alvo_jogador.hp = max(0, alvo_jogador.hp)
-                            if dano_reduzido > 0:
-                                self.tocar_sfx_dano(volume_relativo=0.75)
-                            self.mensagem_log = f"🛡️ DEFESA do alvo {self.nome_exibicao(alvo_jogador)}! {dano_reduzido} dano."
-                            self.iniciar_cooldown_feedback(75, self.avancar_turno)
+                        if critico:
+                            self.mensagem_log = f"⚠️ CRÍTICO DE {nome_inimigo}! Alvo {self.nome_exibicao(alvo_jogador)}: PARRY RÁPIDO!"
                         else:
-                            self.menu_acoes_estado = "esquivando"
-                            self.dano_pendente = dano_inimigo
-                            self.atacante_nome = nome_inimigo
-                            self.alvo_jogador_pendente = alvo_jogador
-                            self.alvo_destaque = alvo_jogador
-                            self.efeitos_pendentes, self.chance_efeito_pendente = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
-                            self.barras_esquiva = []
-                            espacamento = 180
-                            velocidade_base = self.velocidade_esquiva(alvo_jogador)
-                            for i in range(self.total_rodadas_esquiva):
-                                self.barras_esquiva.append({
-                                    "x": random.randint(-20, 0) - (i * espacamento),
-                                    "velocidade": velocidade_base + random.randint(-1, 2),
-                                    "ativa": True
-                                })
-                            self.rodada_esquiva = 0
-                            self.espera_esquiva = 0
-                            self.acertos_esquiva = 0
-                            self.acertos_centro_esquiva = 0
-                            self.reducao_esquiva = 0.0
-
-                            if critico:
-                                self.mensagem_log = f"⚠️ CRÍTICO DE {nome_inimigo}! Alvo {self.nome_exibicao(alvo_jogador)}: clique rápido!"
-                            else:
-                                self.mensagem_log = f"⚠️ {nome_inimigo} ataca o alvo {self.nome_exibicao(alvo_jogador)}! CLIQUE PARA ESQUIVAR!"
+                            self.mensagem_log = f"⚠️ {nome_inimigo} ataca o alvo {self.nome_exibicao(alvo_jogador)}! [ESPAÇO] ou CLIQUE para esquivar!"
 
         self.clique_anterior = clique_agora
 
@@ -2585,32 +2679,38 @@ class GerenciadorJogo(TelaBase):
             pygame.draw.line(self.tela, c_cor_brilho, (r.right, r.bottom), (r.right - c_tam, r.bottom), w_ln + 1)
             pygame.draw.line(self.tela, c_cor_brilho, (r.right, r.bottom), (r.right, r.bottom - c_tam), w_ln + 1)
 
+        if self.menu_acoes_estado == "minigame_ataque" and getattr(self, "minigame_ataque", None) and self.minigame_ataque.esta_ativo():
+            self.minigame_ataque.desenhar(self.tela)
+
         if self.menu_acoes_estado == "esquivando":
-            painel_w = 460
-            painel_h = 56
-            painel_x = (self.tela.get_width() - painel_w) // 2
-            painel_y = 250
-            painel_surf = pygame.Surface((painel_w, painel_h), pygame.SRCALPHA)
-            pygame.draw.rect(painel_surf, (15, 18, 28, 220), (0, 0, painel_w, painel_h), border_radius=10)
-            pygame.draw.rect(painel_surf, (255, 215, 80, 200), (0, 0, painel_w, painel_h), width=2, border_radius=10)
-            self.tela.blit(painel_surf, (painel_x, painel_y))
+            if getattr(self, "minigame_esquiva", None) and self.minigame_esquiva.esta_ativo():
+                self.minigame_esquiva.desenhar(self.tela)
+            else:
+                painel_w = 460
+                painel_h = 56
+                painel_x = (self.tela.get_width() - painel_w) // 2
+                painel_y = 250
+                painel_surf = pygame.Surface((painel_w, painel_h), pygame.SRCALPHA)
+                pygame.draw.rect(painel_surf, (15, 18, 28, 220), (0, 0, painel_w, painel_h), border_radius=10)
+                pygame.draw.rect(painel_surf, (255, 215, 80, 200), (0, 0, painel_w, painel_h), width=2, border_radius=10)
+                self.tela.blit(painel_surf, (painel_x, painel_y))
 
-            bar_w = 400
-            bar_h = 24
-            bar_x = (self.tela.get_width() - bar_w) // 2
-            bar_y = painel_y + (painel_h - bar_h) // 2
+                bar_w = 400
+                bar_h = 24
+                bar_x = (self.tela.get_width() - bar_w) // 2
+                bar_y = painel_y + (painel_h - bar_h) // 2
 
-            pygame.draw.rect(self.tela, (40, 42, 52), (bar_x, bar_y, bar_w, bar_h), border_radius=5)
-            pygame.draw.rect(self.tela, (210, 180, 30), (bar_x + 120, bar_y, 160, bar_h))
-            pygame.draw.rect(self.tela, (30, 220, 90), (bar_x + 180, bar_y, 40, bar_h))
-            pygame.draw.rect(self.tela, (240, 240, 240), (bar_x, bar_y, bar_w, bar_h), width=2, border_radius=5)
+                pygame.draw.rect(self.tela, (40, 42, 52), (bar_x, bar_y, bar_w, bar_h), border_radius=5)
+                pygame.draw.rect(self.tela, (210, 180, 30), (bar_x + 120, bar_y, 160, bar_h))
+                pygame.draw.rect(self.tela, (30, 220, 90), (bar_x + 180, bar_y, 40, bar_h))
+                pygame.draw.rect(self.tela, (240, 240, 240), (bar_x, bar_y, bar_w, bar_h), width=2, border_radius=5)
 
-            for barra in self.barras_esquiva:
-                if not barra["ativa"] or barra["x"] < 0:
-                    continue
-                bx = bar_x + barra["x"] - 4
-                if bar_x <= bx <= bar_x + bar_w:
-                    pygame.draw.rect(self.tela, (255, 60, 60), (bx, bar_y - 6, 8, bar_h + 12), border_radius=2)
+                for barra in self.barras_esquiva:
+                    if not barra["ativa"] or barra["x"] < 0:
+                        continue
+                    bx = bar_x + barra["x"] - 4
+                    if bar_x <= bx <= bar_x + bar_w:
+                        pygame.draw.rect(self.tela, (255, 60, 60), (bx, bar_y - 6, 8, bar_h + 12), border_radius=2)
 
         contador_partida = pygame.Rect(30, 25, 175, 42)
         pygame.draw.rect(self.tela, (24, 26, 36), contador_partida, border_radius=10)
@@ -2922,8 +3022,12 @@ class GerenciadorJogo(TelaBase):
                 if jogador_atual.mp >= custo_mp:
                     self.ataque_selecionado = item_habilidade["nome"]
                     self.ataque_jogador_ativo = jogador_atual
+                    eh_ultimate = getattr(hab, "is_ultimate", False)
                     if hab.em_area or hab.tipo == "Invocador" or getattr(hab, "minion", None):
-                        self.executar_ataque_jogador(item_habilidade["nome"], jogador_ativo=jogador_atual)
+                        if getattr(self, "minigames_ataque_ativos", True) and not eh_ultimate:
+                            self.iniciar_minigame_ataque(hab, alvo=None, jogador_ativo=jogador_atual)
+                        else:
+                            self.executar_ataque_jogador(item_habilidade["nome"], jogador_ativo=jogador_atual)
                     else:
                         self.menu_acoes_estado = "selecionar_alvo"
                 else:
@@ -2957,7 +3061,12 @@ class GerenciadorJogo(TelaBase):
             for alvo in inimigos_vivos:
                 if alvo.rect.collidepoint(posicao_mouse):
                     self.alvo_destaque = alvo
-                    self.executar_ataque_jogador(self.ataque_selecionado, alvo, jogador_ativo=jogador_atual)
+                    hab = banco_habilidades.get(self.ataque_selecionado)
+                    eh_ultimate = getattr(hab, "is_ultimate", False) if hab else False
+                    if getattr(self, "minigames_ataque_ativos", True) and hab and not eh_ultimate:
+                        self.iniciar_minigame_ataque(hab, alvo=alvo, jogador_ativo=jogador_atual)
+                    else:
+                        self.executar_ataque_jogador(self.ataque_selecionado, alvo, jogador_ativo=jogador_atual)
                     break
         return None
 

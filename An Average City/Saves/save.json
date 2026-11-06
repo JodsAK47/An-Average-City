@@ -2,10 +2,7 @@
     "pontos": 0,
     "total_pontos_acumulados": 0,
     "maior_pontuacao": 0,
-    "conquistas": [
-        "cooperativo",
-        "moda_em_primeiro_lugar"
-    ],
+    "conquistas": [],
     "member_card_coletado": false,
     "progresso_versos": {},
     "habilidades_desabilitadas": {}

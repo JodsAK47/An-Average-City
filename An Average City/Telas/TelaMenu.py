@@ -62,45 +62,43 @@ class GerenciadorMenu(TelaBase):
         self.titulo_anim_tempo = 0.0
         self.titulo_surface = self.imagem_titulo if self.imagem_titulo is not None else self.txt_titulo
 
-        sprite_jogar_base = "BVERDEM.png"
-        sprite_jogar_hover = "BVERDG.png"
-        sprite_jogar_clique = "BVERDEP.png"
+        sprite_jogar = "Jogar.png"
+        sprite_verso = "Verso.png"
+        sprite_conquistas = "Conquistas.png"
+        sprite_menu = "Menu.png"
+        sprite_sair = "Sair.png"
 
-        sprite_classe_base = "BYELLM.png"
-        sprite_classe_hover = "BYELLG.png"
-        sprite_classe_clique = "BYELLP.png"
-
-        sprite_conquistas_base = "BVIOLETM.png"
-        sprite_conquistas_hover = "BVIOLETG.png"
-        sprite_conquistas_clique = "BVIOLETP.png"
-
-        sprite_config_base = "BAZULM.png"
-        sprite_config_hover = "BAZULG.png"
-        sprite_config_clique = "BAZULP.png"
-
-        sprite_sair_base = "BREDM.png"
-        sprite_sair_hover = "BREDG.png"
-        sprite_sair_clique = "BREDP.png"
-
-        largura_botao = 190
-        altura_botao = 48
+        largura_botao = 180
+        altura_botao = 105
+        largura_hover = 188
+        altura_hover = 110
+        largura_clique = 172
+        altura_clique = 100
         x_botao = (largura_tela - largura_botao) // 2
-        y_inicial_botoes = 245
-        espacamento_botoes = 62
+        y_inicial_botoes = 205
+        espacamento_botoes = 100
 
         self.botoes = {
-            "jogar": Botao(x_botao, y_inicial_botoes + 0 * espacamento_botoes, largura_botao, altura_botao, "JOGAR", (0, 200, 0), (0, 255, 0), 198, 52, cor_texto=(0, 0, 0), fonte_tamanho=22, sprite_base_path=sprite_jogar_base, sprite_hover_path=sprite_jogar_hover, sprite_clique_path=sprite_jogar_clique),
-            "classe": Botao(x_botao, y_inicial_botoes + 1 * espacamento_botoes, largura_botao, altura_botao, "VERSO", (200, 200, 0), (255, 255, 0), 198, 52, cor_texto=(0, 0, 0), fonte_tamanho=22, sprite_base_path=sprite_classe_base, sprite_hover_path=sprite_classe_hover, sprite_clique_path=sprite_classe_clique),
-            "conquistas": Botao(x_botao, y_inicial_botoes + 2 * espacamento_botoes, largura_botao, altura_botao, "CONQUISTAS", (135, 50, 195), (175, 80, 235), 198, 52, cor_texto=(0, 0, 0), fonte_tamanho=17, sprite_base_path=sprite_conquistas_base, sprite_hover_path=sprite_conquistas_hover, sprite_clique_path=sprite_conquistas_clique),
-            "config": Botao(x_botao, y_inicial_botoes + 3 * espacamento_botoes, largura_botao, altura_botao, "OPÇÕES", (0, 120, 210), (0, 160, 250), 198, 52, cor_texto=(0, 0, 0), fonte_tamanho=18, sprite_base_path=sprite_config_base, sprite_hover_path=sprite_config_hover, sprite_clique_path=sprite_config_clique),
-            "sair": Botao(x_botao, y_inicial_botoes + 4 * espacamento_botoes, largura_botao, altura_botao, "SAIR", (200, 0, 0), (255, 0, 0), 198, 52, cor_texto=(0, 0, 0), fonte_tamanho=22, sprite_base_path=sprite_sair_base, sprite_hover_path=sprite_sair_hover, sprite_clique_path=sprite_sair_clique),
+            "jogar": Botao(x_botao, y_inicial_botoes + 0 * espacamento_botoes, largura_botao, altura_botao, "JOGAR", (0, 200, 0), (0, 255, 0), largura_hover, altura_hover, largura_clique, altura_clique, cor_texto=(0, 0, 0), fonte_tamanho=22, sprite_base_path=sprite_jogar, sem_texto=True, autocrop=True),
+            "classe": Botao(x_botao, y_inicial_botoes + 1 * espacamento_botoes, largura_botao, altura_botao, "VERSO", (0, 150, 220), (50, 200, 255), largura_hover, altura_hover, largura_clique, altura_clique, cor_texto=(0, 0, 0), fonte_tamanho=22, sprite_base_path=sprite_verso, sem_texto=True, autocrop=True),
+            "conquistas": Botao(x_botao, y_inicial_botoes + 2 * espacamento_botoes, largura_botao, altura_botao, "CONQUISTAS", (135, 50, 195), (175, 80, 235), largura_hover, altura_hover, largura_clique, altura_clique, cor_texto=(0, 0, 0), fonte_tamanho=17, sprite_base_path=sprite_conquistas, sem_texto=True, autocrop=True),
+            "menu": Botao(x_botao, y_inicial_botoes + 3 * espacamento_botoes, largura_botao, altura_botao, "MENU", (220, 180, 0), (255, 215, 0), largura_hover, altura_hover, largura_clique, altura_clique, cor_texto=(0, 0, 0), fonte_tamanho=18, sprite_base_path=sprite_menu, sem_texto=True, autocrop=True),
+            "sair": Botao(x_botao, y_inicial_botoes + 4 * espacamento_botoes, largura_botao, altura_botao, "SAIR", (200, 0, 0), (255, 0, 0), largura_hover, altura_hover, largura_clique, altura_clique, cor_texto=(0, 0, 0), fonte_tamanho=22, sprite_base_path=sprite_sair, sem_texto=True, autocrop=True),
         }
+        self.botoes["config"] = self.botoes["menu"]
         self.botao_jogar = self.botoes["jogar"]
         self.botao_classe = self.botoes["classe"]
         self.botao_conquistas = self.botoes["conquistas"]
+        self.botao_menu = self.botoes["menu"]
         self.botao_config = self.botoes["config"]
         self.botao_sair = self.botoes["sair"]
-        self.lista_botoes = list(self.botoes.values())
+        self.lista_botoes = [
+            self.botao_jogar,
+            self.botao_classe,
+            self.botao_conquistas,
+            self.botao_menu,
+            self.botao_sair
+        ]
 
         largura_sw, altura_sw = 80, 40
         x_sw = self.tela.get_width() - largura_sw - 20

@@ -208,7 +208,8 @@ def tratar_eventos_menu(evento, posicao_mouse):
     if botoes_menu["conquistas"].checar_clique(evento, posicao_mouse):
         return "conquistas"
 
-    if "config" in botoes_menu and botoes_menu["config"].checar_clique(evento, posicao_mouse):
+    btn_menu_cfg = botoes_menu.get("menu") or botoes_menu.get("config")
+    if btn_menu_cfg and btn_menu_cfg.checar_clique(evento, posicao_mouse):
         estado_anterior_config = "menu"
         return "config"
 
@@ -398,6 +399,8 @@ def tratar_eventos_jogo(evento, posicao_mouse):
     if getattr(jogo_tela, "btn_pausa", None) and jogo_tela.btn_pausa.checar_clique(evento, posicao_mouse):
         pausa_tela.abrir("jogo")
         return "pausa"
+    if hasattr(jogo_tela, "processar_evento"):
+        jogo_tela.processar_evento(evento, posicao_mouse)
     return None
 
 def tratar_eventos_pos_luta(evento, posicao_mouse):

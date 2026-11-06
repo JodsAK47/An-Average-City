@@ -277,7 +277,7 @@
   },
   "ultimates": {
     "Sobrevivente|Físico": {
-      "nome": "Ultimate do Sobrevivente: Fúria Brutal",
+      "nome": "Fúria Brutal",
       "tipo": "Físico",
       "dano": 40,
       "precisao": 0.95,
@@ -286,7 +286,7 @@
       "verso": "Sobrevivente"
     },
     "Sobrevivente|Distância": {
-      "nome": "Ultimate do Sobrevivente: Chuva de Flechas",
+      "nome": "Chuva de Flechas",
       "tipo": "Distância",
       "dano": 36,
       "precisao": 0.9,
@@ -295,7 +295,7 @@
       "verso": "Sobrevivente"
     },
     "Sobrevivente|Magia": {
-      "nome": "Ultimate do Sobrevivente: Labareda de Umbra",
+      "nome": "Labareda de Umbra",
       "tipo": "Magia",
       "dano": 42,
       "precisao": 0.9,
@@ -306,7 +306,7 @@
       "verso": "Sobrevivente"
     },
     "Sobrevivente|Invocador": {
-      "nome": "Ultimate do Sobrevivente: Enxame Real",
+      "nome": "Enxame Real",
       "tipo": "Invocador",
       "dano": 0,
       "precisao": 1.0,
@@ -316,7 +316,7 @@
       "minion": "Pássaro Olhudo"
     },
     "Agente|Físico": {
-      "nome": "Ultimate do Agente: Golpe Final",
+      "nome": "Golpe Final",
       "tipo": "Físico",
       "dano": 38,
       "precisao": 0.9,
@@ -325,7 +325,7 @@
       "verso": "Agente"
     },
     "Agente|Distância": {
-      "nome": "Ultimate do Agente: Apagão",
+      "nome": "Apagão",
       "tipo": "Distância",
       "dano": 34,
       "precisao": 0.95,
@@ -333,7 +333,7 @@
       "verso": "Agente"
     },
     "Agente|Magia": {
-      "nome": "Ultimate do Agente: Campo de Silêncio",
+      "nome": "Campo de Silêncio",
       "tipo": "Magia",
       "dano": 40,
       "precisao": 0.85,
@@ -344,7 +344,7 @@
       "verso": "Agente"
     },
     "Agente|Invocador": {
-      "nome": "Ultimate do Agente: Protocolo Esquadrão Omega",
+      "nome": "Protocolo Esquadrão Omega",
       "tipo": "Invocador",
       "dano": 0,
       "precisao": 1.0,
@@ -354,7 +354,7 @@
       "minion": "Drone Caçador"
     },
     "Feiticeiro|Físico": {
-      "nome": "Ultimate do Feiticeiro: Fúria Arcana",
+      "nome": "Fúria Arcana",
       "tipo": "Físico",
       "dano": 37,
       "precisao": 0.92,
@@ -363,7 +363,7 @@
       "verso": "Feiticeiro"
     },
     "Feiticeiro|Distância": {
-      "nome": "Ultimate do Feiticeiro: Relâmpago Celeste",
+      "nome": "Relâmpago Celeste",
       "tipo": "Distância",
       "dano": 39,
       "precisao": 0.95,
@@ -371,7 +371,7 @@
       "verso": "Feiticeiro"
     },
     "Feiticeiro|Magia": {
-      "nome": "Ultimate do Feiticeiro: Eclipse Sombrio",
+      "nome": "Eclipse Sombrio",
       "tipo": "Magia",
       "dano": 48,
       "precisao": 0.9,
@@ -382,7 +382,7 @@
       "verso": "Feiticeiro"
     },
     "Feiticeiro|Invocador": {
-      "nome": "Ultimate do Feiticeiro: General Divino Mahoraga",
+      "nome": "Mahoraga",
       "tipo": "Invocador",
       "dano": 0,
       "precisao": 1.0,

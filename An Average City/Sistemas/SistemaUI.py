@@ -17,6 +17,8 @@ class Botao:
         cor_hover: Optional[Tuple[int, int, int]] = None,
         largura_hover: Optional[int] = None,
         altura_hover: Optional[int] = None,
+        largura_clique: Optional[int] = None,
+        altura_clique: Optional[int] = None,
         cor_texto: Tuple[int, int, int] = (240, 245, 250),
         fonte_tamanho: int = 16,
         sprite_base_path: Optional[str] = None,
@@ -28,7 +30,8 @@ class Botao:
         borda_raio: int = 6,
         tooltip: str = "",
         id_botao: Optional[str] = None,
-        sem_texto: bool = False
+        sem_texto: bool = False,
+        autocrop: bool = False
     ):
         self.x_centro = x + largura // 2
         self.y_centro = y + altura // 2
@@ -38,8 +41,8 @@ class Botao:
         self.largura_hover = largura_hover if largura_hover is not None else largura + 6
         self.altura_hover = altura_hover if altura_hover is not None else altura + 4
 
-        self.largura_clique = max(10, largura - 8)
-        self.altura_clique = max(8, altura - 4)
+        self.largura_clique = largura_clique if largura_clique is not None else max(10, largura - 8)
+        self.altura_clique = altura_clique if altura_clique is not None else max(8, altura - 4)
 
         self.rect = pygame.Rect(x, y, largura, altura)
         self.pressionado = False
@@ -81,17 +84,29 @@ class Botao:
                 img_base = pygame.image.load(caminho_base)
                 if pygame.display.get_surface() is not None:
                     img_base = img_base.convert_alpha()
-                self.sprite_base = pygame.transform.scale(img_base, (largura, altura))
 
                 img_hover = pygame.image.load(caminho_hover)
                 if pygame.display.get_surface() is not None:
                     img_hover = img_hover.convert_alpha()
-                self.sprite_hover = pygame.transform.scale(img_hover, (largura, altura))
 
                 img_clique = pygame.image.load(caminho_clique)
                 if pygame.display.get_surface() is not None:
                     img_clique = img_clique.convert_alpha()
-                self.sprite_clique = pygame.transform.scale(img_clique, (largura, altura))
+
+                if autocrop:
+                    bb_base = img_base.get_bounding_rect()
+                    if bb_base.width > 0 and bb_base.height > 0:
+                        img_base = img_base.subsurface(bb_base).copy()
+                    bb_hover = img_hover.get_bounding_rect()
+                    if bb_hover.width > 0 and bb_hover.height > 0:
+                        img_hover = img_hover.subsurface(bb_hover).copy()
+                    bb_clique = img_clique.get_bounding_rect()
+                    if bb_clique.width > 0 and bb_clique.height > 0:
+                        img_clique = img_clique.subsurface(bb_clique).copy()
+
+                self.sprite_base = pygame.transform.scale(img_base, (largura, altura))
+                self.sprite_hover = pygame.transform.scale(img_hover, (self.largura_hover, self.altura_hover))
+                self.sprite_clique = pygame.transform.scale(img_clique, (self.largura_clique, self.altura_clique))
 
                 self.sprite_atual = self.sprite_base
             except (FileNotFoundError, pygame.error) as erro:
@@ -224,6 +239,8 @@ class TelaBase:
         cor_hover: Optional[Tuple[int, int, int]] = None,
         largura_hover: Optional[int] = None,
         altura_hover: Optional[int] = None,
+        largura_clique: Optional[int] = None,
+        altura_clique: Optional[int] = None,
         cor_texto: Tuple[int, int, int] = (240, 245, 250),
         fonte_tamanho: int = 16,
         sprite_base_path: Optional[str] = None,
@@ -233,7 +250,9 @@ class TelaBase:
         ativo_inicial: bool = False,
         acao: Optional[Callable[[], Any]] = None,
         borda_raio: int = 6,
-        id_botao: Optional[str] = None
+        id_botao: Optional[str] = None,
+        sem_texto: bool = False,
+        autocrop: bool = False
     ) -> Botao:
         botao = Botao(
             x=x,
@@ -245,6 +264,8 @@ class TelaBase:
             cor_hover=cor_hover,
             largura_hover=largura_hover,
             altura_hover=altura_hover,
+            largura_clique=largura_clique,
+            altura_clique=altura_clique,
             cor_texto=cor_texto,
             fonte_tamanho=fonte_tamanho,
             sprite_base_path=sprite_base_path,
@@ -254,7 +275,9 @@ class TelaBase:
             ativo_inicial=ativo_inicial,
             acao=acao,
             borda_raio=borda_raio,
-            id_botao=id_botao
+            id_botao=id_botao,
+            sem_texto=sem_texto,
+            autocrop=autocrop
         )
         self.adicionar_botao(botao, id_botao)
         return botao
