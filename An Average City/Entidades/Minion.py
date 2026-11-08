@@ -50,6 +50,9 @@ class Minion(EntidadeCombate):
         self.congelado = False
         self.atordoado = False
         self.nivel = 1
+        self.defendendo = False
+        self.dormindo = False
+        self.alvo_prioritario = None
 
         sab_dono = 1
         tem_i1 = False

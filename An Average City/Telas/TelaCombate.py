@@ -27,6 +27,9 @@ from Sistemas.SistemaEfeitos import (
     obter_efeitos_ativos,
     desenhar_icones_entidade,
     desenhar_tooltip_efeito,
+    carregar_icone_efeito,
+    entidade_anula_debuff_foco,
+    obter_icone_recurso_entidade,
 )
 
 MAPA_ATRIBUTO_CLASSE = {
@@ -207,15 +210,39 @@ class GerenciadorJogo(TelaBase):
         gap = 16
         y_btn = 640
         h_btn = 46
-        self.btn_ataque    = Botao(hud_x + 25 + 0 * (largura_btn + gap), y_btn, largura_btn, h_btn, "ATAQUE", (140, 25, 25), (190, 40, 40), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
+        self.btn_agir      = Botao(hud_x + 25 + 0 * (largura_btn + gap), y_btn, largura_btn, h_btn, "AGIR", (140, 25, 25), (190, 40, 40), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
+        self.btn_ataque    = self.btn_agir
         self.btn_foco      = Botao(hud_x + 25 + 1 * (largura_btn + gap), y_btn, largura_btn, h_btn, "FOCO", (25, 120, 45), (40, 170, 65), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
         self.btn_recuperar = self.btn_foco
-        self.btn_bloquear  = Botao(hud_x + 25 + 2 * (largura_btn + gap), y_btn, largura_btn, h_btn, "BLOQ", (150, 120, 20), (200, 160, 30), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
+        self.btn_item      = Botao(hud_x + 25 + 2 * (largura_btn + gap), y_btn, largura_btn, h_btn, "ITEM", (25, 95, 140), (40, 145, 210), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
         self.btn_fugir     = Botao(hud_x + 25 + 3 * (largura_btn + gap), y_btn, largura_btn, h_btn, "FUGIR", (60, 60, 75), (95, 95, 115), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
         self.btn_voltar    = Botao(hud_x + 25 + 3 * (largura_btn + gap), y_btn, largura_btn, h_btn, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
         self.btn_desarmar_spike = Botao(hud_x + 25 + 3 * (largura_btn + gap), y_btn, largura_btn, h_btn, "DESARMAR", (20, 110, 140), (35, 170, 220), largura_btn + 4, h_btn + 4, cor_texto=(200, 255, 255), fonte_tamanho=11)
         self.btn_cancelar_desarme = Botao((self.tela.get_width() - 180) // 2, 665, 180, 36, "CANCELAR (ESC)", (60, 25, 30), (100, 35, 45), 184, 40, cor_texto=(255, 180, 180), fonte_tamanho=12)
         self.btn_pausa = Botao(845, 24, 125, 42, "⏸ MENU", (32, 38, 54), (50, 64, 88), 128, 44, cor_texto=(230, 235, 245), fonte_tamanho=12, borda_raio=8)
+
+        # Botões do submenu AGIR (Atacar, Bloquear, Voltar)
+        self.btn_agir_atacar   = Botao(hud_x + 25 + 0 * (largura_btn + gap), y_btn, largura_btn, h_btn, "ATACAR", (140, 25, 25), (190, 40, 40), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
+        self.btn_agir_bloquear = Botao(hud_x + 25 + 1 * (largura_btn + gap), y_btn, largura_btn, h_btn, "BLOQUEAR", (150, 120, 20), (200, 160, 30), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
+        self.btn_bloquear      = self.btn_agir_bloquear
+        self.btn_agir_voltar   = Botao(hud_x + 25 + 3 * (largura_btn + gap), y_btn, largura_btn, h_btn, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
+
+        # Botões dinâmicos do submenu ITEM
+        self.botoes_itens_dinamicos = []
+        self.btn_voltar_itens  = Botao(hud_x + 25 + 3 * (largura_btn + gap), y_btn, largura_btn, h_btn, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
+
+        # Botões dinâmicos do submenu MINIONS do Invocador
+        self.botoes_minions_dinamicos = []
+        self.btn_voltar_minions = Botao(hud_x + 25 + 3 * (largura_btn + gap), y_btn, largura_btn, h_btn, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=12)
+
+        # Alvo prioritário para os minions (Comando ATINGIR)
+        self.alvo_prioritario_minions = None
+
+        # Botões do submenu COMANDOS do Invocador
+        self.btn_cmd_atingir   = Botao(hud_x + 25 + 0 * (largura_btn + gap), y_btn, largura_btn, h_btn, "ATINGIR", (140, 45, 45), (190, 65, 65), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=11)
+        self.btn_cmd_defender  = Botao(hud_x + 25 + 1 * (largura_btn + gap), y_btn, largura_btn, h_btn, "DEFENDER", (35, 95, 145), (50, 140, 205), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=11)
+        self.btn_cmd_descansar = Botao(hud_x + 25 + 2 * (largura_btn + gap), y_btn, largura_btn, h_btn, "DESCANSAR", (35, 130, 95), (50, 180, 135), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=11)
+        self.btn_cmd_voltar    = Botao(hud_x + 25 + 3 * (largura_btn + gap), y_btn, largura_btn, h_btn, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, h_btn + 4, cor_texto=(255,255,255), fonte_tamanho=11)
 
         self.fundo_luta = self._carregar_fundo_luta()
         self.fundo_luta_redimensionado = None
@@ -943,6 +970,9 @@ class GerenciadorJogo(TelaBase):
                 if turnos <= 0:
                     ent.envenenado = False
 
+        for m in self.obter_minions_vivos():
+            m.defendendo = False
+
     def eh_minion(self, entidade):
         return bool(getattr(entidade, "is_minion", False))
 
@@ -1020,12 +1050,7 @@ class GerenciadorJogo(TelaBase):
         limite = self.limite_minions(dono_final)
 
         if len(vivos_dono) >= limite:
-            mesmo_tipo = next((m for m in vivos_dono if m.nome == nome_minion), None)
-            alvo_reforco = mesmo_tipo if mesmo_tipo is not None else min(vivos_dono, key=lambda m: m.hp)
-            sab_bonus = max(1, dono_final.obter_atributo_total("Sab") // 2) if hasattr(dono_final, "obter_atributo_total") else 2
-            alvo_reforco.curar_e_fortalecer(bonus_sab=sab_bonus)
-            self.atualizar_posicoes_inimigos()
-            return alvo_reforco
+            return None
 
         novo_minion = criar_minion(nome_minion, dono=dono_final)
         if novo_minion not in self.minions_ativos:
@@ -1171,35 +1196,311 @@ class GerenciadorJogo(TelaBase):
         for minion, (mx, my) in zip(minions_vivos, layout_minions):
             minion.rect.center = (mx, my)
 
+    def _eh_habilidade_minion(self, nome_hab):
+        hab = banco_habilidades.get(nome_hab)
+        if not hab:
+            return False
+        return bool(getattr(hab, "minion", None) or getattr(hab, "tipo", None) == "Invocador")
+
+    def obter_summons_invocador_combate(self, jogador=None):
+        alvo = jogador if jogador is not None else (self.jogadores[self.indice_jogador_ativo] if hasattr(self, "jogadores") and self.jogadores else personagem)
+        ataques = getattr(alvo, "ataques", [])
+        return [nome for nome in ataques if self._eh_habilidade_minion(nome)]
+
+    def gerar_botoes_minions(self, jogador=None):
+        self.botoes_minions_dinamicos = []
+        alvo = jogador if jogador is not None else (self.jogadores[self.indice_jogador_ativo] if hasattr(self, "jogadores") and self.jogadores else personagem)
+        summons = self.obter_summons_invocador_combate(alvo)
+        qtd = len(summons)
+
+        hud_rect = self.obter_rect_hud_acoes(estado="minions")
+        hud_x = hud_rect.x
+        hud_y = hud_rect.y
+
+        largura_btn = 125
+        gap_x = 16
+        inicio_x = hud_x + 25
+        y_inicial = hud_y + 44
+        h_btn = 46
+        gap_y = 10
+
+        if qtd <= 3:
+            linhas = 1
+        else:
+            linhas = math.ceil((qtd + 1) / 4)
+
+        for idx, nome_hab in enumerate(summons):
+            if idx < (linhas - 1) * 4:
+                row = idx // 4
+                col = idx % 4
+            else:
+                row = linhas - 1
+                col = idx - (linhas - 1) * 4
+
+            bx = inicio_x + col * (largura_btn + gap_x)
+            by = y_inicial + row * (h_btn + gap_y)
+
+            label = nome_hab
+            if label.upper().startswith("INVOCAR "):
+                label = "INV. " + label[8:]
+            elif label.upper().startswith("IMPLANTAR "):
+                label = "IMP. " + label[10:]
+            texto_btn = label.upper()[:12]
+
+            hab = banco_habilidades.get(nome_hab)
+            eh_ultimate = getattr(hab, "is_ultimate", False) if hab else False
+
+            if eh_ultimate:
+                cor_btn = (140, 90, 20)
+                cor_hover = (190, 130, 30)
+            else:
+                cor_btn = (25, 110, 125)
+                cor_hover = (40, 160, 180)
+
+            btn = Botao(
+                bx, by, largura_btn, h_btn, texto_btn,
+                cor_btn, cor_hover,
+                largura_btn + 4, h_btn + 4,
+                cor_texto=(255, 255, 255), fonte_tamanho=11
+            )
+            self.botoes_minions_dinamicos.append({
+                "botao": btn,
+                "nome": nome_hab,
+                "habilidade": hab
+            })
+
+        # Botão VOLTAR sempre no último slot da grade
+        row_v = linhas - 1
+        col_v = 3
+        bx_v = inicio_x + col_v * (largura_btn + gap_x)
+        by_v = y_inicial + row_v * (h_btn + gap_y)
+        self.btn_voltar_minions = Botao(
+            bx_v, by_v, largura_btn, h_btn, "VOLTAR",
+            (75, 75, 85), (110, 110, 120),
+            largura_btn + 4, h_btn + 4,
+            cor_texto=(255, 255, 255), fonte_tamanho=11
+        )
+
     def gerar_botoes_ataque(self, jogador=None):
         self.botoes_habilidades_dinamicos = []
         alvo = jogador if jogador is not None else personagem
-        ataques = list(alvo.ataques)
-        total_botoes = len(ataques)
+        ataques = list(getattr(alvo, "ataques", []))
+
+        eh_invocador = (self.tipo_classe_do_jogador(alvo) == "Invocador") or any(self._eh_habilidade_minion(n) for n in ataques)
 
         hud_x = (self.tela.get_width() - 640) // 2
         hud_largura = 640
         y_botoes = 640
         altura_botao = 46
 
-        if total_botoes <= 3:
-            largura_btn = 125
-            espaco = 16
-            inicio_x = hud_x + 25
-            for idx, nome_hab in enumerate(ataques):
-                bx = inicio_x + idx * (largura_btn + espaco)
-                btn = Botao(bx, y_botoes, largura_btn, altura_botao, nome_hab.upper()[:12], (0, 100, 150), (0, 150, 200), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=11)
-                self.botoes_habilidades_dinamicos.append({"botao": btn, "nome": nome_hab})
-            self.btn_voltar = Botao(hud_x + hud_largura - largura_btn - 25, y_botoes, largura_btn, altura_botao, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=11)
+        if eh_invocador:
+            outros_ataques = [n for n in ataques if not self._eh_habilidade_minion(n)]
+            total_botoes = len(outros_ataques) + 2  # outros ataques + botão MINIONS + botão COMANDOS
+
+            if total_botoes <= 3:
+                largura_btn = 125
+                espaco = 16
+                inicio_x = hud_x + 25
+                cur_idx = 0
+                for nome_hab in outros_ataques:
+                    bx = inicio_x + cur_idx * (largura_btn + espaco)
+                    btn = Botao(bx, y_botoes, largura_btn, altura_botao, nome_hab.upper()[:12], (0, 100, 150), (0, 150, 200), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=11)
+                    self.botoes_habilidades_dinamicos.append({"botao": btn, "nome": nome_hab, "tipo": "ataque"})
+                    cur_idx += 1
+
+                bx_minions = inicio_x + cur_idx * (largura_btn + espaco)
+                btn_minions = Botao(
+                    bx_minions, y_botoes, largura_btn, altura_botao, "MINIONS",
+                    (52, 168, 148), (68, 205, 182),
+                    largura_btn + 4, altura_botao + 4,
+                    cor_texto=(255, 255, 255), fonte_tamanho=11
+                )
+                self.botoes_habilidades_dinamicos.append({"botao": btn_minions, "nome": "MINIONS", "tipo": "minions"})
+                cur_idx += 1
+
+                bx_comandos = inicio_x + cur_idx * (largura_btn + espaco)
+                btn_comandos = Botao(
+                    bx_comandos, y_botoes, largura_btn, altura_botao, "COMANDOS",
+                    (35, 115, 145), (50, 160, 195),
+                    largura_btn + 4, altura_botao + 4,
+                    cor_texto=(255, 255, 255), fonte_tamanho=11
+                )
+                self.botoes_habilidades_dinamicos.append({"botao": btn_comandos, "nome": "COMANDOS", "tipo": "comandos"})
+
+                self.btn_voltar = Botao(hud_x + hud_largura - largura_btn - 25, y_botoes, largura_btn, altura_botao, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=11)
+            else:
+                largura_btn = 105
+                espaco = 10
+                inicio_x = hud_x + 15
+                cur_idx = 0
+                for nome_hab in outros_ataques:
+                    bx = inicio_x + cur_idx * (largura_btn + espaco)
+                    btn = Botao(bx, y_botoes, largura_btn, altura_botao, nome_hab.upper()[:10], (0, 100, 150), (0, 150, 200), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=10)
+                    self.botoes_habilidades_dinamicos.append({"botao": btn, "nome": nome_hab, "tipo": "ataque"})
+                    cur_idx += 1
+
+                bx_minions = inicio_x + cur_idx * (largura_btn + espaco)
+                btn_minions = Botao(
+                    bx_minions, y_botoes, largura_btn, altura_botao, "MINIONS",
+                    (52, 168, 148), (68, 205, 182),
+                    largura_btn + 4, altura_botao + 4,
+                    cor_texto=(255, 255, 255), fonte_tamanho=10
+                )
+                self.botoes_habilidades_dinamicos.append({"botao": btn_minions, "nome": "MINIONS", "tipo": "minions"})
+                cur_idx += 1
+
+                bx_comandos = inicio_x + cur_idx * (largura_btn + espaco)
+                btn_comandos = Botao(
+                    bx_comandos, y_botoes, largura_btn, altura_botao, "COMANDOS",
+                    (35, 115, 145), (50, 160, 195),
+                    largura_btn + 4, altura_botao + 4,
+                    cor_texto=(255, 255, 255), fonte_tamanho=10
+                )
+                self.botoes_habilidades_dinamicos.append({"botao": btn_comandos, "nome": "COMANDOS", "tipo": "comandos"})
+
+                self.btn_voltar = Botao(hud_x + hud_largura - largura_btn - 15, y_botoes, largura_btn, altura_botao, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=10)
         else:
-            largura_btn = 105
-            espaco = 10
-            inicio_x = hud_x + 15
-            for idx, nome_hab in enumerate(ataques):
-                bx = inicio_x + idx * (largura_btn + espaco)
-                btn = Botao(bx, y_botoes, largura_btn, altura_botao, nome_hab.upper()[:10], (0, 100, 150), (0, 150, 200), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=10)
-                self.botoes_habilidades_dinamicos.append({"botao": btn, "nome": nome_hab})
-            self.btn_voltar = Botao(hud_x + hud_largura - largura_btn - 15, y_botoes, largura_btn, altura_botao, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=10)
+            total_botoes = len(ataques)
+            if total_botoes <= 3:
+                largura_btn = 125
+                espaco = 16
+                inicio_x = hud_x + 25
+                for idx, nome_hab in enumerate(ataques):
+                    bx = inicio_x + idx * (largura_btn + espaco)
+                    btn = Botao(bx, y_botoes, largura_btn, altura_botao, nome_hab.upper()[:12], (0, 100, 150), (0, 150, 200), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=11)
+                    self.botoes_habilidades_dinamicos.append({"botao": btn, "nome": nome_hab, "tipo": "ataque"})
+                self.btn_voltar = Botao(hud_x + hud_largura - largura_btn - 25, y_botoes, largura_btn, altura_botao, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=11)
+            else:
+                largura_btn = 105
+                espaco = 10
+                inicio_x = hud_x + 15
+                for idx, nome_hab in enumerate(ataques):
+                    bx = inicio_x + idx * (largura_btn + espaco)
+                    btn = Botao(bx, y_botoes, largura_btn, altura_botao, nome_hab.upper()[:10], (0, 100, 150), (0, 150, 200), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=10)
+                    self.botoes_habilidades_dinamicos.append({"botao": btn, "nome": nome_hab, "tipo": "ataque"})
+                self.btn_voltar = Botao(hud_x + hud_largura - largura_btn - 15, y_botoes, largura_btn, altura_botao, "VOLTAR", (75, 75, 85), (110, 110, 120), largura_btn + 4, altura_botao + 4, cor_texto=(255, 255, 255), fonte_tamanho=10)
+
+    def obter_itens_consumiveis_combate(self):
+        try:
+            from Sistemas.Inventario import inventario_global
+            return [c for c in getattr(inventario_global, "consumiveis", []) if getattr(c, "quantidade", 0) > 0]
+        except Exception:
+            return []
+
+    def obter_rect_hud_acoes(self, estado=None):
+        w_tela = self.tela.get_width()
+        largura = 640
+        x = (w_tela - largura) // 2
+        base_bottom_y = 702
+        altura_padrao = 106
+
+        estado_alvo = estado if estado is not None else self.menu_acoes_estado
+        if estado_alvo == "itens":
+            itens = self.obter_itens_consumiveis_combate()
+            qtd_itens = len(itens)
+            if qtd_itens <= 3:
+                linhas = 1
+            else:
+                linhas = math.ceil((qtd_itens + 1) / 4)
+            altura = altura_padrao + (linhas - 1) * 56
+            y = base_bottom_y - altura
+            return pygame.Rect(x, y, largura, altura)
+        elif estado_alvo == "minions":
+            summons = self.obter_summons_invocador_combate()
+            qtd_summons = len(summons)
+            if qtd_summons <= 3:
+                linhas = 1
+            else:
+                linhas = math.ceil((qtd_summons + 1) / 4)
+            altura = altura_padrao + (linhas - 1) * 56
+            y = base_bottom_y - altura
+            return pygame.Rect(x, y, largura, altura)
+
+        return pygame.Rect(x, 596, largura, altura_padrao)
+
+    def gerar_botoes_itens(self, jogador=None):
+        self.botoes_itens_dinamicos = []
+        itens = self.obter_itens_consumiveis_combate()
+        qtd_itens = len(itens)
+
+        hud_rect = self.obter_rect_hud_acoes(estado="itens")
+        hud_x = hud_rect.x
+        hud_y = hud_rect.y
+
+        largura_btn = 125
+        gap_x = 16
+        inicio_x = hud_x + 25
+        y_inicial = hud_y + 44
+        h_btn = 46
+        gap_y = 10
+
+        if qtd_itens <= 3:
+            linhas = 1
+        else:
+            linhas = math.ceil((qtd_itens + 1) / 4)
+
+        for idx, item in enumerate(itens):
+            if idx < (linhas - 1) * 4:
+                row = idx // 4
+                col = idx % 4
+            else:
+                row = linhas - 1
+                col = idx - (linhas - 1) * 4
+
+            bx = inicio_x + col * (largura_btn + gap_x)
+            by = y_inicial + row * (h_btn + gap_y)
+
+            nome_display = item.nome
+            if len(nome_display) > 11:
+                nome_display = nome_display[:10] + "."
+            texto_btn = f"{nome_display} ({item.quantidade})"
+            btn = Botao(
+                bx, by, largura_btn, h_btn, texto_btn,
+                (25, 95, 140), (40, 145, 210),
+                largura_btn + 4, h_btn + 4,
+                cor_texto=(255, 255, 255), fonte_tamanho=10
+            )
+            self.botoes_itens_dinamicos.append({"botao": btn, "item": item})
+
+        # Botão VOLTAR sempre no último slot (canto inferior direito) da grade
+        row_v = linhas - 1
+        col_v = 3
+        bx_v = inicio_x + col_v * (largura_btn + gap_x)
+        by_v = y_inicial + row_v * (h_btn + gap_y)
+        self.btn_voltar_itens = Botao(
+            bx_v, by_v, largura_btn, h_btn, "VOLTAR",
+            (75, 75, 85), (110, 110, 120),
+            largura_btn + 4, h_btn + 4,
+            cor_texto=(255, 255, 255), fonte_tamanho=11
+        )
+
+    def usar_item_combate(self, item, jogador_atual=None):
+        if jogador_atual is None:
+            jogador_atual = self.jogadores[self.indice_jogador_ativo] if hasattr(self, "jogadores") and self.jogadores else personagem
+
+        if getattr(item, "quantidade", 0) <= 0:
+            self.mensagem_log = f"Item {getattr(item, 'nome', 'desconhecido')} esgotado!"
+            return False
+
+        hp_antes = jogador_atual.hp
+        mp_antes = jogador_atual.mp
+
+        item.usar(jogador_atual)
+
+        hp_rec = max(0, jogador_atual.hp - hp_antes)
+        mp_rec = max(0, jogador_atual.mp - mp_antes)
+
+        detalhes = []
+        if hp_rec > 0:
+            detalhes.append(f"+{hp_rec} HP")
+        if mp_rec > 0:
+            detalhes.append(f"+{mp_rec} PM")
+        txt_rec = f" ({', '.join(detalhes)})" if detalhes else ""
+
+        self.mensagem_log = f"🧪 {jogador_atual.nome} usou {item.nome}{txt_rec}!"
+        self.menu_acoes_estado = "principal"
+        self.iniciar_cooldown_feedback(45, self.avancar_turno)
+        return True
 
     def _custo_habilidade(self, hab, jogador_ativo=None):
         jogador_ativo = jogador_ativo or personagem
@@ -1506,6 +1807,24 @@ class GerenciadorJogo(TelaBase):
             bonus += inventario_global.obter_bonus_atributo(attr)
         return bonus
 
+    def calcular_defesa_passiva(self, entidade):
+        """
+        Calcula a defesa passiva do jogador a partir de sua Constituição (Con // 2)
+        somada ao bônus de Armadura/Defesa fornecido pelos equipamentos de proteção.
+        """
+        if not entidade or not getattr(entidade, "is_player", False):
+            return 0
+        con = getattr(entidade, "atributos", {}).get("Con", 0)
+        def_equip = 0
+        try:
+            from Sistemas.Inventario import inventario_global
+            con += inventario_global.obter_bonus_atributo("Con")
+            def_equip = inventario_global.obter_bonus_defesa()
+        except Exception:
+            pass
+        defesa_con = max(0, con // 2)
+        return defesa_con + max(0, def_equip)
+
     def obter_jogadores(self):
         jogadores = [personagem]
         if getattr(self, 'personagem2', None) is not None:
@@ -1555,9 +1874,14 @@ class GerenciadorJogo(TelaBase):
     def executar_turno_minion(self, minion, alvo_forcado=None):
         if not minion or getattr(minion, "hp", 0) <= 0:
             return None
-        inimigos_vivos = [e for e in self.ordem_turnos if self.eh_inimigo(e) and e.hp > 0]
-        if not inimigos_vivos:
-            return None
+        if getattr(minion, "defendendo", False):
+            self.mensagem_log = f"🛡️ {minion.nome} está defendendo e não ataca neste turno!"
+            return self.mensagem_log
+        if getattr(minion, "dormindo", False):
+            minion.dormindo = False
+            self.mensagem_log = f"💤 {minion.nome} está descansando/dormindo e não ataca neste turno!"
+            return self.mensagem_log
+
         inimigos_vivos = [e for e in self.ordem_turnos if self.eh_inimigo(e) and e.hp > 0]
         if not inimigos_vivos:
             return None
@@ -1600,7 +1924,13 @@ class GerenciadorJogo(TelaBase):
         elif "corte" in nome_hab_minion:
             self.tocar_vfx_corte(volume_relativo=0.85)
 
-        alvo_principal = alvo_forcado if (alvo_forcado in inimigos_vivos) else random.choice(inimigos_vivos)
+        alvo_prioritario = alvo_forcado
+        if not alvo_prioritario:
+            alvo_pref = getattr(minion, "alvo_prioritario", None) or getattr(self, "alvo_prioritario_minions", None)
+            if alvo_pref in inimigos_vivos and getattr(alvo_pref, "hp", 0) > 0:
+                alvo_prioritario = alvo_pref
+
+        alvo_principal = alvo_prioritario if (alvo_prioritario in inimigos_vivos) else random.choice(inimigos_vivos)
         alvos = inimigos_vivos if hab.em_area else [alvo_principal]
 
         dano_total_turno = 0
@@ -1688,7 +2018,7 @@ class GerenciadorJogo(TelaBase):
         desempenho_minigame=None
     ):
         jogador_ativo = jogador_ativo or personagem
-        hab = banco_habilidades.get(nome_habilidade)
+        hab = nome_habilidade if hasattr(nome_habilidade, 'dano') else banco_habilidades.get(nome_habilidade)
         if not hab:
             return
         minion_invocado = None
@@ -1749,6 +2079,14 @@ class GerenciadorJogo(TelaBase):
 
             if getattr(hab, "minion", None):
                 minion_invocado = self.invocar_minion(hab.minion, dono=jogador_ativo)
+                if minion_invocado is None:
+                    limite = self.limite_minions(jogador_ativo)
+                    self.mensagem_log = f"⚠️ {self.nome_exibicao(jogador_ativo)} já atingiu o limite de summons ({limite})!"
+                    self.menu_acoes_estado = "principal"
+                    self.ataque_selecionado = None
+                    self.iniciar_cooldown_feedback(35, self.avancar_turno)
+                    return
+
                 if getattr(hab, "is_ultimate", False):
                     for m in self.obter_minions_vivos(jogador_ativo):
                         if m is not minion_invocado:
@@ -1787,7 +2125,7 @@ class GerenciadorJogo(TelaBase):
         if getattr(jogador_ativo, 'is_player', False):
             from Sistemas.Inventario import inventario_global
             sorte_jogador += inventario_global.obter_bonus_atributo("Sor")
-        chance_crit = min(1.0, chance_crit_base + (sorte_jogador * 0.001))
+        chance_crit = min(1.0, chance_crit_base + (sorte_jogador * 0.005))
         mult_crit = 3.0 if tem_a2 else 1.5
 
         critico = False
@@ -2205,8 +2543,15 @@ class GerenciadorJogo(TelaBase):
 
                 manipuladores_menu = {
                     "principal": lambda: self._processar_menu_principal(jogador_atual, posicao_mouse, estado_clique_mouse, clicou),
+                    "agir": lambda: self._processar_menu_agir(jogador_atual, posicao_mouse, estado_clique_mouse, clicou),
                     "ataques": lambda: self._processar_menu_ataques(jogador_atual, posicao_mouse, estado_clique_mouse, clicou),
+                    "minions": lambda: self._processar_menu_minions(jogador_atual, posicao_mouse, estado_clique_mouse, clicou),
+                    "comandos": lambda: self._processar_menu_comandos(jogador_atual, posicao_mouse, estado_clique_mouse, clicou),
+                    "itens": lambda: self._processar_menu_itens(jogador_atual, posicao_mouse, estado_clique_mouse, clicou),
                     "selecionar_alvo": lambda: self._processar_menu_selecionar_alvo(jogador_atual, posicao_mouse, estado_clique_mouse, clicou, inimigos_vivos),
+                    "selecionar_alvo_comando_atingir": lambda: self._processar_selecao_alvo_atingir(jogador_atual, posicao_mouse, estado_clique_mouse, clicou, inimigos_vivos),
+                    "selecionar_minion_comando_defender": lambda: self._processar_selecao_minion_defender(jogador_atual, posicao_mouse, estado_clique_mouse, clicou),
+                    "selecionar_minion_comando_descansar": lambda: self._processar_selecao_minion_descansar(jogador_atual, posicao_mouse, estado_clique_mouse, clicou),
                 }
                 if manipulador := manipuladores_menu.get(self.menu_acoes_estado):
                     if resultado_menu := manipulador():
@@ -2225,6 +2570,19 @@ class GerenciadorJogo(TelaBase):
                 self.timer_inimigo += 1
                 if self.timer_inimigo >= max(25, self.tempo_espera_inimigo // 2):
                     self.limpar_efeitos_controle(entidade_atual)
+                    self.iniciar_cooldown_feedback(40, self.avancar_turno)
+            elif getattr(entidade_atual, "defendendo", False):
+                if self.timer_inimigo == 0:
+                    self.mensagem_log = f"🛡️ {entidade_atual.nome} está em guarda defendendo e não ataca!"
+                self.timer_inimigo += 1
+                if self.timer_inimigo >= max(35, self.tempo_espera_inimigo // 2):
+                    self.iniciar_cooldown_feedback(40, self.avancar_turno)
+            elif getattr(entidade_atual, "dormindo", False):
+                if self.timer_inimigo == 0:
+                    self.mensagem_log = f"💤 {entidade_atual.nome} está descansando/dormindo e não ataca!"
+                self.timer_inimigo += 1
+                if self.timer_inimigo >= max(35, self.tempo_espera_inimigo // 2):
+                    entidade_atual.dormindo = False
                     self.iniciar_cooldown_feedback(40, self.avancar_turno)
             else:
                 if self.timer_inimigo == 0:
@@ -2399,7 +2757,32 @@ class GerenciadorJogo(TelaBase):
                 jogadores_vivos = [j for j in self.obter_jogadores() if j.hp > 0]
                 minions_vivos = self.obter_minions_vivos()
 
-                if minions_vivos and random.random() < 0.45:
+                minions_defendendo = [m for m in minions_vivos if getattr(m, "defendendo", False)]
+                if minions_defendendo:
+                    alvo_minion = random.choice(minions_defendendo)
+                    self.alvo_destaque = alvo_minion
+                    efeitos_ataque, chance_efeito = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
+                    if not critico and random.random() > hab_usada.precisao:
+                        self.mensagem_log = f"💨 {nome_inimigo} atacou o alvo {alvo_minion.nome}, mas ERROU!"
+                    else:
+                        if eh_ataque_corte:
+                            self.disparar_vfx_corte_alvo(alvo_minion)
+                        alvo_minion.receber_dano(dano_inimigo)
+                        if dano_inimigo > 0:
+                            self.tocar_sfx_dano(volume_relativo=0.8)
+                        efeitos_aplicados = []
+                        if efeitos_ataque and random.random() < chance_efeito:
+                            efeitos_aplicados = self.aplicar_efeitos_controle(alvo_minion, efeitos_ataque)
+                        if alvo_minion.hp <= 0:
+                            self.mensagem_log = f"💥 {nome_inimigo} destruiu o defensor {alvo_minion.nome}! ({dano_inimigo} dano)"
+                        else:
+                            self.mensagem_log = f"🛡️ {nome_inimigo} atacou o defensor {alvo_minion.nome}! ({dano_inimigo} dano)"
+                            if efeitos_aplicados:
+                                self.mensagem_log += f" {' '.join(efeitos_aplicados)}"
+                    self.iniciar_cooldown_feedback(75, self.avancar_turno)
+                    self.clique_anterior = clique_agora
+                    return None
+                elif minions_vivos and random.random() < 0.45:
                     alvo_minion = random.choice(minions_vivos)
                     self.alvo_destaque = alvo_minion
                     efeitos_ataque, chance_efeito = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
@@ -2443,6 +2826,10 @@ class GerenciadorJogo(TelaBase):
                     if alvo_jogador.recuperando or getattr(alvo_jogador, "focado", False):
                         if not self.tem_talento(alvo_jogador, "F2"):
                             dano_inimigo += max(1, int(dano_inimigo * 0.30))
+
+                    # Mitigação por Defesa Passiva e Armadura (Con // 2 + bônus de itens)
+                    defesa_passiva = self.calcular_defesa_passiva(alvo_jogador)
+                    dano_inimigo = max(1, dano_inimigo - defesa_passiva)
 
                     if alvo_jogador.bloqueando:
                         dano_reduzido = max(1, int(dano_inimigo * 0.5))
@@ -2568,7 +2955,9 @@ class GerenciadorJogo(TelaBase):
         if hovered_ent:
             self.efeito_hovered_ativo = hovered_ent
 
-    def desenhar(self, posicao_mouse):
+    def desenhar(self, posicao_mouse=None):
+        if posicao_mouse is None:
+            posicao_mouse = pygame.mouse.get_pos()
         tamanho_tela = self.tela.get_size()
         if self.fundo_luta is not None:
             if self.fundo_luta_redimensionado is None or self.fundo_luta_tamanho != tamanho_tela:
@@ -2644,10 +3033,16 @@ class GerenciadorJogo(TelaBase):
             self.tela.blit(seta_surf, (turno_ativo.rect.centerx - seta_surf.get_width() // 2, indicador_y))
 
         alvos_com_contorno = []
-        if self.menu_acoes_estado == "selecionar_alvo":
+        if self.menu_acoes_estado in ("selecionar_alvo", "selecionar_alvo_comando_atingir"):
             inimigos = [entidade for entidade in self.ordem_turnos if self.eh_inimigo(entidade) and entidade.hp > 0]
             for alvo in inimigos:
                 if alvo.rect.collidepoint(posicao_mouse):
+                    alvos_com_contorno.append(alvo)
+                    break
+        elif self.menu_acoes_estado in ("selecionar_minion_comando_defender", "selecionar_minion_comando_descansar"):
+            minions = self.obter_minions_vivos()
+            for alvo in minions:
+                if alvo.rect.inflate(16, 16).collidepoint(posicao_mouse):
                     alvos_com_contorno.append(alvo)
                     break
         elif getattr(self, "alvo_destaque", None) is not None:
@@ -2659,26 +3054,35 @@ class GerenciadorJogo(TelaBase):
         pulso = int(math.sin(self.tempo_animacao * 6.0) * 3)
         for alvo in alvos_com_contorno:
             nome_alvo_txt = self.nome_exibicao(alvo)
-            txt_alvo = self.fonte_inimigo.render(f"▼ ALVO: {nome_alvo_txt.upper()} ▼", True, (255, 65, 65))
+            eh_minion_alvo = self.eh_minion(alvo)
+            if eh_minion_alvo and self.menu_acoes_estado == "selecionar_minion_comando_defender":
+                c_cor = (35, 95, 145)
+                c_cor_brilho = (60, 165, 235)
+                txt_alvo = self.fonte_inimigo.render(f"▼ DEFENDER: {nome_alvo_txt.upper()} ▼", True, c_cor_brilho)
+            elif eh_minion_alvo and self.menu_acoes_estado == "selecionar_minion_comando_descansar":
+                c_cor = (35, 130, 95)
+                c_cor_brilho = (60, 210, 155)
+                txt_alvo = self.fonte_inimigo.render(f"▼ DESCANSAR: {nome_alvo_txt.upper()} ▼", True, c_cor_brilho)
+            else:
+                c_cor = (240, 35, 35)
+                c_cor_brilho = (255, 95, 95)
+                txt_alvo = self.fonte_inimigo.render(f"▼ ALVO: {nome_alvo_txt.upper()} ▼", True, c_cor_brilho)
             self.tela.blit(txt_alvo, (alvo.rect.centerx - txt_alvo.get_width() // 2, alvo.rect.top - 46 + pulso))
 
             r = alvo.rect.inflate(12 + pulso, 12 + pulso)
             c_tam = 16
-            c_cor = (240, 35, 35)
-            c_cor_brilho = (255, 95, 95)
             w_ln = 3
-            # Contorno retangular vermelho completo
+            # Contorno retangular completo
             pygame.draw.rect(self.tela, c_cor, r, width=3, border_radius=6)
-            # Cantos destacados em vermelho vibrante
+            # Cantos destacados
             pygame.draw.line(self.tela, c_cor_brilho, (r.left, r.top), (r.left + c_tam, r.top), w_ln + 1)
             pygame.draw.line(self.tela, c_cor_brilho, (r.left, r.top), (r.left, r.top + c_tam), w_ln + 1)
             pygame.draw.line(self.tela, c_cor_brilho, (r.right, r.top), (r.right - c_tam, r.top), w_ln + 1)
             pygame.draw.line(self.tela, c_cor_brilho, (r.right, r.top), (r.right, r.top + c_tam), w_ln + 1)
             pygame.draw.line(self.tela, c_cor_brilho, (r.left, r.bottom), (r.left + c_tam, r.bottom), w_ln + 1)
-            pygame.draw.line(self.tela, c_cor_brilho, (r.left, r.bottom), (r.left, r.bottom - c_tam), w_ln + 1)
+            pygame.draw.line(self.tela, c_cor_brilho, (r.left, r.bottom), (r.left - c_tam, r.bottom), w_ln + 1)
             pygame.draw.line(self.tela, c_cor_brilho, (r.right, r.bottom), (r.right - c_tam, r.bottom), w_ln + 1)
             pygame.draw.line(self.tela, c_cor_brilho, (r.right, r.bottom), (r.right, r.bottom - c_tam), w_ln + 1)
-
         if self.menu_acoes_estado == "minigame_ataque" and getattr(self, "minigame_ataque", None) and self.minigame_ataque.esta_ativo():
             self.minigame_ataque.desenhar(self.tela)
 
@@ -2739,11 +3143,23 @@ class GerenciadorJogo(TelaBase):
             barra_rect = pygame.Rect(hud_log.x + 8, hud_log.bottom - 6, largura_barra, 3)
             pygame.draw.rect(self.tela, (255, 215, 90), barra_rect, border_radius=2)
 
-        hud_acoes = pygame.Rect((self.tela.get_width() - 640) // 2, 596, 640, 106)
+        hud_acoes = self.obter_rect_hud_acoes()
         pygame.draw.rect(self.tela, (20, 22, 32), hud_acoes, border_radius=12)
         pygame.draw.rect(self.tela, (85, 95, 120), hud_acoes, width=2, border_radius=12)
-        self.tela.blit(self.fonte_titulos.render("AÇÕES", True, (180, 190, 215)), (hud_acoes.x + 16, hud_acoes.y + 8))
-
+        titulos_menu = {
+            "principal": "AÇÕES",
+            "agir": "AGIR",
+            "ataques": "HABILIDADES",
+            "minions": "MINIONS",
+            "comandos": "COMANDOS",
+            "itens": "ITENS",
+            "selecionar_alvo": "SELECIONAR ALVO",
+            "selecionar_alvo_comando_atingir": "ORDEM: ATINGIR",
+            "selecionar_minion_comando_defender": "ORDEM: DEFENDER",
+            "selecionar_minion_comando_descansar": "ORDEM: DESCANSAR",
+        }
+        titulo_hud = titulos_menu.get(self.menu_acoes_estado, "AÇÕES")
+        self.tela.blit(self.fonte_titulos.render(titulo_hud, True, (180, 190, 215)), (hud_acoes.x + 16, hud_acoes.y + 8))
         jogadores_status = [personagem]
         if getattr(self, 'duas_pessoas', False) and getattr(self, 'personagem2', None) is not None:
             jogadores_status.append(self.personagem2)
@@ -2791,24 +3207,63 @@ class GerenciadorJogo(TelaBase):
                 txt_minions = self.fonte_status.render(f"MINIONS {len(minions_j)}/{self.limite_minions(jogador)}", True, (80, 235, 195))
                 self.tela.blit(txt_minions, (rect_status.right - txt_minions.get_width() - 12, rect_status.y + 6))
 
-            x_hp = rect_status.x + 12
+            # Ícone de Vida (HP) e Barra de HP
+            icone_vida = carregar_icone_efeito("Vida.png", 16)
+            x_icone = rect_status.x + 10
             y_hp = rect_status.y + 28
-            w_bar = 150
+            self.tela.blit(icone_vida, (x_icone, y_hp - 1))
+
+            x_hp = rect_status.x + 30
+            w_bar = 136
             h_bar = 13
             pygame.draw.rect(self.tela, (65, 14, 18), (x_hp, y_hp, w_bar, h_bar), border_radius=3)
             if jogador.max_hp > 0:
                 porc_hp = max(0.0, min(1.0, jogador.hp / jogador.max_hp))
                 pygame.draw.rect(self.tela, (40, 210, 80), (x_hp, y_hp, int(w_bar * porc_hp), h_bar), border_radius=3)
             txt_hp = self.fonte_status.render(f"HP {jogador.hp}/{jogador.max_hp}", True, (255, 255, 255))
-            self.tela.blit(txt_hp, (x_hp + w_bar + 10, y_hp - 1))
+            self.tela.blit(txt_hp, (x_hp + w_bar + 8, y_hp - 1))
 
+            # Ícone de Mana/Foco e Barra de PM
+            # Caso o jogador não possua a skill tree do feiticeiro que anula os debuffs do foco (F2), troca para Foco.png
+            icone_recurso, _ = obter_icone_recurso_entidade(jogador, 16)
             y_mp = rect_status.y + 46
+            self.tela.blit(icone_recurso, (x_icone, y_mp - 1))
+
             pygame.draw.rect(self.tela, (14, 22, 60), (x_hp, y_mp, w_bar, h_bar), border_radius=3)
             if jogador.max_mp > 0:
                 porc_mp = max(0.0, min(1.0, jogador.mp / jogador.max_mp))
                 pygame.draw.rect(self.tela, (30, 150, 255), (x_hp, y_mp, int(w_bar * porc_mp), h_bar), border_radius=3)
             txt_mp = self.fonte_status.render(f"PM {jogador.mp}/{jogador.max_mp}", True, (255, 255, 255))
-            self.tela.blit(txt_mp, (x_hp + w_bar + 10, y_mp - 1))
+            self.tela.blit(txt_mp, (x_hp + w_bar + 8, y_mp - 1))
+
+            # Tooltip interativa nos ícones de Vida e Mana/Foco
+            if posicao_mouse:
+                mx, my = posicao_mouse
+                if pygame.Rect(x_icone, y_hp - 1, 16, 16).collidepoint(mx, my):
+                    self.efeito_hovered_ativo = {
+                        "nome": "Vida (HP)",
+                        "tag": "RECURSO",
+                        "cor": (40, 210, 80),
+                        "arquivo": "Vida.png",
+                        "descricao": f"Vitalidade do jogador: {jogador.hp}/{jogador.max_hp} pontos de vida.",
+                    }
+                elif pygame.Rect(x_icone, y_mp - 1, 16, 16).collidepoint(mx, my):
+                    if entidade_anula_debuff_foco(jogador):
+                        self.efeito_hovered_ativo = {
+                            "nome": "Mana (PM)",
+                            "tag": "RECURSO",
+                            "cor": (30, 150, 255),
+                            "arquivo": "Mana.png",
+                            "descricao": f"Pontos de Mana: {jogador.mp}/{jogador.max_mp}. Domínio Simples ativo (anula vulnerabilidade de foco).",
+                        }
+                    else:
+                        self.efeito_hovered_ativo = {
+                            "nome": "Foco (PM)",
+                            "tag": "FOCO",
+                            "cor": (255, 140, 40),
+                            "arquivo": "Foco.png",
+                            "descricao": f"Pontos de Mana: {jogador.mp}/{jogador.max_mp}. Sem Domínio Simples: sofre +30% de dano durante o foco.",
+                        }
 
             # Ícones discretos de De_Buffs na placa do jogador ao lado da barra de HP
             hovered_j = desenhar_icones_entidade(
@@ -2827,8 +3282,15 @@ class GerenciadorJogo(TelaBase):
         if turno_ativo is not None and getattr(turno_ativo, 'hp', 0) > 0 and turno_ativo in (personagem, getattr(self, 'personagem2', None)) and not self.obter_efeito_controle(turno_ativo):
             desenhadores_menu = {
                 "principal": self._desenhar_menu_principal,
+                "agir": self._desenhar_menu_agir,
                 "ataques": self._desenhar_menu_ataques,
+                "minions": self._desenhar_menu_minions,
+                "comandos": self._desenhar_menu_comandos,
+                "itens": self._desenhar_menu_itens,
                 "selecionar_alvo": self._desenhar_menu_selecionar_alvo,
+                "selecionar_alvo_comando_atingir": self._desenhar_menu_selecionar_alvo,
+                "selecionar_minion_comando_defender": self._desenhar_menu_selecionar_alvo,
+                "selecionar_minion_comando_descansar": self._desenhar_menu_selecionar_alvo,
             }
             if desenhador := desenhadores_menu.get(self.menu_acoes_estado):
                 desenhador()
@@ -2876,22 +3338,46 @@ class GerenciadorJogo(TelaBase):
 
         # Renderização da tooltip do efeito hovered (no topo de todas as camadas)
         if getattr(self, "efeito_hovered_ativo", None):
+            self.ultimo_efeito_hovered = self.efeito_hovered_ativo
             desenhar_tooltip_efeito(self.tela, self.efeito_hovered_ativo, posicao_mouse)
             self.efeito_hovered_ativo = None
+        else:
+            self.ultimo_efeito_hovered = None
 
     def _desenhar_menu_principal(self):
-        self.btn_ataque.desenhar(self.tela)
+        self.btn_agir.desenhar(self.tela)
         self.btn_foco.desenhar(self.tela)
-        self.btn_bloquear.desenhar(self.tela)
+        self.btn_item.desenhar(self.tela)
         if getattr(self, "spike", None) is not None and self.spike.ativa and not self.spike.desarmada:
             self.btn_desarmar_spike.desenhar(self.tela)
         else:
             self.btn_fugir.desenhar(self.tela)
 
+    def _desenhar_menu_agir(self):
+        self.btn_agir_atacar.desenhar(self.tela)
+        self.btn_agir_bloquear.desenhar(self.tela)
+        self.btn_agir_voltar.desenhar(self.tela)
+
+    def _desenhar_menu_itens(self):
+        for item_info in self.botoes_itens_dinamicos:
+            item_info["botao"].desenhar(self.tela)
+        self.btn_voltar_itens.desenhar(self.tela)
+
     def _desenhar_menu_ataques(self):
         for item_habilidade in self.botoes_habilidades_dinamicos:
             item_habilidade["botao"].desenhar(self.tela)
         self.btn_voltar.desenhar(self.tela)
+
+    def _desenhar_menu_minions(self):
+        for item_minion in self.botoes_minions_dinamicos:
+            item_minion["botao"].desenhar(self.tela)
+        self.btn_voltar_minions.desenhar(self.tela)
+
+    def _desenhar_menu_comandos(self):
+        self.btn_cmd_atingir.desenhar(self.tela)
+        self.btn_cmd_defender.desenhar(self.tela)
+        self.btn_cmd_descansar.desenhar(self.tela)
+        self.btn_cmd_voltar.desenhar(self.tela)
 
     def _desenhar_menu_selecionar_alvo(self):
         self.btn_voltar.desenhar(self.tela)
@@ -2953,9 +3439,9 @@ class GerenciadorJogo(TelaBase):
         ):
             self.mensagem_log = nome_turno
 
-        self.btn_ataque.atualizar(posicao_mouse, estado_clique_mouse)
+        self.btn_agir.atualizar(posicao_mouse, estado_clique_mouse)
         self.btn_foco.atualizar(posicao_mouse, estado_clique_mouse)
-        self.btn_bloquear.atualizar(posicao_mouse, estado_clique_mouse)
+        self.btn_item.atualizar(posicao_mouse, estado_clique_mouse)
 
         spike_ativa = (getattr(self, "spike", None) is not None and self.spike.ativa and not self.spike.desarmada)
         if spike_ativa:
@@ -2972,15 +3458,15 @@ class GerenciadorJogo(TelaBase):
                 self.iniciar_minigame_desarme_spike()
                 return None
 
-        if self.btn_ataque.clicado(posicao_mouse):
-            self.gerar_botoes_ataque(jogador_atual)
-            self.menu_acoes_estado = "ataques"
+        if self.btn_agir.clicado(posicao_mouse):
+            self.menu_acoes_estado = "agir"
         elif self.btn_foco.clicado(posicao_mouse) or self.btn_recuperar.clicado(posicao_mouse):
             self.executar_foco(jogador_atual)
-        elif self.btn_bloquear.clicado(posicao_mouse):
-            jogador_atual.bloqueando = True
-            self.mensagem_log = "🛡️ BLOQUEAR: Dano reduzido em 50%!"
-            self.iniciar_cooldown_feedback(45, self.avancar_turno)
+        elif self.btn_item.clicado(posicao_mouse):
+            self.menu_acoes_estado = "itens"
+            self.gerar_botoes_itens(jogador_atual)
+            if not self.obter_itens_consumiveis_combate():
+                self.mensagem_log = "Nenhum item consumível no inventário!"
         elif self.btn_fugir.clicado(posicao_mouse):
             chance_fuga = 1.0 if self.tem_talento(jogador_atual, "S1") else 0.50
             if random.random() < chance_fuga:
@@ -3001,6 +3487,47 @@ class GerenciadorJogo(TelaBase):
                 self.iniciar_cooldown_feedback(50, self.avancar_turno)
         return None
 
+    def _processar_menu_agir(self, jogador_atual, posicao_mouse, estado_clique_mouse, clicou):
+        self.btn_agir_atacar.atualizar(posicao_mouse, estado_clique_mouse)
+        self.btn_agir_bloquear.atualizar(posicao_mouse, estado_clique_mouse)
+        self.btn_agir_voltar.atualizar(posicao_mouse, estado_clique_mouse)
+
+        if not clicou:
+            return None
+
+        if self.btn_agir_voltar.clicado(posicao_mouse):
+            self.menu_acoes_estado = "principal"
+            return None
+
+        if self.btn_agir_atacar.clicado(posicao_mouse):
+            self.gerar_botoes_ataque(jogador_atual)
+            self.menu_acoes_estado = "ataques"
+        elif self.btn_agir_bloquear.clicado(posicao_mouse):
+            jogador_atual.bloqueando = True
+            self.mensagem_log = "🛡️ BLOQUEAR: Dano reduzido em 50%!"
+            self.iniciar_cooldown_feedback(45, self.avancar_turno)
+            self.menu_acoes_estado = "principal"
+        return None
+
+    def _processar_menu_itens(self, jogador_atual, posicao_mouse, estado_clique_mouse, clicou):
+        self.btn_voltar_itens.atualizar(posicao_mouse, estado_clique_mouse)
+        for item_info in self.botoes_itens_dinamicos:
+            item_info["botao"].atualizar(posicao_mouse, estado_clique_mouse)
+
+        if not clicou:
+            return None
+
+        if self.btn_voltar_itens.clicado(posicao_mouse):
+            self.menu_acoes_estado = "principal"
+            return None
+
+        for item_info in self.botoes_itens_dinamicos:
+            if item_info["botao"].clicado(posicao_mouse):
+                item = item_info["item"]
+                self.usar_item_combate(item, jogador_atual)
+                break
+        return None
+
     def _processar_menu_ataques(self, jogador_atual, posicao_mouse, estado_clique_mouse, clicou):
         self.btn_voltar.atualizar(posicao_mouse, estado_clique_mouse)
         for item_habilidade in self.botoes_habilidades_dinamicos:
@@ -3010,14 +3537,28 @@ class GerenciadorJogo(TelaBase):
             return None
 
         if self.btn_voltar.clicado(posicao_mouse):
-            self.menu_acoes_estado = "principal"
+            self.menu_acoes_estado = "agir"
             return None
 
         for item_habilidade in self.botoes_habilidades_dinamicos:
             if item_habilidade["botao"].clicado(posicao_mouse):
+                if item_habilidade.get("tipo") == "minions":
+                    self.gerar_botoes_minions(jogador_atual)
+                    self.menu_acoes_estado = "minions"
+                    return None
+                elif item_habilidade.get("tipo") == "comandos":
+                    self.menu_acoes_estado = "comandos"
+                    return None
+
                 hab = banco_habilidades.get(item_habilidade["nome"])
                 if not hab:
                     continue
+                if getattr(hab, "minion", None) or hab.tipo == "Invocador":
+                    limite = self.limite_minions(jogador_atual)
+                    if len(self.obter_minions_vivos(jogador_atual)) >= limite:
+                        self.mensagem_log = f"⚠️ Limite de summons atingido ({limite}/{limite})!"
+                        self.iniciar_cooldown_feedback(35)
+                        break
                 custo_mp = self._custo_habilidade(hab, jogador_atual)
                 if jogador_atual.mp >= custo_mp:
                     self.ataque_selecionado = item_habilidade["nome"]
@@ -3033,7 +3574,50 @@ class GerenciadorJogo(TelaBase):
                 else:
                     self.mensagem_log = f"💧 PM Insuficiente para {hab.nome}!"
                     self.iniciar_cooldown_feedback(35)
-                    self.menu_acoes_estado = "principal"
+                    self.menu_acoes_estado = "agir"
+                break
+        return None
+
+    def _processar_menu_minions(self, jogador_atual, posicao_mouse, estado_clique_mouse, clicou):
+        self.btn_voltar_minions.atualizar(posicao_mouse, estado_clique_mouse)
+        for item_minion in self.botoes_minions_dinamicos:
+            item_minion["botao"].atualizar(posicao_mouse, estado_clique_mouse)
+
+        if not clicou:
+            return None
+
+        if self.btn_voltar_minions.clicado(posicao_mouse):
+            self.menu_acoes_estado = "ataques"
+            return None
+
+        for item_minion in self.botoes_minions_dinamicos:
+            if item_minion["botao"].clicado(posicao_mouse):
+                nome_hab = item_minion["nome"]
+                hab = item_minion.get("habilidade") or banco_habilidades.get(nome_hab)
+                if not hab:
+                    continue
+                if getattr(hab, "minion", None) or hab.tipo == "Invocador":
+                    limite = self.limite_minions(jogador_atual)
+                    if len(self.obter_minions_vivos(jogador_atual)) >= limite:
+                        self.mensagem_log = f"⚠️ Limite de summons atingido ({limite}/{limite})!"
+                        self.iniciar_cooldown_feedback(35)
+                        break
+                custo_mp = self._custo_habilidade(hab, jogador_atual)
+                if jogador_atual.mp >= custo_mp:
+                    self.ataque_selecionado = nome_hab
+                    self.ataque_jogador_ativo = jogador_atual
+                    eh_ultimate = getattr(hab, "is_ultimate", False)
+                    if hab.em_area or hab.tipo == "Invocador" or getattr(hab, "minion", None):
+                        if getattr(self, "minigames_ataque_ativos", True) and not eh_ultimate:
+                            self.iniciar_minigame_ataque(hab, alvo=None, jogador_ativo=jogador_atual)
+                        else:
+                            self.executar_ataque_jogador(nome_hab, jogador_ativo=jogador_atual)
+                    else:
+                        self.menu_acoes_estado = "selecionar_alvo"
+                else:
+                    self.mensagem_log = f"💧 PM Insuficiente para {hab.nome}!"
+                    self.iniciar_cooldown_feedback(35)
+                    self.menu_acoes_estado = "minions"
                 break
         return None
 
@@ -3056,7 +3640,10 @@ class GerenciadorJogo(TelaBase):
 
         if self.btn_voltar.clicado(posicao_mouse):
             self.alvo_destaque = None
-            self.menu_acoes_estado = "ataques"
+            if self._eh_habilidade_minion(self.ataque_selecionado):
+                self.menu_acoes_estado = "minions"
+            else:
+                self.menu_acoes_estado = "ataques"
         else:
             for alvo in inimigos_vivos:
                 if alvo.rect.collidepoint(posicao_mouse):
@@ -3068,6 +3655,160 @@ class GerenciadorJogo(TelaBase):
                     else:
                         self.executar_ataque_jogador(self.ataque_selecionado, alvo, jogador_ativo=jogador_atual)
                     break
+        return None
+
+    def _processar_menu_comandos(self, jogador_atual, posicao_mouse, estado_clique_mouse, clicou):
+        self.btn_cmd_atingir.atualizar(posicao_mouse, estado_clique_mouse)
+        self.btn_cmd_defender.atualizar(posicao_mouse, estado_clique_mouse)
+        self.btn_cmd_descansar.atualizar(posicao_mouse, estado_clique_mouse)
+        self.btn_cmd_voltar.atualizar(posicao_mouse, estado_clique_mouse)
+
+        if not clicou:
+            return None
+
+        if self.btn_cmd_voltar.clicado(posicao_mouse):
+            self.menu_acoes_estado = "ataques"
+            return None
+
+        minions_vivos = self.obter_minions_vivos(jogador_atual)
+
+        if self.btn_cmd_atingir.clicado(posicao_mouse):
+            if not minions_vivos:
+                self.mensagem_log = "⚠️ Você não possui nenhum summon em campo!"
+                self.iniciar_cooldown_feedback(35)
+                return None
+            self.menu_acoes_estado = "selecionar_alvo_comando_atingir"
+            return None
+
+        elif self.btn_cmd_defender.clicado(posicao_mouse):
+            if not minions_vivos:
+                self.mensagem_log = "⚠️ Você não possui nenhum summon em campo!"
+                self.iniciar_cooldown_feedback(35)
+                return None
+            self.menu_acoes_estado = "selecionar_minion_comando_defender"
+            return None
+
+        elif self.btn_cmd_descansar.clicado(posicao_mouse):
+            if not minions_vivos:
+                self.mensagem_log = "⚠️ Você não possui nenhum summon em campo!"
+                self.iniciar_cooldown_feedback(35)
+                return None
+            self.menu_acoes_estado = "selecionar_minion_comando_descansar"
+            return None
+
+        return None
+
+    def _processar_selecao_alvo_atingir(self, jogador_atual, posicao_mouse, estado_clique_mouse, clicou, inimigos_vivos):
+        alvo_hover = None
+        for a in inimigos_vivos:
+            if a.rect.collidepoint(posicao_mouse):
+                alvo_hover = a
+                break
+
+        if alvo_hover:
+            self.mensagem_log = f"🎯 ATINGIR: Focar em {self.nome_exibicao(alvo_hover)}? Clique para ordenar os summons!"
+        else:
+            self.mensagem_log = "🎯 ATINGIR: Selecione o inimigo que todos os summons focarão!"
+
+        self.btn_voltar.atualizar(posicao_mouse, estado_clique_mouse)
+        if not clicou:
+            return None
+
+        if self.btn_voltar.clicado(posicao_mouse):
+            self.alvo_destaque = None
+            self.menu_acoes_estado = "comandos"
+            return None
+
+        for alvo in inimigos_vivos:
+            if alvo.rect.collidepoint(posicao_mouse):
+                self.alvo_destaque = alvo
+                self.alvo_prioritario_minions = alvo
+                for m in self.obter_minions_vivos(jogador_atual):
+                    m.alvo_prioritario = alvo
+                    m.defendendo = False
+                self.mensagem_log = f"🎯 COMANDO: Todos os summons agora focam em {self.nome_exibicao(alvo)}!"
+                self.iniciar_cooldown_feedback(45, self.avancar_turno)
+                self.menu_acoes_estado = "principal"
+                break
+        return None
+
+    def _processar_selecao_minion_defender(self, jogador_atual, posicao_mouse, estado_clique_mouse, clicou):
+        minions_vivos = self.obter_minions_vivos(jogador_atual)
+        if not minions_vivos:
+            self.mensagem_log = "⚠️ Nenhum summon disponível para defender!"
+            self.menu_acoes_estado = "comandos"
+            return None
+
+        alvo_hover = None
+        for m in minions_vivos:
+            if m.rect.inflate(16, 16).collidepoint(posicao_mouse):
+                alvo_hover = m
+                break
+
+        if alvo_hover:
+            self.mensagem_log = f"🛡️ DEFENDER: Ordenar que {alvo_hover.nome} defenda a equipe? Clique para confirmar!"
+        else:
+            self.mensagem_log = "🛡️ DEFENDER: Clique no summon alvo para defender a equipe!"
+
+        self.btn_voltar.atualizar(posicao_mouse, estado_clique_mouse)
+        if not clicou:
+            return None
+
+        if self.btn_voltar.clicado(posicao_mouse):
+            self.alvo_destaque = None
+            self.menu_acoes_estado = "comandos"
+            return None
+
+        for m in minions_vivos:
+            if m.rect.inflate(16, 16).collidepoint(posicao_mouse):
+                self.alvo_destaque = m
+                m.defendendo = True
+                m.dormindo = False
+                self.mensagem_log = f"🛡️ COMANDO: {m.nome} defenderá a equipe e chamará a atenção dos inimigos!"
+                self.iniciar_cooldown_feedback(45, self.avancar_turno)
+                self.menu_acoes_estado = "principal"
+                break
+        return None
+
+    def _processar_selecao_minion_descansar(self, jogador_atual, posicao_mouse, estado_clique_mouse, clicou):
+        minions_vivos = self.obter_minions_vivos(jogador_atual)
+        if not minions_vivos:
+            self.mensagem_log = "⚠️ Nenhum summon disponível para descansar!"
+            self.menu_acoes_estado = "comandos"
+            return None
+
+        alvo_hover = None
+        for m in minions_vivos:
+            if m.rect.inflate(16, 16).collidepoint(posicao_mouse):
+                alvo_hover = m
+                break
+
+        if alvo_hover:
+            cura_estimada = max(1, int(getattr(alvo_hover, "max_hp", 10) * 0.10))
+            self.mensagem_log = f"💤 DESCANSAR: {alvo_hover.nome} (+{cura_estimada} HP)? Ele dormirá este turno. Clique para confirmar!"
+        else:
+            self.mensagem_log = "💤 DESCANSAR: Clique no summon para descansar e curar 10% do HP!"
+
+        self.btn_voltar.atualizar(posicao_mouse, estado_clique_mouse)
+        if not clicou:
+            return None
+
+        if self.btn_voltar.clicado(posicao_mouse):
+            self.alvo_destaque = None
+            self.menu_acoes_estado = "comandos"
+            return None
+
+        for m in minions_vivos:
+            if m.rect.inflate(16, 16).collidepoint(posicao_mouse):
+                self.alvo_destaque = m
+                cura = max(1, int(getattr(m, "max_hp", 10) * 0.10))
+                m.hp = min(getattr(m, "max_hp", 10), m.hp + cura)
+                m.dormindo = True
+                m.defendendo = False
+                self.mensagem_log = f"💤 COMANDO: {m.nome} descansou (+{cura} HP) e dormirá este turno!"
+                self.iniciar_cooldown_feedback(45, self.avancar_turno)
+                self.menu_acoes_estado = "principal"
+                break
         return None
 
 TelaCombate = GerenciadorJogo

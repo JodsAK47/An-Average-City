@@ -56,6 +56,8 @@ from .SistemaEfeitos import (
     carregar_icone_efeito,
     desenhar_icones_entidade,
     desenhar_tooltip_efeito,
+    entidade_anula_debuff_foco,
+    obter_icone_recurso_entidade,
 )
 from .SistemaCutscene import (
     SistemaCutscene,
@@ -123,6 +125,8 @@ __all__ = [
     "carregar_icone_efeito",
     "desenhar_icones_entidade",
     "desenhar_tooltip_efeito",
+    "entidade_anula_debuff_foco",
+    "obter_icone_recurso_entidade",
     "SistemaCutscene",
     "sistema_cutscene",
 ]

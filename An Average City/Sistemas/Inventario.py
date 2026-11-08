@@ -839,6 +839,24 @@ class SistemaInventario:
                 totais[k] = totais.get(k, 0) + int(v)
         return totais
 
+    def obter_bonus_defesa(self):
+        """Retorna o bônus total de armadura e defesa plana concedido pelos equipamentos equipados."""
+        total = 0
+        for eq in self.todos_equipamentos_equipados():
+            total += int(eq.atributos_bonus.get("Def", 0))
+            total += int(eq.atributos_bonus.get("Armadura", 0))
+            total += int(eq.atributos_bonus.get("Defesa", 0))
+        return total
+
+    def limpar_equipamentos(self):
+        """Desequipa todos os itens de todos os slots de equipamento."""
+        self.equipamento_slot = None
+        self.capacete_slot = None
+        self.peitoral_slot = None
+        self.calca_slot = None
+        self.bota_slot = None
+        self.amuletos_slots = []
+
     def adicionar_item_por_id(self, item_id, quantidade=1):
         item = obter_item_por_id_ou_nome(item_id)
         if not item:

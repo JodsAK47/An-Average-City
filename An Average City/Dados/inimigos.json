@@ -84,7 +84,7 @@
         "arquivo_imagem": "Abelha.png",
         "nome": "Abelha",
         "ataques": [
-            "Mordida"
+            "Ferroada"
         ],
         "xp": 25,
         "atributos": {
@@ -100,9 +100,12 @@
         "max_hp": 45,
         "max_mp": 10,
         "arquivo_imagem": "Hound.png",
-        "nome": "Carrapato Sombrio",
+        "nome": "Hound",
         "ataques": [
             "Mordida",
+            "Mordida de Fogo",
+            "Mordida de Gelo",
+            "Mordida de Veneno",
             "Soco"
         ],
         "xp": 45,

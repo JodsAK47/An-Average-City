@@ -8,9 +8,16 @@ def _descobrir_raiz() -> Path:
     candidato = Path(__file__).resolve().parent
     for _ in range(4):
         if (candidato / "Sprites").exists() or (candidato / "Dados").exists():
-            return candidato
+            return candidato.resolve()
         candidato = candidato.parent
-    return Path(__file__).resolve().parent
+
+    # Tenta também a partir do diretório de trabalho atual (CWD)
+    cwd = Path.cwd().resolve()
+    for sub in [cwd, cwd / "An Average City", cwd.parent / "An Average City"]:
+        if (sub / "Sprites").exists() or (sub / "Dados").exists():
+            return sub.resolve()
+
+    return Path(__file__).resolve().parent.parent.resolve()
 
 DIRETORIO_PROJETO = _descobrir_raiz()
 
@@ -64,6 +71,10 @@ def reindexar_sprites():
 
 def caminho_recurso(*partes) -> str:
     return str(DIRETORIO_PROJETO.joinpath(*partes))
+
+def caminho_raiz(*partes) -> str:
+    """Retorna o caminho absoluto da pasta raiz de recursos do jogo ('An Average City')."""
+    return str(DIRETORIO_PROJETO.joinpath(*partes)) if partes else str(DIRETORIO_PROJETO)
 
 def caminho_dados(nome_arquivo: str = "") -> str:
     return caminho_recurso("Dados", nome_arquivo) if nome_arquivo else caminho_recurso("Dados")

@@ -23,6 +23,54 @@
     "em_area": false,
     "verso": "Inimigo"
   },
+  "Ferroada": {
+    "nome": "Ferroada",
+    "tipo": "Físico",
+    "dano": 5,
+    "custo_mp": 0,
+    "precisao": 0.85,
+    "descricao": "A Abelha ferroa o alvo e injeta veneno.",
+    "efeito": "Veneno",
+    "chance_efeito": 1.0,
+    "em_area": false,
+    "verso": "Inimigo"
+  },
+  "Mordida de Fogo": {
+    "nome": "Mordida de Fogo",
+    "tipo": "Físico",
+    "dano": 8,
+    "custo_mp": 0,
+    "precisao": 0.8,
+    "descricao": "Morde o alvo com presas envoltas em chamas.",
+    "efeito": "Queimar",
+    "chance_efeito": 0.15,
+    "em_area": false,
+    "verso": "Inimigo"
+  },
+  "Mordida de Gelo": {
+    "nome": "Mordida de Gelo",
+    "tipo": "Físico",
+    "dano": 8,
+    "custo_mp": 0,
+    "precisao": 0.8,
+    "descricao": "Morde o alvo com presas cobertas de gelo.",
+    "efeito": "Congelar",
+    "chance_efeito": 0.15,
+    "em_area": false,
+    "verso": "Inimigo"
+  },
+  "Mordida de Veneno": {
+    "nome": "Mordida de Veneno",
+    "tipo": "Físico",
+    "dano": 8,
+    "custo_mp": 0,
+    "precisao": 0.8,
+    "descricao": "Morde o alvo e injeta veneno.",
+    "efeito": "Veneno",
+    "chance_efeito": 0.15,
+    "em_area": false,
+    "verso": "Inimigo"
+  },
   "Porrete do Chefe": {
     "nome": "Porrete do Chefe",
     "tipo": "Físico",

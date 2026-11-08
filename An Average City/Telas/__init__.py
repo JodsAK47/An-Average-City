@@ -17,6 +17,13 @@ from .TelaConfiguracoes import GerenciadorConfiguracoesTela
 from .TelaPosDialogo import GerenciadorPosDialogo
 from .TelaLoja import GerenciadorLoja, TelaLoja
 from .TelaPausa import GerenciadorPausa, TelaPausa
+from .CombateHUD import (
+    desenhar_sombra_contato,
+    desenhar_barras_status,
+    desenhar_destaque_alvo,
+    desenhar_painel_log,
+    desenhar_cartoes_jogadores,
+)
 
 TelaConfiguracoes = GerenciadorConfiguracoesTela
 
@@ -43,4 +50,9 @@ __all__ = [
     "TelaLoja",
     "GerenciadorPausa",
     "TelaPausa",
+    "desenhar_sombra_contato",
+    "desenhar_barras_status",
+    "desenhar_destaque_alvo",
+    "desenhar_painel_log",
+    "desenhar_cartoes_jogadores",
 ]

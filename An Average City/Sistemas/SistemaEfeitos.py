@@ -61,23 +61,41 @@ CONFIG_EFEITOS: Dict[str, Dict[str, Any]] = {
         "tag": "BUFF",
         "descricao": "Postura defensiva ativa! Todo dano recebido é reduzido em 50%.",
     },
+    "vida": {
+        "id": "vida",
+        "nome": "Vida",
+        "tipo": "buff",
+        "arquivo": "Vida.png",
+        "cor": (40, 210, 80),
+        "tag": "RECURSO",
+        "descricao": "Pontos de Vida (HP): Vitalidade física do personagem.",
+    },
+    "mana": {
+        "id": "mana",
+        "nome": "Mana",
+        "tipo": "buff",
+        "arquivo": "Mana.png",
+        "cor": (30, 150, 255),
+        "tag": "RECURSO",
+        "descricao": "Pontos de Mana (PM): Energia mágica para conjuração de habilidades e magias.",
+    },
     "recuperando": {
         "id": "recuperando",
         "nome": "Foco",
-        "tipo": "buff",
-        "arquivo": "Regeneracao.png",
-        "cor": (90, 255, 150),
-        "tag": "BUFF",
-        "descricao": "Estado de Foco ativo: Regenera PM na rodada, porém vulnerável (+30% dano sofrido, anulado com F2).",
+        "tipo": "debuff",
+        "arquivo": "Foco.png",
+        "cor": (255, 95, 45),
+        "tag": "DEBUFF",
+        "descricao": "Estado de Foco ativo: Regenera PM na rodada, porém vulnerável (+30% dano sofrido).",
     },
     "foco": {
-        "id": "recuperando",
+        "id": "foco",
         "nome": "Foco",
-        "tipo": "buff",
-        "arquivo": "Regeneracao.png",
-        "cor": (90, 255, 150),
-        "tag": "BUFF",
-        "descricao": "Estado de Foco ativo: Regenera PM na rodada, porém vulnerável (+30% dano sofrido, anulado com F2).",
+        "tipo": "debuff",
+        "arquivo": "Foco.png",
+        "cor": (255, 95, 45),
+        "tag": "DEBUFF",
+        "descricao": "Estado de Foco ativo: Regenera PM na rodada, porém vulnerável (+30% dano sofrido).",
     },
     "god_mode": {
         "id": "god_mode",
@@ -144,6 +162,38 @@ def carregar_icone_efeito(nome_arquivo_ou_id: str, tamanho: int = 20) -> pygame.
     return surf_fallback
 
 
+def entidade_anula_debuff_foco(entidade: Any) -> bool:
+    """
+    Verifica se a entidade possui o talento F2 (Domínio Simples) da árvore do Feiticeiro,
+    que anula os debuffs e a vulnerabilidade de dano extra associados ao Foco.
+    """
+    if entidade is None:
+        return False
+    if hasattr(entidade, "tem_talento") and callable(entidade.tem_talento):
+        try:
+            if bool(entidade.tem_talento("F2")):
+                return True
+        except Exception:
+            pass
+    talentos = getattr(entidade, "talentos", None)
+    if talentos:
+        if isinstance(talentos, dict) and bool(talentos.get("F2")):
+            return True
+        if isinstance(talentos, (set, list, tuple)) and "F2" in talentos:
+            return True
+    return False
+
+
+def obter_icone_recurso_entidade(entidade: Any, tamanho: int = 16) -> Tuple[pygame.Surface, str]:
+    """
+    Retorna a superfície do ícone e o nome do arquivo para o recurso de Mana/Foco da entidade:
+    - Se a entidade possui o talento F2 do Feiticeiro (que anula os debuffs do foco), usa 'Mana.png'.
+    - Caso contrário, troca o ícone para 'Foco.png'.
+    """
+    arquivo = "Mana.png" if entidade_anula_debuff_foco(entidade) else "Foco.png"
+    return carregar_icone_efeito(arquivo, tamanho), arquivo
+
+
 def obter_efeitos_ativos(entidade: Any) -> List[Dict[str, Any]]:
     """
     Varre a entidade (Personagem, Minion ou Inimigo) e retorna uma lista
@@ -185,9 +235,20 @@ def obter_efeitos_ativos(entidade: Any) -> List[Dict[str, Any]]:
         info = dict(CONFIG_EFEITOS["bloqueio"])
         efeitos.append(info)
 
-    # 6. Foco / Recuperando (Buff)
+    # 6. Foco / Recuperando (Alterna entre Buff e Debuff dependendo do talento F2)
     if getattr(entidade, "recuperando", False) or getattr(entidade, "focado", False):
-        info = dict(CONFIG_EFEITOS["recuperando"])
+        if entidade_anula_debuff_foco(entidade):
+            info = {
+                "id": "foco_estavel",
+                "nome": "Foco (Domínio Simples)",
+                "tipo": "buff",
+                "arquivo": "Mana.png",
+                "cor": (80, 190, 255),
+                "tag": "BUFF",
+                "descricao": "Estado de Foco ativo: Regenera PM na rodada sem penalidade de dano (Domínio Simples F2).",
+            }
+        else:
+            info = dict(CONFIG_EFEITOS["recuperando"])
         efeitos.append(info)
 
     # 7. Modo Deus (Buff)

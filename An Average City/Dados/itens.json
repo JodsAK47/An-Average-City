@@ -361,7 +361,8 @@
       "tipo": "equipamento",
       "categoria": "capacete",
       "atributos_bonus": {
-        "Con": 2
+        "Con": 2,
+        "Def": 1
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -378,7 +379,8 @@
       "categoria": "capacete",
       "atributos_bonus": {
         "Sab": 2,
-        "Agi": 1
+        "Agi": 1,
+        "Def": 1
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -395,7 +397,8 @@
       "categoria": "capacete",
       "atributos_bonus": {
         "Int": 2,
-        "Sor": 1
+        "Sor": 1,
+        "Def": 1
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -412,7 +415,8 @@
       "categoria": "peitoral",
       "atributos_bonus": {
         "Con": 3,
-        "For": 1
+        "For": 1,
+        "Def": 3
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -429,7 +433,8 @@
       "categoria": "peitoral",
       "atributos_bonus": {
         "Con": 2,
-        "Agi": 2
+        "Agi": 2,
+        "Def": 2
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -446,7 +451,8 @@
       "categoria": "peitoral",
       "atributos_bonus": {
         "Int": 3,
-        "Sab": 1
+        "Sab": 1,
+        "Def": 2
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -463,7 +469,8 @@
       "categoria": "peitoral",
       "atributos_bonus": {
         "Con": 2,
-        "Sab": 1
+        "Sab": 1,
+        "Def": 2
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -480,7 +487,8 @@
       "categoria": "peitoral",
       "atributos_bonus": {
         "Con": 2,
-        "For": 2
+        "For": 2,
+        "Def": 3
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -497,7 +505,8 @@
       "categoria": "calca",
       "atributos_bonus": {
         "Con": 2,
-        "For": 1
+        "For": 1,
+        "Def": 2
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -514,7 +523,8 @@
       "categoria": "calca",
       "atributos_bonus": {
         "Agi": 2,
-        "Con": 1
+        "Con": 1,
+        "Def": 1
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -531,7 +541,8 @@
       "categoria": "calca",
       "atributos_bonus": {
         "Sab": 2,
-        "Int": 1
+        "Int": 1,
+        "Def": 1
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -548,7 +559,8 @@
       "categoria": "bota",
       "atributos_bonus": {
         "For": 2,
-        "Agi": 1
+        "Agi": 1,
+        "Def": 1
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -564,7 +576,8 @@
       "tipo": "equipamento",
       "categoria": "bota",
       "atributos_bonus": {
-        "Agi": 3
+        "Agi": 3,
+        "Def": 1
       },
       "verso": "Todos",
       "classe": "Todas",
@@ -582,7 +595,8 @@
       "atributos_bonus": {
         "Int": 1,
         "Sab": 1,
-        "Sor": 1
+        "Sor": 1,
+        "Def": 1
       },
       "verso": "Todos",
       "classe": "Todas",

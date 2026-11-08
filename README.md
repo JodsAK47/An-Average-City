@@ -10,7 +10,7 @@ O projeto é um RPG por turnos com foco em combate, seleção de classes, árvor
 
 A estrutura atual do projeto está organizada em módulos e telas, com a lógica principal localizada em:
 
-- [An Average City/Main.py](An%20Average%20City/Main.py)
+- [An Average City/Sistemas/MotorJogo.py](An%20Average%20City/Sistemas/MotorJogo.py)
 - [An Average City/Telas](An%20Average%20City/Telas)
 - [An Average City/Sistemas](An%20Average%20City/Sistemas)
 - [An Average City/Entidades](An%20Average%20City/Entidades)
@@ -105,33 +105,40 @@ A estrutura atual do projeto está organizada em módulos e telas, com a lógica
 
 ### Pré-requisitos
 
-- Python 3.13
-- Biblioteca pygame
+- Python 3.10+ (Recomendado 3.13)
+- Dependências listadas em requirements.txt
 
-### 2. Acessar a pasta do projeto
-```bash
-cd "An-Avarage-City/An Average City"
-```
-
-### Instalação
+### Instalação de dependências
 
 ```bash
-pip install pygame
+pip install -r requirements.txt
 ```
 
-### Execução
+### Execução Padronizada (Direto da Raiz)
 
-No diretório do projeto:
+O jogo conta com um ponto de entrada padronizado (`main.py`) que configura caminhos e diretórios automaticamente:
 
 ```bash
-python Main.py
+python main.py
+# ou
+py main.py
 ```
 
-O projeto esta em uma pasta com subdiretório, [An Average City/Main.py](An%20Average%20City/Main.py), execute a partir da pasta correta:
+### Execução dos Testes Automatizados
+
+```bash
+python main.py --test
+# ou
+py -m unittest discover tests
+```
+
+### Execução Alternativa (Subpasta)
+
+Também é possível executar diretamente a partir da subpasta do jogo:
 
 ```bash
 cd "An Average City"
-python Main.py
+python Sistemas/MotorJogo.py
 ```
 
 ## 📁 Estrutura principal
@@ -140,11 +147,12 @@ python Main.py
 An-Avarage-City/
 ├── README.md
 ├── README(Start).md
+├── main.py
 ├── An Average City/
-│   ├── Main.py
 │   ├── Entidades/
 │   ├── Gameplay/
 │   ├── Sistemas/
+│   │   ├── MotorJogo.py
 │   ├── Telas/
 │   ├── Saves/
 │   ├── Dados/

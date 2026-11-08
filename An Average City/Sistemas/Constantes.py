@@ -60,9 +60,17 @@ class Classe(str, Enum):
 
 MAPA_ATRIBUTO_CLASSE = {
     Classe.FISICO: "For",
+    "Físico": "For",
+    "Fisico": "For",
     Classe.MAGIA: "Int",
+    "Magia": "Int",
     Classe.DISTANCIA: "Agi",
+    "Distância": "Agi",
+    "Distancia": "Agi",
     Classe.INVOCADOR: "Sab",
+    "Invocador": "Sab",
+    "Invocação": "Sab",
+    "Invocacao": "Sab",
 }
 
 # Tabela canônica de equipamentos iniciais (sem duplicatas)
@@ -92,6 +100,15 @@ MULTIPLICADORES_VERSO_TIPO = {
     (Verso.FEITICEIRO, Classe.MAGIA): 2.0,
     (Verso.FEITICEIRO, Classe.INVOCADOR): 2.0,
 }
+
+# Suporte retrocompatível a buscas diretas com strings (com ou sem acento / maiúsculas)
+for (_v, _c), _item in list(TABELA_EQUIPAMENTOS_INICIAIS.items()):
+    TABELA_EQUIPAMENTOS_INICIAIS[(_v.value, _c.value)] = _item
+    TABELA_EQUIPAMENTOS_INICIAIS[(normalizar_identificador(_v.value), normalizar_identificador(_c.value))] = _item
+
+for (_v, _c), _mult in list(MULTIPLICADORES_VERSO_TIPO.items()):
+    MULTIPLICADORES_VERSO_TIPO[(_v.value, _c.value)] = _mult
+    MULTIPLICADORES_VERSO_TIPO[(normalizar_identificador(_v.value), normalizar_identificador(_c.value))] = _mult
 
 
 def obter_equipamento_inicial(verso, classe_dano):

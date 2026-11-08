@@ -15,8 +15,8 @@ class MinigameEsquiva:
     Gerencia:
     - O avanço rítmico dos projéteis móveis em direção à zona central (x=200);
     - Detecção imediata por Teclado ([ESPAÇO], [ENTER], [W], [↑]) e Clique de Mouse;
-    - Zona Central de Parry (100% de redução no projétil / -33% total);
-    - Zona Lateral de Esquiva (50% de redução no projétil / -16% total);
+    - Zona Central de Parry (10% de redução no dano recebido);
+    - Zona Lateral de Esquiva (5% de redução no dano recebido);
     - Partículas visuais, banner de feedback flutuante e suporte a múltiplos disparos.
     """
 
@@ -245,8 +245,8 @@ class MinigameEsquiva:
 
                 if distancia <= 22:
                     self.acertos_centro += 1
-                    self.reducao += 0.33
-                    self.ultimo_feedback = "⚡ PARRY PERFEITO! (-33% DANO)"
+                    self.reducao += 0.10
+                    self.ultimo_feedback = "⚡ PARRY PERFEITO! (-10% DANO)"
                     barra_alvo["resultado"] = "parry"
                     self._gerar_particulas(bx_tela, by_tela, (50, 240, 140), qtd=10)
                     self._gerar_particulas(bx_tela, by_tela, (255, 230, 90), qtd=6)
@@ -256,8 +256,8 @@ class MinigameEsquiva:
                         pass
                 elif distancia <= 80:
                     self.acertos += 1
-                    self.reducao += 0.16
-                    self.ultimo_feedback = "💨 ESQUIVA SINCRONIZADA! (-16% DANO)"
+                    self.reducao += 0.05
+                    self.ultimo_feedback = "💨 ESQUIVA SINCRONIZADA! (-5% DANO)"
                     barra_alvo["resultado"] = "esquiva"
                     self._gerar_particulas(bx_tela, by_tela, (70, 210, 255), qtd=8)
                     try:
