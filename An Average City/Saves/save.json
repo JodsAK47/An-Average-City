@@ -1,9 +1,19 @@
 {
-    "pontos": 0,
-    "total_pontos_acumulados": 0,
+    "pontos": 999819,
+    "total_pontos_acumulados": 999999,
     "maior_pontuacao": 0,
-    "conquistas": [],
-    "member_card_coletado": false,
-    "progresso_versos": {},
+    "conquistas": [
+        "primeiro_talento",
+        "ultimate_desbloqueada"
+    ],
+    "member_card_coletado": true,
+    "progresso_versos": {
+        "Sobrevivente": [
+            "S1",
+            "S2",
+            "S3",
+            "S4"
+        ]
+    },
     "habilidades_desabilitadas": {}
 }

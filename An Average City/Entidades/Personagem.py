@@ -29,23 +29,28 @@ class Personagem(EntidadeCombate):
         self.bloqueando = False
         self.recuperando = False
         self.focado = False
+        self.cego = False
+        self.turnos_cegueira = 0
         self.is_player = True
         self.talentos = set()
         self.god_mode = False
         self.nome_imagem = nome_imagem
+        self.arquivo_imagem = nome_imagem
+        self.direcao_olhar = "leste"
 
         try:
             self.imagem_original = pygame.image.load(caminho_imagem(nome_imagem))
             w_orig, h_orig = self.imagem_original.get_size()
             altura_desejada = 115
             largura_desejada = int(w_orig * (altura_desejada / max(1, h_orig)))
-            self.imagem = pygame.transform.scale(self.imagem_original, (largura_desejada, altura_desejada))
-            # skins e aliados devem ficar virados para a direita
-            self.imagem = self.imagem
+            self.imagem_base = pygame.transform.scale(self.imagem_original, (largura_desejada, altura_desejada))
+            from Sistemas.SistemaOrientacao import sistema_orientacao
+            self.imagem = sistema_orientacao.aplicar_orientacao(self.imagem_base, nome_imagem, "leste")
         except (pygame.error, FileNotFoundError) as e:
             print(f"⚠️ Erro ao carregar imagem: {e}")
-            self.imagem = pygame.Surface((100, 115))
-            self.imagem.fill((0, 200, 100))
+            self.imagem_base = pygame.Surface((100, 115))
+            self.imagem_base.fill((0, 200, 100))
+            self.imagem = self.imagem_base.copy()
 
         self.rect = self.imagem.get_rect(topleft=(x, y))
         self.convertida = False
@@ -63,13 +68,15 @@ class Personagem(EntidadeCombate):
 
     def trocar_skin(self, nova_imagem):
         self.nome_imagem = nova_imagem
+        self.arquivo_imagem = nova_imagem
         try:
             self.imagem_original = pygame.image.load(caminho_imagem(nova_imagem))
             w_orig, h_orig = self.imagem_original.get_size()
             altura_desejada = 115
             largura_desejada = int(w_orig * (altura_desejada / max(1, h_orig)))
-            self.imagem = pygame.transform.scale(self.imagem_original, (largura_desejada, altura_desejada))
-            # skins do jogador sempre ficam para a direita
+            self.imagem_base = pygame.transform.scale(self.imagem_original, (largura_desejada, altura_desejada))
+            from Sistemas.SistemaOrientacao import sistema_orientacao
+            self.imagem = sistema_orientacao.aplicar_orientacao(self.imagem_base, nova_imagem, self.direcao_olhar)
             self.rect.size = self.imagem.get_size()
             self.convertida = False
         except (pygame.error, FileNotFoundError) as e:

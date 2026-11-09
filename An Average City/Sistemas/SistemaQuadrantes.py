@@ -18,6 +18,7 @@ class DirecaoOlhar:
     LESTE = "leste"       # Olhando para a direita (sprite original)
     ESQUERDA = "oeste"
     DIREITA = "leste"
+    FRONTAL = "frontal"
 
 
 class SistemaQuadrantes:

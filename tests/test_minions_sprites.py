@@ -19,16 +19,17 @@ from Entidades.Minion import BANCO_MINIONS, Minion, criar_minion
 
 class TestMinionsSprites(unittest.TestCase):
     def test_todos_minions_possuem_sprites_existentes(self):
-        """Verifica se todos os minions do minions.json possuem arquivo_imagem válido e existente no disco."""
-        caminho_minions = Path(caminho_dados("minions.json"))
-        self.assertTrue(caminho_minions.exists(), "minions.json não encontrado")
+        """Verifica se todos os minions cadastrados possuem arquivo_imagem válido e existente no disco."""
+        for arq in ["minions_personagem.json", "minions_inimigos.json"]:
+            caminho_minions = Path(caminho_dados(arq))
+            self.assertTrue(caminho_minions.exists(), f"{arq} não encontrado")
+            with open(caminho_minions, "r", encoding="utf-8") as f:
+                minions = json.load(f)
+            self.assertGreater(len(minions), 0, f"{arq} está vazio")
 
-        with open(caminho_minions, "r", encoding="utf-8") as f:
-            minions = json.load(f)
+        self.assertGreater(len(BANCO_MINIONS), 0, "BANCO_MINIONS está vazio")
 
-        self.assertGreater(len(minions), 0, "minions.json está vazio")
-
-        for nome, dados in minions.items():
+        for nome, dados in BANCO_MINIONS.items():
             img = dados.get("arquivo_imagem")
             self.assertTrue(bool(img), f"Minion '{nome}' não possui arquivo_imagem definido")
             caminho_resolvido = caminho_imagem(img)
@@ -39,9 +40,7 @@ class TestMinionsSprites(unittest.TestCase):
 
     def test_sprites_especificas_dos_minions(self):
         """Verifica a atribuição correta das sprites de cada minion, especialmente as novas."""
-        caminho_minions = Path(caminho_dados("minions.json"))
-        with open(caminho_minions, "r", encoding="utf-8") as f:
-            minions = json.load(f)
+        minions = BANCO_MINIONS
 
         # Cão Divino deve usar Cachorro.png
         self.assertEqual(minions["Cão Divino"]["arquivo_imagem"], "Cachorro.png")

@@ -1,0 +1,278 @@
+{
+  "Pequeno Santuário": {
+    "nome": "Pequeno Santuário",
+    "verso": "Feiticeiro",
+    "arquivo_imagem": "Santuario.png",
+    "inverter_horizontal": false,
+    "max_hp": 100,
+    "max_mp": 0,
+    "descricao": "Pequeno santuário invocado pela ultimate do Sukuna. Destruído em 4 ataques ou 10% de desgaste por rodada.",
+    "atributos": {
+      "For": 8,
+      "Agi": 5,
+      "Con": 10,
+      "Sab": 10,
+      "Int": 12,
+      "Sor": 1
+    },
+    "ataques": [
+      {
+        "nome": "Cortes Malevolentes",
+        "tipo": "Magia",
+        "dano": 15,
+        "custo_mp": 0,
+        "precisao": 1.0,
+        "efeito": null,
+        "chance_efeito": 0.0,
+        "em_area": true,
+        "descricao": "Tempestade de cortes contínuos que atinge todos os oponentes em área."
+      }
+    ]
+  },
+  "Fera do Breu": {
+    "nome": "Fera do Breu",
+    "verso": "Sobrevivente",
+    "arquivo_imagem": "Hound.png",
+    "inverter_horizontal": false,
+    "max_hp": 40,
+    "max_mp": 12,
+    "descricao": "Fera lupina sombria convocada por invocadores para dilacerar oponentes.",
+    "atributos": {
+      "For": 6,
+      "Agi": 6,
+      "Con": 4,
+      "Sab": 4,
+      "Int": 2,
+      "Sor": 3
+    },
+    "ataques": [
+      {
+        "nome": "Mordida Dilacerante",
+        "tipo": "Físico",
+        "dano": 10,
+        "custo_mp": 0,
+        "precisao": 0.9,
+        "efeito": null,
+        "chance_efeito": 0.0,
+        "em_area": false,
+        "descricao": "Mordida feroz e veloz da fera sombria."
+      },
+      {
+        "nome": "Investida Feroz",
+        "tipo": "Físico",
+        "dano": 14,
+        "custo_mp": 3,
+        "precisao": 0.85,
+        "efeito": null,
+        "chance_efeito": 0.0,
+        "em_area": false,
+        "descricao": "Bote violento que despedaça a guarda."
+      }
+    ]
+  },
+  "Mãos das Sombras": {
+    "nome": "Mãos das Sombras",
+    "verso": "Sobrevivente",
+    "arquivo_imagem": "Maldição 4.png",
+    "inverter_horizontal": false,
+    "max_hp": 30,
+    "max_mp": 10,
+    "descricao": "Entidade espectral que emerge das trevas para atormentar e ofuscar a visão dos vivos.",
+    "atributos": {
+      "For": 4,
+      "Agi": 5,
+      "Con": 3,
+      "Sab": 5,
+      "Int": 4,
+      "Sor": 2
+    },
+    "ataques": [
+      {
+        "nome": "Garras Espectrais",
+        "tipo": "Físico",
+        "dano": 8,
+        "custo_mp": 0,
+        "precisao": 0.9,
+        "efeito": null,
+        "chance_efeito": 0.0,
+        "em_area": false,
+        "descricao": "Garras do breu rasgando a carne do alvo."
+      },
+      {
+        "nome": "Toque da Cegueira",
+        "tipo": "Magia",
+        "dano": 10,
+        "custo_mp": 2,
+        "precisao": 0.88,
+        "efeito": "Cegueira",
+        "chance_efeito": 0.4,
+        "em_area": false,
+        "descricao": "Névoa de trevas que cega o oponente (+20% chance de errar ataques)."
+      }
+    ]
+  },
+  "Tentáculos das Trevas": {
+    "nome": "Tentáculos das Trevas",
+    "verso": "Sobrevivente",
+    "arquivo_imagem": "Confinamento.png",
+    "inverter_horizontal": false,
+    "max_hp": 38,
+    "max_mp": 14,
+    "descricao": "Apêndices amaldiçoados de pura escuridão que paralisam seus alvos.",
+    "atributos": {
+      "For": 5,
+      "Agi": 4,
+      "Con": 5,
+      "Sab": 6,
+      "Int": 5,
+      "Sor": 2
+    },
+    "ataques": [
+      {
+        "nome": "Açoite das Trevas",
+        "tipo": "Físico",
+        "dano": 9,
+        "custo_mp": 0,
+        "precisao": 0.88,
+        "efeito": null,
+        "chance_efeito": 0.0,
+        "em_area": false,
+        "descricao": "Golpe pesado com tentáculos sombrios."
+      },
+      {
+        "nome": "Constrição Gélida",
+        "tipo": "Magia",
+        "dano": 12,
+        "custo_mp": 4,
+        "precisao": 0.82,
+        "efeito": "Congelar",
+        "chance_efeito": 0.35,
+        "em_area": false,
+        "descricao": "Aperto congelante que paralisa a presa."
+      }
+    ]
+  },
+  "Enxame Noturno": {
+    "nome": "Enxame Noturno",
+    "verso": "Sobrevivente",
+    "arquivo_imagem": "Abelha.png",
+    "inverter_horizontal": true,
+    "max_hp": 26,
+    "max_mp": 10,
+    "descricao": "Enxame violento de insetos sombrios que atacam em grupo.",
+    "atributos": {
+      "For": 3,
+      "Agi": 6,
+      "Con": 2,
+      "Sab": 4,
+      "Int": 3,
+      "Sor": 3
+    },
+    "ataques": [
+      {
+        "nome": "Ferrão Venenoso",
+        "tipo": "Físico",
+        "dano": 7,
+        "custo_mp": 0,
+        "precisao": 0.9,
+        "efeito": "Veneno",
+        "chance_efeito": 0.3,
+        "em_area": false,
+        "descricao": "Picada tóxica que envenena o alvo."
+      },
+      {
+        "nome": "Investida em Nuvem",
+        "tipo": "Físico",
+        "dano": 10,
+        "custo_mp": 3,
+        "precisao": 0.85,
+        "efeito": null,
+        "chance_efeito": 0.0,
+        "em_area": true,
+        "descricao": "Investida ampla que atinge todos os oponentes."
+      }
+    ]
+  },
+  "Torreta Inimiga": {
+    "nome": "Torreta Inimiga",
+    "verso": "Agente",
+    "arquivo_imagem": "Torreta.png",
+    "inverter_horizontal": false,
+    "max_hp": 32,
+    "max_mp": 10,
+    "descricao": "Unidade sentinela hostil de disparo automatizado e apoio tático.",
+    "atributos": {
+      "For": 4,
+      "Agi": 4,
+      "Con": 4,
+      "Sab": 4,
+      "Int": 4,
+      "Sor": 2
+    },
+    "ataques": [
+      {
+        "nome": "Disparo Sentinela",
+        "tipo": "Distância",
+        "dano": 8,
+        "custo_mp": 0,
+        "precisao": 0.9,
+        "efeito": null,
+        "chance_efeito": 0.0,
+        "em_area": false,
+        "descricao": "Disparo rápido em rajada."
+      },
+      {
+        "nome": "Granada Fumígena",
+        "tipo": "Distância",
+        "dano": 9,
+        "custo_mp": 2,
+        "precisao": 0.86,
+        "efeito": "Cegueira",
+        "chance_efeito": 0.4,
+        "em_area": false,
+        "descricao": "Dispara projétil fumígeno que cega o inimigo (+20% chance de falha)."
+      }
+    ]
+  },
+  "Pássaro Sombrio": {
+    "nome": "Pássaro Sombrio",
+    "verso": "Sobrevivente",
+    "arquivo_imagem": "Passaro.png",
+    "inverter_horizontal": true,
+    "max_hp": 40,
+    "max_mp": 12,
+    "descricao": "Pássaro territorial feroz com garras afiadas e grito atordoante.",
+    "atributos": {
+      "For": 6,
+      "Agi": 4,
+      "Con": 4,
+      "Sab": 4,
+      "Int": 3,
+      "Sor": 2
+    },
+    "ataques": [
+      {
+        "nome": "Bicada Brutal",
+        "tipo": "Físico",
+        "dano": 10,
+        "custo_mp": 0,
+        "precisao": 0.88,
+        "efeito": null,
+        "chance_efeito": 0.0,
+        "em_area": false,
+        "descricao": "Ataque veloz com bico afiado."
+      },
+      {
+        "nome": "Grito Desorientador",
+        "tipo": "Magia",
+        "dano": 11,
+        "custo_mp": 3,
+        "precisao": 0.85,
+        "efeito": "Atordoar",
+        "chance_efeito": 0.3,
+        "em_area": false,
+        "descricao": "Onda sonora estridente que atordoa o oponente."
+      }
+    ]
+  }
+}

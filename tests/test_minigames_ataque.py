@@ -307,7 +307,7 @@ class TestMinigamesAtaque(unittest.TestCase):
         jogo = GerenciadorJogo(self.tela)
         jogo.minigames_ataque_ativos = True
 
-        inimigo = Inimigo(500, 400, 200, "Maldicao1.png", nome="Alvo Teste")
+        inimigo = Inimigo(500, 400, 200, "Maldição 4.png", nome="Alvo Teste")
         inimigo.rect = pygame.Rect(500, 400, 60, 80)
         personagem.rect = pygame.Rect(100, 400, 60, 80)
         personagem.mp = 50
@@ -345,7 +345,7 @@ class TestMinigamesAtaque(unittest.TestCase):
         jogo = GerenciadorJogo(self.tela)
         jogo.minigames_ataque_ativos = True
 
-        inimigo = Inimigo(500, 400, 200, "Maldicao1.png", nome="Alvo Teste")
+        inimigo = Inimigo(500, 400, 200, "Maldição 4.png", nome="Alvo Teste")
         inimigo.rect = pygame.Rect(500, 400, 60, 80)
         personagem.rect = pygame.Rect(100, 400, 60, 80)
         personagem.mp = 50
@@ -381,7 +381,7 @@ class TestMinigamesAtaque(unittest.TestCase):
         jogo = GerenciadorJogo(self.tela)
         jogo.minigames_ataque_ativos = True
 
-        inimigo = Inimigo(500, 400, 200, "Maldicao1.png", nome="Alvo Teste")
+        inimigo = Inimigo(500, 400, 200, "Maldição 4.png", nome="Alvo Teste")
         inimigo.rect = pygame.Rect(500, 400, 60, 80)
         personagem.rect = pygame.Rect(100, 400, 60, 80)
         personagem.mp = 50
@@ -483,7 +483,7 @@ class TestMinigamesAtaque(unittest.TestCase):
         jogo.minigames_ataque_ativos = True
 
         jogador = EntidadeCombate("Herói", max_hp=100, max_mp=10, is_player=True)
-        inimigo = Inimigo(500, 400, 100, "Maldicao1.png", nome="Monstro Alvo")
+        inimigo = Inimigo(500, 400, 100, "Maldição 4.png", nome="Monstro Alvo")
         inimigo.rect = pygame.Rect(500, 400, 60, 80)
         jogo.ordem_turnos = [jogador, inimigo]
 

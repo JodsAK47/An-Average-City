@@ -34,6 +34,33 @@ CONFIG_EFEITOS: Dict[str, Dict[str, Any]] = {
         "tag": "DEBUFF",
         "descricao": "Tonto e atordoado! Incapaz de realizar ações ou atacar neste turno.",
     },
+    "eletrocutar": {
+        "id": "eletrocutar",
+        "nome": "Eletrocutado",
+        "tipo": "debuff",
+        "arquivo": "Choque.png",
+        "cor": (255, 235, 60),
+        "tag": "DEBUFF",
+        "descricao": "Eletrocutado! Atordoado no primeiro turno e sofre dano elétrico contínuo durante 2 rodadas.",
+    },
+    "eletrocutado": {
+        "id": "eletrocutar",
+        "nome": "Eletrocutado",
+        "tipo": "debuff",
+        "arquivo": "Choque.png",
+        "cor": (255, 235, 60),
+        "tag": "DEBUFF",
+        "descricao": "Eletrocutado! Atordoado no primeiro turno e sofre dano elétrico contínuo durante 2 rodadas.",
+    },
+    "choque": {
+        "id": "eletrocutar",
+        "nome": "Eletrocutado",
+        "tipo": "debuff",
+        "arquivo": "Choque.png",
+        "cor": (255, 235, 60),
+        "tag": "DEBUFF",
+        "descricao": "Eletrocutado! Atordoado no primeiro turno e sofre dano elétrico contínuo durante 2 rodadas.",
+    },
     "fogo": {
         "id": "fogo",
         "nome": "Queimando",
@@ -51,6 +78,24 @@ CONFIG_EFEITOS: Dict[str, Dict[str, Any]] = {
         "cor": (130, 240, 80),
         "tag": "DEBUFF",
         "descricao": "Toxina mortal! Perde pontos de vida gradualmente ao final de cada rodada.",
+    },
+    "cegueira": {
+        "id": "cegueira",
+        "nome": "Cegueira",
+        "tipo": "debuff",
+        "arquivo": "Cego.png",
+        "cor": (175, 175, 195),
+        "tag": "DEBUFF",
+        "descricao": "Visão ofuscada e turva! A chance de falhar ou errar ataques aumenta em +20%.",
+    },
+    "cego": {
+        "id": "cegueira",
+        "nome": "Cegueira",
+        "tipo": "debuff",
+        "arquivo": "Cego.png",
+        "cor": (175, 175, 195),
+        "tag": "DEBUFF",
+        "descricao": "Visão ofuscada e turva! A chance de falhar ou errar ataques aumenta em +20%.",
     },
     "bloqueio": {
         "id": "bloqueio",
@@ -147,7 +192,11 @@ def carregar_icone_efeito(nome_arquivo_ou_id: str, tamanho: int = 20) -> pygame.
     caminho = DIR_DE_BUFFS / arquivo
     if caminho.exists():
         try:
-            img = pygame.image.load(str(caminho)).convert_alpha()
+            img = pygame.image.load(str(caminho))
+            if pygame.display.get_surface() is not None:
+                img = img.convert_alpha()
+            elif img.get_bitsize() < 24:
+                img = img.convert(32)
             icone = pygame.transform.smoothscale(img, (tamanho, tamanho))
             _cache_icones[chave_cache] = icone
             return icone
@@ -210,11 +259,19 @@ def obter_efeitos_ativos(entidade: Any) -> List[Dict[str, Any]]:
         efeitos.append(info)
 
     # 2. Atordoado
-    if getattr(entidade, "atordoado", False):
+    if getattr(entidade, "atordoado", False) and not getattr(entidade, "eletrocutado", False):
         info = dict(CONFIG_EFEITOS["atordoado"])
         efeitos.append(info)
 
-    # 3. Fogo / Queimando
+    # 3. Eletrocutado / Choque
+    if getattr(entidade, "eletrocutado", False):
+        info = dict(CONFIG_EFEITOS["eletrocutar"])
+        turnos = getattr(entidade, "turnos_eletrocutado", 0)
+        if turnos > 0:
+            info["duracao_texto"] = f"Duração: {turnos} rodada{'s' if turnos > 1 else ''}"
+        efeitos.append(info)
+
+    # 4. Fogo / Queimando
     if getattr(entidade, "queimando", False):
         info = dict(CONFIG_EFEITOS["fogo"])
         turnos = getattr(entidade, "turnos_fogo", 0)
@@ -226,6 +283,14 @@ def obter_efeitos_ativos(entidade: Any) -> List[Dict[str, Any]]:
     if getattr(entidade, "envenenado", False):
         info = dict(CONFIG_EFEITOS["veneno"])
         turnos = getattr(entidade, "turnos_veneno", 0)
+        if turnos > 0:
+            info["duracao_texto"] = f"Duração: {turnos} rodada{'s' if turnos > 1 else ''}"
+        efeitos.append(info)
+
+    # 5. Cegueira / Cego
+    if getattr(entidade, "cego", False):
+        info = dict(CONFIG_EFEITOS["cegueira"])
+        turnos = getattr(entidade, "turnos_cegueira", 0)
         if turnos > 0:
             info["duracao_texto"] = f"Duração: {turnos} rodada{'s' if turnos > 1 else ''}"
         efeitos.append(info)

@@ -52,7 +52,9 @@ def desenhar_barras_status(
         return None
 
     rect = entidade.rect
-    eh_aliado = eh_minion_func(entidade)
+    eh_minion = eh_minion_func(entidade)
+    eh_minion_inimigo = getattr(entidade, "eh_do_inimigo", False) or (eh_minion and getattr(entidade, "lado", "") == "inimigo")
+    eh_aliado = (eh_minion and not eh_minion_inimigo) or getattr(entidade, "eh_do_jogador", False)
     eh_santuario = getattr(entidade, "is_santuario", False)
     classe_tag = f" [{entidade.classe}]" if getattr(entidade, "classe", None) else ""
 
@@ -60,12 +62,27 @@ def desenhar_barras_status(
         dur_txt = getattr(entidade, "duracao", 4)
         nome_texto = f"⛩ {entidade.nome} [Dur: {dur_txt} | {entidade.golpes_restantes()}/4]"
         cor_nome = (255, 110, 110) if getattr(entidade, "lado", "inimigo") == "inimigo" else (170, 255, 235)
+    elif eh_minion_inimigo:
+        nome_texto = f"👾 {entidade.nome[:16]}"
+        if getattr(entidade, "congelado", False):
+            nome_texto = f"❄ {nome_texto}"
+        elif getattr(entidade, "eletrocutado", False):
+            nome_texto = f"⚡ {nome_texto}"
+        elif getattr(entidade, "atordoado", False):
+            nome_texto = f"💫 {nome_texto}"
+        elif getattr(entidade, "cego", False):
+            nome_texto = f"👁 {nome_texto}"
+        cor_nome = (255, 120, 100)
     else:
         nome_texto = f"★ {entidade.nome[:16]}" if eh_aliado else f"{entidade.nome[:22]}{classe_tag}"
         if getattr(entidade, "congelado", False):
             nome_texto = f"❄ {nome_texto}"
-        if getattr(entidade, "atordoado", False):
+        elif getattr(entidade, "eletrocutado", False):
+            nome_texto = f"⚡ {nome_texto}"
+        elif getattr(entidade, "atordoado", False):
             nome_texto = f"💫 {nome_texto}"
+        elif getattr(entidade, "cego", False):
+            nome_texto = f"👁 {nome_texto}"
         cor_nome = (
             (170, 255, 235)
             if eh_aliado
@@ -83,9 +100,13 @@ def desenhar_barras_status(
         (235, 60, 60, 230)
         if eh_santuario
         else (
-            (52, 210, 180, 230)
-            if eh_aliado
-            else ((255, 215, 90, 230) if getattr(entidade, "tipo", "") == "chefe" else (70, 80, 105, 220))
+            (235, 60, 60, 230)
+            if eh_minion_inimigo
+            else (
+                (52, 210, 180, 230)
+                if eh_aliado
+                else ((255, 215, 90, 230) if getattr(entidade, "tipo", "") == "chefe" else (70, 80, 105, 220))
+            )
         )
     )
     pygame.draw.rect(fundo_placa, (16, 22, 30, 205), (0, 0, largura_placa, altura_placa), border_radius=6)
@@ -102,6 +123,8 @@ def desenhar_barras_status(
         porc_hp = max(0.0, min(1.0, entidade.hp / entidade.max_hp))
         if eh_santuario:
             cor_hp = (225, 45, 45) if porc_hp > 0.35 else (255, 130, 40)
+        elif eh_minion_inimigo:
+            cor_hp = (235, 65, 65) if porc_hp > 0.35 else (255, 120, 60)
         elif eh_aliado:
             cor_hp = (52, 225, 185) if porc_hp > 0.35 else (235, 165, 50)
         else:

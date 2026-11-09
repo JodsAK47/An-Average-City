@@ -149,6 +149,8 @@ class GerenciadorJogo(TelaBase):
         self.personagem2 = None
         self.classe_jogador2 = None
         self.classe_jogador2_tipo = None
+        self.perdeu_para_chefe = False
+        self.ultimo_chefe_combate = None
         self.ordem_turnos = [personagem]
         self.minions_ativos = []
 
@@ -176,6 +178,7 @@ class GerenciadorJogo(TelaBase):
         self.cooldown_feedback = 0
         self.acao_pos_feedback = None
         self.ultimo_chefe_combate = None
+        self.perdeu_para_chefe = False
         self.fase_numero = 1
         self.gerador_fases = GeradorFase(self.fase_numero)
         self.partida_atual = 1
@@ -248,6 +251,7 @@ class GerenciadorJogo(TelaBase):
         self.fundo_luta_redimensionado = None
         self.fundo_luta_tamanho = None
         self.tempo_animacao = 0.0
+        self.animacao_ataque_fisico = None
 
         try:
             img_c = pygame.image.load(caminho_imagem("Cortes.png"))
@@ -433,6 +437,150 @@ class GerenciadorJogo(TelaBase):
         self.animacao_cortes_duracao = duracao
         self.animacao_cortes_max = duracao
         self.disparar_screen_shake(duracao=duracao, intensidade=7)
+
+    def eh_ataque_fisico(self, hab_ou_nome) -> bool:
+        """Identifica se uma habilidade, ataque ou comando é do tipo Físico/Corpo-a-corpo."""
+        if not hab_ou_nome:
+            return False
+
+        hab = hab_ou_nome
+        if isinstance(hab_ou_nome, str):
+            hab = banco_habilidades.get(hab_ou_nome)
+
+        tipo = None
+        nome = None
+
+        if hasattr(hab, "tipo"):
+            tipo = getattr(hab, "tipo", None)
+        elif isinstance(hab, dict):
+            tipo = hab.get("tipo")
+
+        if hasattr(hab, "nome"):
+            nome = getattr(hab, "nome", None)
+        elif isinstance(hab, dict):
+            nome = hab.get("nome")
+        elif isinstance(hab_ou_nome, str):
+            nome = hab_ou_nome
+
+        import unicodedata
+        def normalizar(txt):
+            if not txt:
+                return ""
+            return unicodedata.normalize('NFKD', str(txt)).encode('ASCII', 'ignore').decode('utf-8').strip().lower()
+
+        tipo_norm = normalizar(tipo)
+        if tipo_norm in ("fisico", "corpo-a-corpo", "corpo a corpo", "melee"):
+            return True
+
+        nome_norm = normalizar(nome)
+        palavras_fisicas = (
+            "soco", "golpe", "mordida", "ferrao", "bicada", "machadada",
+            "corte", "clivagem", "desmantelar", "investida", "espada",
+            "presas", "porrete", "rasante", "chute", "facada", "lamina",
+            "hambat", "flash negro", "colisao 24 frames", "segura o regue"
+        )
+        if any(p in nome_norm for p in palavras_fisicas):
+            return True
+
+        return False
+
+    def disparar_ataque_fisico_teleporte(self, atacante, alvo, duracao=45):
+        """Teleporta temporariamente a sprite do atacante para a frente do alvo e aciona balanço físico."""
+        if not atacante or not alvo or atacante == alvo:
+            return
+        if not hasattr(atacante, "rect") or not hasattr(alvo, "rect"):
+            return
+
+        pos_original = getattr(atacante, "posicao_base", (atacante.rect.centerx, atacante.rect.centery))
+        direcao_original = getattr(atacante, "direcao_olhar", "leste")
+        if self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == atacante:
+            pos_original = self.animacao_ataque_fisico.get("pos_original", pos_original)
+            direcao_original = self.animacao_ataque_fisico.get("direcao_original", direcao_original)
+
+        self.animacao_ataque_fisico = {
+            "atacante": atacante,
+            "alvo": alvo,
+            "timer": duracao,
+            "duracao_total": duracao,
+            "pos_original": pos_original,
+            "direcao_original": direcao_original,
+            "em_espera": duracao is None,
+        }
+
+    def atualizar_animacao_ataque_fisico(self):
+        """Atualiza a posição e a oscilação de balanço do ataque físico a cada frame."""
+        if not self.animacao_ataque_fisico:
+            return
+
+        atacante = self.animacao_ataque_fisico.get("atacante")
+        alvo = self.animacao_ataque_fisico.get("alvo")
+        pos_orig = self.animacao_ataque_fisico.get("pos_original")
+
+        if not atacante or not hasattr(atacante, "rect") or getattr(atacante, "hp", 0) <= 0:
+            self.animacao_ataque_fisico = None
+            return
+
+        if not alvo or not hasattr(alvo, "rect"):
+            if pos_orig and hasattr(atacante, "rect"):
+                atacante.rect.center = pos_orig
+            direcao_orig = self.animacao_ataque_fisico.get("direcao_original")
+            if direcao_orig and hasattr(atacante, "virar_para"):
+                atacante.virar_para(direcao_orig)
+            elif hasattr(atacante, "atualizar_orientacao_por_quadrante"):
+                atacante.atualizar_orientacao_por_quadrante()
+            self.animacao_ataque_fisico = None
+            return
+
+        if self.animacao_ataque_fisico.get("em_espera"):
+            if self.menu_acoes_estado != "esquivando":
+                self.animacao_ataque_fisico["em_espera"] = False
+                self.animacao_ataque_fisico["timer"] = 35
+                self.animacao_ataque_fisico["duracao_total"] = 35
+        else:
+            if self.animacao_ataque_fisico.get("timer") is not None:
+                self.animacao_ataque_fisico["timer"] -= 1
+                if self.animacao_ataque_fisico["timer"] <= 0:
+                    if pos_orig and hasattr(atacante, "rect"):
+                        atacante.rect.center = pos_orig
+                    direcao_orig = self.animacao_ataque_fisico.get("direcao_original")
+                    if direcao_orig and hasattr(atacante, "virar_para"):
+                        atacante.virar_para(direcao_orig)
+                    elif hasattr(atacante, "atualizar_orientacao_por_quadrante"):
+                        atacante.atualizar_orientacao_por_quadrante()
+                    self.animacao_ataque_fisico = None
+                    return
+
+        orig_x = pos_orig[0] if pos_orig else atacante.rect.centerx
+        if orig_x <= alvo.rect.centerx:
+            dest_x = alvo.rect.left - (atacante.rect.width // 2) - 15
+            direcao = 1
+            if hasattr(atacante, "virar_para"):
+                atacante.virar_para("leste")
+        else:
+            dest_x = alvo.rect.right + (atacante.rect.width // 2) + 15
+            direcao = -1
+            if hasattr(atacante, "virar_para"):
+                atacante.virar_para("oeste")
+
+        dest_y = alvo.rect.centery
+
+        # Movimento leve e rápido de pêndulo invertido na frente do personagem
+        altura = atacante.rect.height
+        raio_pendulo = max(50, altura)
+        y_pivo = dest_y + (altura // 2)
+
+        # Oscilação suave e ágil de pêndulo (sem tremer/vibração)
+        fase_pendulo = self.tempo_animacao * 7.5
+        angulo_max_rad = math.radians(12.0)  # 12 graus de inclinação leve
+        theta = math.sin(fase_pendulo) * angulo_max_rad * direcao
+
+        # Equação do pêndulo invertido: o pivô está na base (pés), topo/centro oscila em arco
+        desloc_x = int(raio_pendulo * math.sin(theta))
+        desloc_y = int(raio_pendulo * (1.0 - math.cos(theta)))
+
+        atacante.rect.center = (dest_x + desloc_x, dest_y + desloc_y)
+        self.animacao_ataque_fisico["angulo_rotacao"] = -math.degrees(theta)
+        self.animacao_ataque_fisico["pivo_base"] = (dest_x, y_pivo)
 
     def invocar_santuario(self, dono=None):
         for ent in list(self.ordem_turnos):
@@ -951,7 +1099,7 @@ class GerenciadorJogo(TelaBase):
                 santuario._hp = 0
                 self.mensagem_log = "💨 O Pequeno Santuário esgotou sua duração e desmoronou!"
 
-        # Processamento de dano contínuo (DoT) para Queimando e Envenenado
+        # Processamento de dano contínuo (DoT) para Queimando, Eletrocutado e Envenenado
         for ent in self.ordem_turnos:
             if getattr(ent, "hp", 0) <= 0:
                 continue
@@ -962,6 +1110,13 @@ class GerenciadorJogo(TelaBase):
                 setattr(ent, "turnos_fogo", turnos)
                 if turnos <= 0:
                     ent.queimando = False
+            if getattr(ent, "eletrocutado", False):
+                dano_eletrico = max(1, int(getattr(ent, "max_hp", 100) * 0.05))
+                ent.hp = max(0, ent.hp - dano_eletrico)
+                turnos = getattr(ent, "turnos_eletrocutado", 1) - 1
+                setattr(ent, "turnos_eletrocutado", turnos)
+                if turnos <= 0:
+                    ent.eletrocutado = False
             if getattr(ent, "envenenado", False):
                 dano_veneno = max(1, int(getattr(ent, "max_hp", 100) * 0.04))
                 ent.hp = max(0, ent.hp - dano_veneno)
@@ -969,6 +1124,11 @@ class GerenciadorJogo(TelaBase):
                 setattr(ent, "turnos_veneno", turnos)
                 if turnos <= 0:
                     ent.envenenado = False
+            if getattr(ent, "cego", False):
+                turnos = getattr(ent, "turnos_cegueira", 1) - 1
+                setattr(ent, "turnos_cegueira", turnos)
+                if turnos <= 0:
+                    ent.cego = False
 
         for m in self.obter_minions_vivos():
             m.defendendo = False
@@ -976,14 +1136,38 @@ class GerenciadorJogo(TelaBase):
     def eh_minion(self, entidade):
         return bool(getattr(entidade, "is_minion", False))
 
+    def eh_minion_jogador(self, entidade):
+        if not self.eh_minion(entidade):
+            return False
+        dono = getattr(entidade, "dono", None)
+        return bool(dono and getattr(dono, "is_player", False))
+
+    def eh_minion_inimigo(self, entidade):
+        if not self.eh_minion(entidade):
+            return False
+        return not self.eh_minion_jogador(entidade)
+
+    def eh_aliado(self, entidade):
+        return bool(getattr(entidade, "is_player", False) or self.eh_minion_jogador(entidade))
+
     def eh_inimigo(self, entidade):
-        return not getattr(entidade, "is_player", False) and not getattr(entidade, "is_minion", False)
+        if getattr(entidade, "is_player", False):
+            return False
+        if getattr(entidade, "is_santuario", False):
+            return getattr(entidade, "lado", "inimigo") == "inimigo"
+        if self.eh_minion(entidade):
+            return self.eh_minion_inimigo(entidade)
+        return True
 
     def obter_efeito_controle(self, entidade):
         if getattr(entidade, "congelado", False):
             return "Congelar"
         if getattr(entidade, "atordoado", False):
+            if getattr(entidade, "eletrocutado", False):
+                return "Eletrocutar"
             return "Atordoar"
+        if getattr(entidade, "cego", False):
+            return "Cegueira"
         return None
 
     def aplicar_efeito_controle(self, entidade, efeito):
@@ -993,6 +1177,11 @@ class GerenciadorJogo(TelaBase):
         if "congel" in ef_lower:
             entidade.congelado = True
             return "CONGELOU!"
+        if "eletroc" in ef_lower or "choque" in ef_lower:
+            entidade.eletrocutado = True
+            setattr(entidade, "turnos_eletrocutado", 2)
+            entidade.atordoado = True
+            return "ELETROCUTOU!"
         if "atordo" in ef_lower or "stun" in ef_lower:
             entidade.atordoado = True
             return "ATORDOADO!"
@@ -1004,11 +1193,17 @@ class GerenciadorJogo(TelaBase):
             entidade.envenenado = True
             setattr(entidade, "turnos_veneno", 3)
             return "ENVENENOU!"
+        if "ceg" in ef_lower or "blind" in ef_lower:
+            entidade.cego = True
+            setattr(entidade, "turnos_cegueira", 2)
+            return "CEGOU!"
         return None
 
     def limpar_efeitos_controle(self, entidade):
         entidade.congelado = False
         entidade.atordoado = False
+        entidade.cego = False
+        setattr(entidade, "turnos_cegueira", 0)
 
     def obter_efeitos_ataque_inimigo(self, inimigo, habilidade):
         efeito = getattr(habilidade, "efeito", None)
@@ -1039,9 +1234,20 @@ class GerenciadorJogo(TelaBase):
             minions = [m for m in minions if getattr(m, "dono", None) is dono]
         return minions
 
-    def limite_minions(self, jogador=None):
-        alvo = jogador if jogador is not None else personagem
-        return 3 if self.tem_talento(alvo, "I3") else 2
+    def obter_minions_jogador(self, jogador=None):
+        minions = [m for m in self.obter_minions_vivos() if self.eh_minion_jogador(m)]
+        if jogador is not None:
+            minions = [m for m in minions if getattr(m, "dono", None) is jogador]
+        return minions
+
+    def obter_minions_inimigos(self):
+        return [m for m in self.obter_minions_vivos() if self.eh_minion_inimigo(m)]
+
+    def limite_minions(self, dono=None):
+        alvo = dono if dono is not None else personagem
+        if getattr(alvo, "is_player", False):
+            return 3 if self.tem_talento(alvo, "I3") else 2
+        return 2
 
     def invocar_minion(self, nome_minion, dono=None):
         from Entidades.Minion import criar_minion
@@ -1063,6 +1269,10 @@ class GerenciadorJogo(TelaBase):
         if novo_minion not in self.ordem_turnos:
             pos_insercao = min(len(self.ordem_turnos), self.indice_turno + 1)
             self.ordem_turnos.insert(pos_insercao, novo_minion)
+
+        if hasattr(novo_minion, "virar_para"):
+            direcao = "leste" if self.eh_minion_jogador(novo_minion) else "oeste"
+            novo_minion.virar_para(direcao, forcar=True)
 
         self.atualizar_posicoes_inimigos()
         return novo_minion
@@ -1153,7 +1363,7 @@ class GerenciadorJogo(TelaBase):
     def atualizar_posicoes_inimigos(self):
         inimigos_vivos = [entidade for entidade in self.ordem_turnos if self.eh_inimigo(entidade) and (entidade.hp > 0 or getattr(entidade, 'timer_fade_derrota', 0) > 0)]
         santuarios = [e for e in inimigos_vivos if getattr(e, "is_santuario", False)]
-        outros_inimigos = [e for e in inimigos_vivos if not getattr(e, "is_santuario", False)]
+        outros_inimigos = [e for e in inimigos_vivos if not getattr(e, "is_santuario", False) and not self.eh_minion(e)]
 
         for sant in santuarios:
             if getattr(sant, "lado", "inimigo") == "inimigo":
@@ -1173,28 +1383,61 @@ class GerenciadorJogo(TelaBase):
         layout_inimigos = posicoes_inimigos.get(quantidade_inimigos, [(740, 400)] * quantidade_inimigos)
         for inimigo, (px, py) in zip(outros_inimigos, layout_inimigos):
             if inimigo.hp > 0:
-                inimigo.rect.center = (px, py)
+                inimigo.posicao_base = (px, py)
+                if not (self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == inimigo):
+                    inimigo.rect.center = (px, py)
                 if hasattr(inimigo, 'atualizar_orientacao_por_quadrante'):
                     inimigo.atualizar_orientacao_por_quadrante()
 
         centro_x_jogadores = 260
         jogadores_vivos = [entidade for entidade in self.ordem_turnos if getattr(entidade, 'is_player', False) and entidade.hp > 0]
         if len(jogadores_vivos) == 1:
-            jogadores_vivos[0].rect.center = (centro_x_jogadores, 400)
+            jogadores_vivos[0].posicao_base = (centro_x_jogadores, 400)
+            if not (self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == jogadores_vivos[0]):
+                jogadores_vivos[0].rect.center = (centro_x_jogadores, 400)
         elif len(jogadores_vivos) == 2:
-            jogadores_vivos[0].rect.center = (centro_x_jogadores, 335)
-            jogadores_vivos[1].rect.center = (centro_x_jogadores, 465)
+            jogadores_vivos[0].posicao_base = (centro_x_jogadores, 335)
+            jogadores_vivos[1].posicao_base = (centro_x_jogadores, 465)
+            if not (self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == jogadores_vivos[0]):
+                jogadores_vivos[0].rect.center = (centro_x_jogadores, 335)
+            if not (self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == jogadores_vivos[1]):
+                jogadores_vivos[1].rect.center = (centro_x_jogadores, 465)
 
-        minions_vivos = self.obter_minions_vivos()
-        qtd_minions = len(minions_vivos)
-        posicoes_minions = {
+        for j in jogadores_vivos:
+            if hasattr(j, "virar_para") and not (self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == j):
+                j.virar_para("leste")
+
+        # Minions do Jogador (lado esquerdo, x=395, virados para leste)
+        minions_jogador = self.obter_minions_jogador()
+        qtd_mj = len(minions_jogador)
+        posicoes_mj = {
             1: [(395, 405)],
             2: [(395, 340), (395, 465)],
             3: [(395, 290), (395, 400), (395, 510)],
         }
-        layout_minions = posicoes_minions.get(qtd_minions, [(395, 320 + idx * 90) for idx in range(qtd_minions)])
-        for minion, (mx, my) in zip(minions_vivos, layout_minions):
-            minion.rect.center = (mx, my)
+        layout_mj = posicoes_mj.get(qtd_mj, [(395, 290 + idx * 80) for idx in range(qtd_mj)])
+        for minion, (mx, my) in zip(minions_jogador, layout_mj):
+            minion.posicao_base = (mx, my)
+            if not (self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == minion):
+                minion.rect.center = (mx, my)
+                if hasattr(minion, "virar_para"):
+                    minion.virar_para("leste", forcar=True)
+
+        # Minions dos Inimigos (lado direito, x=540, virados para oeste)
+        minions_inimigos = self.obter_minions_inimigos()
+        qtd_mi = len(minions_inimigos)
+        posicoes_mi = {
+            1: [(540, 405)],
+            2: [(540, 340), (540, 465)],
+            3: [(540, 290), (540, 400), (540, 510)],
+        }
+        layout_mi = posicoes_mi.get(qtd_mi, [(540, 290 + idx * 80) for idx in range(qtd_mi)])
+        for minion, (mx, my) in zip(minions_inimigos, layout_mi):
+            minion.posicao_base = (mx, my)
+            if not (self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == minion):
+                minion.rect.center = (mx, my)
+                if hasattr(minion, "virar_para"):
+                    minion.virar_para("oeste", forcar=True)
 
     def _eh_habilidade_minion(self, nome_hab):
         hab = banco_habilidades.get(nome_hab)
@@ -1636,6 +1879,8 @@ class GerenciadorJogo(TelaBase):
             self.mensagem_log = "⚠️ Cenário não identificado."
             self.musica_luta = self.obter_musica_combate(eh_chefe=False)
 
+        self.perdeu_para_chefe = False
+        self.ultimo_chefe_combate = None
         self.ordem_turnos = [personagem]
         if getattr(self, 'duas_pessoas', False) and self.personagem2 is not None:
             self.ordem_turnos.append(self.personagem2)
@@ -1647,6 +1892,9 @@ class GerenciadorJogo(TelaBase):
                 ent.hp = ent.max_hp
                 ent.mp = getattr(ent, 'max_mp', 0)
             ent.congelado = False
+            ent.atordoado = False
+            ent.eletrocutado = False
+            ent.turnos_eletrocutado = 0
             if not hasattr(ent, 'atributos'):
                 ent.atributos = {"For": 1, "Agi": 1, "Int": 1, "Sor": 1}
 
@@ -1656,6 +1904,7 @@ class GerenciadorJogo(TelaBase):
         return dados_efeito
 
     def reiniciar(self):
+        self.animacao_ataque_fisico = None
         inimigos_atuais = [entidade for entidade in self.ordem_turnos if self.eh_inimigo(entidade)]
         if not inimigos_atuais:
             inimigos_atuais = self.gerador_fases.gerar_inimigos_aleatorios(self.fase_numero, quantidade=2, verso=self.classe_atual)
@@ -1683,6 +1932,8 @@ class GerenciadorJogo(TelaBase):
                 inventario_global.equipar(Equipamento(eq_nome, eq_attr, categoria="arma"))
         self._aplicar_classe_personagem2()
 
+        self.perdeu_para_chefe = False
+        self.ultimo_chefe_combate = None
         self.ordem_turnos = [personagem]
         if getattr(self, 'duas_pessoas', False) and self.personagem2 is not None:
             self.ordem_turnos.append(self.personagem2)
@@ -1690,6 +1941,9 @@ class GerenciadorJogo(TelaBase):
 
         for entidade in self.ordem_turnos:
             entidade.congelado = False
+            entidade.atordoado = False
+            entidade.eletrocutado = False
+            entidade.turnos_eletrocutado = 0
             if getattr(entidade, 'is_player', False):
                 if getattr(entidade, 'hp', 0) <= 0:
                     entidade.hp = max(1, int(getattr(entidade, 'max_hp', 100) * 0.30))
@@ -1713,6 +1967,7 @@ class GerenciadorJogo(TelaBase):
         self.cooldown_feedback = 0
         self.acao_pos_feedback = None
         self.ultimo_chefe_combate = None
+        self.perdeu_para_chefe = False
         self.gerar_botoes_ataque(personagem)
         self.atualizar_posicoes_inimigos()
 
@@ -1791,6 +2046,18 @@ class GerenciadorJogo(TelaBase):
         return cura_info
 
     def avancar_turno(self):
+        if getattr(self, "animacao_ataque_fisico", None):
+            atacante = self.animacao_ataque_fisico.get("atacante")
+            pos_orig = self.animacao_ataque_fisico.get("pos_original")
+            if atacante and pos_orig and hasattr(atacante, "rect"):
+                atacante.rect.center = pos_orig
+            direcao_orig = self.animacao_ataque_fisico.get("direcao_original")
+            if atacante:
+                if direcao_orig and hasattr(atacante, "virar_para"):
+                    atacante.virar_para(direcao_orig)
+                elif hasattr(atacante, "atualizar_orientacao_por_quadrante"):
+                    atacante.atualizar_orientacao_por_quadrante()
+            self.animacao_ataque_fisico = None
         self.alvo_destaque = None
         self.indice_turno += 1
         self.timer_inimigo = 0
@@ -1882,7 +2149,11 @@ class GerenciadorJogo(TelaBase):
             self.mensagem_log = f"💤 {minion.nome} está descansando/dormindo e não ataca neste turno!"
             return self.mensagem_log
 
-        inimigos_vivos = [e for e in self.ordem_turnos if self.eh_inimigo(e) and e.hp > 0]
+        if self.eh_minion_jogador(minion):
+            inimigos_vivos = [e for e in self.ordem_turnos if self.eh_inimigo(e) and e.hp > 0]
+        else:
+            inimigos_vivos = [j for j in self.obter_jogadores() if j.hp > 0] + [m for m in self.obter_minions_jogador() if m.hp > 0]
+
         if not inimigos_vivos:
             return None
 
@@ -1894,27 +2165,36 @@ class GerenciadorJogo(TelaBase):
         minion.mp = max(0, minion.mp - int(custo))
 
         dano_final = minion.calcular_dano_ataque(hab)
-        dono = getattr(minion, "dono", None) or personagem
-        tem_i2 = self.tem_talento(dono, "I2")
+        dono = getattr(minion, "dono", None) or (personagem if self.eh_minion_jogador(minion) else None)
+        tem_i2 = self.tem_talento(dono, "I2") if dono else False
 
         sorte_minion = int(getattr(minion, "atributos", {}).get("Sor", 2))
         chance_crit = min(1.0, 0.08 + (sorte_minion * 0.01))
         critico = False
-        if getattr(dono, "god_mode", False):
+        if dono and getattr(dono, "god_mode", False):
             critico = True
             dano_final = max(dano_final, 9999)
         elif random.random() < chance_crit:
             critico = True
             dano_final = int(dano_final * 1.6)
 
-        precisao_final = 1.0 if getattr(dono, "god_mode", False) else float(hab.precisao)
+        precisao_final = 1.0 if (dono and getattr(dono, "god_mode", False)) else float(hab.precisao)
         if tem_i2:
             precisao_final = min(1.0, precisao_final + 0.10)
+        if getattr(minion, "cego", False) and not (dono and getattr(dono, "god_mode", False)):
+            precisao_final = max(0.0, precisao_final - 0.20)
 
-        if not critico and random.random() > precisao_final:
-            minion.registrar_ataque(dano=0, acertou=False, critico=False, abates=0)
-            self.mensagem_log = f"🐾 {minion.nome} usou {hab.nome}, mas ERROU!"
-            return self.mensagem_log
+        alvo_prioritario = alvo_forcado
+        if not alvo_prioritario and self.eh_minion_jogador(minion):
+            alvo_pref = getattr(minion, "alvo_prioritario", None) or getattr(self, "alvo_prioritario_minions", None)
+            if alvo_pref in inimigos_vivos and getattr(alvo_pref, "hp", 0) > 0:
+                alvo_prioritario = alvo_pref
+
+        alvo_principal = alvo_prioritario if (alvo_prioritario in inimigos_vivos) else random.choice(inimigos_vivos)
+        alvos = inimigos_vivos if hab.em_area else [alvo_principal]
+
+        if self.eh_ataque_fisico(hab) and alvo_principal:
+            self.disparar_ataque_fisico_teleporte(minion, alvo_principal, duracao=75)
 
         nome_hab_minion = (hab.nome or "").lower()
         if "mordida" in nome_hab_minion:
@@ -1924,29 +2204,31 @@ class GerenciadorJogo(TelaBase):
         elif "corte" in nome_hab_minion:
             self.tocar_vfx_corte(volume_relativo=0.85)
 
-        alvo_prioritario = alvo_forcado
-        if not alvo_prioritario:
-            alvo_pref = getattr(minion, "alvo_prioritario", None) or getattr(self, "alvo_prioritario_minions", None)
-            if alvo_pref in inimigos_vivos and getattr(alvo_pref, "hp", 0) > 0:
-                alvo_prioritario = alvo_pref
-
-        alvo_principal = alvo_prioritario if (alvo_prioritario in inimigos_vivos) else random.choice(inimigos_vivos)
-        alvos = inimigos_vivos if hab.em_area else [alvo_principal]
+        origem_icone = "🐾" if self.eh_minion_jogador(minion) else "👾"
+        if not critico and random.random() > precisao_final:
+            minion.registrar_ataque(dano=0, acertou=False, critico=False, abates=0)
+            self.mensagem_log = f"{origem_icone} {minion.nome} usou {hab.nome}, mas ERROU!"
+            return self.mensagem_log
 
         dano_total_turno = 0
         abates_turno = 0
         efeitos_aplicados = []
 
         for alvo in alvos:
-            alvo.hp = max(0, alvo.hp - dano_final)
+            if hasattr(alvo, "receber_dano"):
+                alvo.receber_dano(dano_final)
+            else:
+                alvo.hp = max(0, alvo.hp - dano_final)
             dano_total_turno += int(dano_final)
-            self.dano_causado_total += int(dano_final)
+            if self.eh_minion_jogador(minion):
+                self.dano_causado_total += int(dano_final)
             if alvo.hp <= 0:
                 abates_turno += 1
-                self.kills_total += 1
-                self.dificuldade_total += max(1, int(getattr(alvo, "xp", 0)))
-                from Sistemas.Conquistas import sistema_conquistas
-                sistema_conquistas.desbloquear("primeiro_sangue")
+                if self.eh_minion_jogador(minion):
+                    self.kills_total += 1
+                    self.dificuldade_total += max(1, int(getattr(alvo, "xp", 0)))
+                    from Sistemas.Conquistas import sistema_conquistas
+                    sistema_conquistas.desbloquear("primeiro_sangue")
             elif hab.efeito and random.random() < hab.chance_efeito:
                 efeito_aplicado = self.aplicar_efeito_controle(alvo, hab.efeito)
                 if efeito_aplicado and efeito_aplicado not in efeitos_aplicados:
@@ -1954,10 +2236,10 @@ class GerenciadorJogo(TelaBase):
 
         minion.registrar_ataque(dano=dano_total_turno, acertou=True, critico=critico, abates=abates_turno)
 
-        if tem_i2 and (critico or abates_turno > 0):
+        if tem_i2 and dono and (critico or abates_turno > 0):
             dono.mp = min(dono.max_mp, dono.mp + 1)
 
-        prefixo = "🎯 CRÍTICO DO MINION! " if critico else "🐾 "
+        prefixo = f"🎯 CRÍTICO ({origem_icone})! " if critico else f"{origem_icone} "
         txt_alvo = "EM ÁREA (TODOS OS INIMIGOS)" if hab.em_area else self.nome_exibicao(alvo_principal)
         self.alvo_destaque = alvos if hab.em_area else alvo_principal
         msg = f"{prefixo}{minion.nome} usou {hab.nome} no alvo {txt_alvo}! ({dano_final} dano)"
@@ -1978,7 +2260,7 @@ class GerenciadorJogo(TelaBase):
             return
 
         if getattr(santuario, "lado", "inimigo") == "inimigo":
-            alvos = [j for j in self.obter_jogadores() if j.hp > 0] + self.obter_minions_vivos()
+            alvos = [j for j in self.obter_jogadores() if j.hp > 0] + self.obter_minions_jogador()
         else:
             alvos = [e for e in self.ordem_turnos if self.eh_inimigo(e) and not getattr(e, "is_santuario", False) and e.hp > 0]
 
@@ -2063,6 +2345,8 @@ class GerenciadorJogo(TelaBase):
                 chance_invoc = float(chance_erro_minigame)
                 if self.tem_talento(jogador_ativo, "A1"):
                     chance_invoc = max(0.0, chance_invoc - 0.05)
+                if getattr(jogador_ativo, "cego", False):
+                    chance_invoc = min(1.0, chance_invoc + 0.20)
                 if getattr(jogador_ativo, 'god_mode', False):
                     chance_invoc = 0.0
                 errou_invocacao = (random.random() < chance_invoc)
@@ -2143,6 +2427,8 @@ class GerenciadorJogo(TelaBase):
             chance_erro_final = float(chance_erro_minigame)
             if self.tem_talento(jogador_ativo, "A1"):
                 chance_erro_final = max(0.0, chance_erro_final - 0.05)
+            if getattr(jogador_ativo, "cego", False):
+                chance_erro_final = min(1.0, chance_erro_final + 0.20)
             if getattr(jogador_ativo, 'god_mode', False):
                 chance_erro_final = 0.0
             errou = (random.random() < chance_erro_final)
@@ -2152,6 +2438,8 @@ class GerenciadorJogo(TelaBase):
             precisao_final = 1.0 if getattr(jogador_ativo, 'god_mode', False) else hab.precisao
             if self.tem_talento(jogador_ativo, "A1"):
                 precisao_final = min(1.0, precisao_final + 0.05)
+            if getattr(jogador_ativo, "cego", False) and not getattr(jogador_ativo, 'god_mode', False):
+                precisao_final = max(0.0, precisao_final - 0.20)
             errou = (not critico and random.random() > precisao_final)
 
         if alvo_principal is None and inimigos_vivos:
@@ -2159,6 +2447,11 @@ class GerenciadorJogo(TelaBase):
         alvos = inimigos_vivos if hab.em_area else ([alvo_principal] if alvo_principal else [])
         self.alvo_destaque = alvos if hab.em_area else alvo_principal
         texto_alvo = "EM ÁREA (TODOS OS INIMIGOS)" if hab.em_area else (self.nome_exibicao(alvo_principal) if alvo_principal else "alvo")
+
+        alvo_teleporte = alvo_principal or (alvos[0] if alvos else None)
+        if alvo_teleporte and self.eh_ataque_fisico(hab):
+            cd_frames = 35 if (desempenho_minigame is not None or chance_erro_minigame is not None) else 75
+            self.disparar_ataque_fisico_teleporte(jogador_ativo, alvo_teleporte, duracao=cd_frames)
 
         if not critico and errou:
             if minion_invocado is not None:
@@ -2192,11 +2485,18 @@ class GerenciadorJogo(TelaBase):
                         from Sistemas.Conquistas import sistema_conquistas
                         sistema_conquistas.desbloquear("primeiro_sangue")
 
-                # Se Sukuna for derrotado, seu santuario colapsa imediatamente
-                if "sukuna" in getattr(alvo, "nome", "").lower() and alvo.hp <= 0:
+                # Se o alvo for derrotado, seus santuários e invocações colapsam
+                if alvo.hp <= 0:
                     for ent in self.ordem_turnos:
-                        if getattr(ent, "is_santuario", False) and getattr(ent, "lado", "") == "inimigo":
-                            ent._hp = 0
+                        if getattr(ent, "dono", None) == alvo:
+                            if getattr(ent, "is_santuario", False):
+                                ent._hp = 0
+                            elif self.eh_minion(ent):
+                                ent.hp = 0
+                    if "sukuna" in getattr(alvo, "nome", "").lower():
+                        for ent in self.ordem_turnos:
+                            if getattr(ent, "is_santuario", False) and getattr(ent, "lado", "") == "inimigo":
+                                ent._hp = 0
 
                 if hab.efeito and random.random() < hab.chance_efeito:
                     efeito_aplicado = self.aplicar_efeito_controle(alvo, hab.efeito)
@@ -2262,6 +2562,7 @@ class GerenciadorJogo(TelaBase):
     def atualizar(self, posicao_mouse, estado_clique_mouse):
         self.tempo_animacao += 0.04
         self.atualizar_posicoes_inimigos()
+        self.atualizar_animacao_ataque_fisico()
         self.atualizar_cortes_santuario()
         self.atualizar_spike_e_detonacao()
 
@@ -2310,23 +2611,33 @@ class GerenciadorJogo(TelaBase):
         if not jogadores_vivos:
             if not getattr(self, 'derrota_processada', False):
                 self.derrota_processada = True
-                self.pontos_jogo = 0
                 from Sistemas.Conquistas import sistema_conquistas
                 sistema_conquistas.desbloquear("acontece_com_todos")
                 self.mensagem_log = "💀 Você foi derrotado!"
-                self.ultimo_chefe_combate = None
-                for inimigo in self.ordem_turnos:
-                    if self.eh_inimigo(inimigo):
-                        nome_i = getattr(inimigo, "nome", "").lower()
-                        if "sukuna" in nome_i:
-                            self.ultimo_chefe_combate = "Sukuna"
-                            break
-                        elif "charlie" in nome_i:
-                            self.ultimo_chefe_combate = "Charlie"
-                            break
-                        elif "estraga prazeres" in nome_i:
-                            self.ultimo_chefe_combate = "Estraga Prazeres"
-                            break
+
+                chefe_vivo = None
+                for inimigo in inimigos_vivos:
+                    tipo_i = getattr(inimigo, "tipo", "").strip().lower()
+                    nome_i = getattr(inimigo, "nome", "").strip().lower()
+                    if tipo_i == "chefe" or any(b in nome_i for b in ["sukuna", "charlie", "estraga prazeres"]):
+                        chefe_vivo = inimigo
+                        break
+
+                if chefe_vivo is not None:
+                    self.perdeu_para_chefe = True
+                    nome_c = getattr(chefe_vivo, "nome", "").strip().lower()
+                    if "sukuna" in nome_c:
+                        self.ultimo_chefe_combate = "Sukuna"
+                    elif "charlie" in nome_c:
+                        self.ultimo_chefe_combate = "Charlie"
+                    elif "estraga prazeres" in nome_c:
+                        self.ultimo_chefe_combate = "Estraga Prazeres"
+                    else:
+                        self.ultimo_chefe_combate = getattr(chefe_vivo, "nome", "Chefe")
+                else:
+                    self.perdeu_para_chefe = False
+                    self.ultimo_chefe_combate = None
+
                 self.iniciar_cooldown_feedback(30, lambda: "game_over")
                 self.clique_anterior = clique_agora
                 return None
@@ -2513,8 +2824,8 @@ class GerenciadorJogo(TelaBase):
             efeito_controle = self.obter_efeito_controle(jogador_atual)
             if efeito_controle:
                 if self.timer_inimigo == 0:
-                    status = "CONGELADO" if efeito_controle == "Congelar" else "ATORDOADO"
-                    icone = "❄️" if efeito_controle == "Congelar" else "💫"
+                    status = "CONGELADO" if efeito_controle == "Congelar" else ("ELETROCUTADO" if efeito_controle == "Eletrocutar" else "ATORDOADO")
+                    icone = "❄️" if efeito_controle == "Congelar" else ("⚡" if efeito_controle == "Eletrocutar" else "💫")
                     if getattr(self, 'duas_pessoas', False):
                         nome_j = self.nome_exibicao(jogador_atual)
                         self.mensagem_log = f"{icone} {nome_j} está {status} e perdeu o turno!"
@@ -2564,8 +2875,8 @@ class GerenciadorJogo(TelaBase):
             efeito_controle = self.obter_efeito_controle(entidade_atual)
             if efeito_controle:
                 if self.timer_inimigo == 0:
-                    status = "CONGELADO" if efeito_controle == "Congelar" else "ATORDOADO"
-                    icone = "❄️" if efeito_controle == "Congelar" else "💫"
+                    status = "CONGELADO" if efeito_controle == "Congelar" else ("ELETROCUTADO" if efeito_controle == "Eletrocutar" else "ATORDOADO")
+                    icone = "❄️" if efeito_controle == "Congelar" else ("⚡" if efeito_controle == "Eletrocutar" else "💫")
                     self.mensagem_log = f"{icone} {entidade_atual.nome} está {status}!"
                 self.timer_inimigo += 1
                 if self.timer_inimigo >= max(25, self.tempo_espera_inimigo // 2):
@@ -2617,8 +2928,8 @@ class GerenciadorJogo(TelaBase):
         efeito_controle = self.obter_efeito_controle(entidade_atual)
         if efeito_controle:
             if self.timer_inimigo == 0:
-                status = "CONGELADO" if efeito_controle == "Congelar" else "ATORDOADO"
-                icone = "❄️" if efeito_controle == "Congelar" else "💫"
+                status = "CONGELADO" if efeito_controle == "Congelar" else ("ELETROCUTADO" if efeito_controle == "Eletrocutar" else "ATORDOADO")
+                icone = "❄️" if efeito_controle == "Congelar" else ("⚡" if efeito_controle == "Eletrocutar" else "💫")
                 self.mensagem_log = f"{icone} {nome_inimigo} {status}!"
             self.timer_inimigo += 1
             if self.timer_inimigo >= self.tempo_espera_inimigo:
@@ -2719,6 +3030,18 @@ class GerenciadorJogo(TelaBase):
                     self.clique_anterior = clique_agora
                     return None
 
+                minion_invocar = getattr(hab_usada, "minion", None)
+                if minion_invocar and minion_invocar != "Pequeno Santuário":
+                    novo_minion = self.invocar_minion(minion_invocar, dono=entidade_atual)
+                    if novo_minion:
+                        self.disparar_screen_shake(duracao=20, intensidade=4)
+                        self.mensagem_log = f"🔮 {nome_inimigo} invocou {novo_minion.nome}!"
+                    else:
+                        self.mensagem_log = f"⚠️ {nome_inimigo} tentou invocar {minion_invocar}, mas atingiu o limite de invocações!"
+                    self.iniciar_cooldown_feedback(65, self.avancar_turno)
+                    self.clique_anterior = clique_agora
+                    return None
+
                 nome_golpe_lower = (hab_usada.nome or "").lower()
                 eh_ataque_corte = (
                     "sukuna" in nome_inimigo.lower()
@@ -2755,14 +3078,19 @@ class GerenciadorJogo(TelaBase):
                     dano_inimigo = int(dano_inimigo * 1.5)
 
                 jogadores_vivos = [j for j in self.obter_jogadores() if j.hp > 0]
-                minions_vivos = self.obter_minions_vivos()
+                minions_vivos = self.obter_minions_jogador()
 
                 minions_defendendo = [m for m in minions_vivos if getattr(m, "defendendo", False)]
                 if minions_defendendo:
                     alvo_minion = random.choice(minions_defendendo)
                     self.alvo_destaque = alvo_minion
+                    if self.eh_ataque_fisico(hab_usada):
+                        self.disparar_ataque_fisico_teleporte(entidade_atual, alvo_minion, duracao=75)
                     efeitos_ataque, chance_efeito = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
-                    if not critico and random.random() > hab_usada.precisao:
+                    precisao_atk = hab_usada.precisao
+                    if getattr(entidade_atual, "cego", False):
+                        precisao_atk = max(0.0, precisao_atk - 0.20)
+                    if not critico and random.random() > precisao_atk:
                         self.mensagem_log = f"💨 {nome_inimigo} atacou o alvo {alvo_minion.nome}, mas ERROU!"
                     else:
                         if eh_ataque_corte:
@@ -2785,8 +3113,13 @@ class GerenciadorJogo(TelaBase):
                 elif minions_vivos and random.random() < 0.45:
                     alvo_minion = random.choice(minions_vivos)
                     self.alvo_destaque = alvo_minion
+                    if self.eh_ataque_fisico(hab_usada):
+                        self.disparar_ataque_fisico_teleporte(entidade_atual, alvo_minion, duracao=75)
                     efeitos_ataque, chance_efeito = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
-                    if not critico and random.random() > hab_usada.precisao:
+                    precisao_atk = hab_usada.precisao
+                    if getattr(entidade_atual, "cego", False):
+                        precisao_atk = max(0.0, precisao_atk - 0.20)
+                    if not critico and random.random() > precisao_atk:
                         self.mensagem_log = f"💨 {nome_inimigo} atacou o alvo {alvo_minion.nome}, mas ERROU!"
                     else:
                         if eh_ataque_corte:
@@ -2817,8 +3150,12 @@ class GerenciadorJogo(TelaBase):
                 precisao_inimigo = hab_usada.precisao
                 if self.tem_talento(alvo_jogador, "A3"):
                     precisao_inimigo = max(0.15, precisao_inimigo - 0.20)
+                if getattr(entidade_atual, "cego", False):
+                    precisao_inimigo = max(0.0, precisao_inimigo - 0.20)
 
                 if not critico and random.random() > precisao_inimigo:
+                    if self.eh_ataque_fisico(hab_usada):
+                        self.disparar_ataque_fisico_teleporte(entidade_atual, alvo_jogador, duracao=75)
                     self.mensagem_log = f"💨 {nome_inimigo} usou {hab_usada.nome} no alvo {self.nome_exibicao(alvo_jogador)}, mas ERROU!"
                     self.iniciar_cooldown_feedback(75, self.avancar_turno)
                 else:
@@ -2832,6 +3169,8 @@ class GerenciadorJogo(TelaBase):
                     dano_inimigo = max(1, dano_inimigo - defesa_passiva)
 
                     if alvo_jogador.bloqueando:
+                        if self.eh_ataque_fisico(hab_usada):
+                            self.disparar_ataque_fisico_teleporte(entidade_atual, alvo_jogador, duracao=75)
                         dano_reduzido = max(1, int(dano_inimigo * 0.5))
                         if getattr(alvo_jogador, 'god_mode', False):
                             dano_reduzido = 0
@@ -2848,6 +3187,8 @@ class GerenciadorJogo(TelaBase):
                         self.alvo_jogador_pendente = alvo_jogador
                         self.alvo_destaque = alvo_jogador
                         self.efeitos_pendentes, self.chance_efeito_pendente = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
+                        if self.eh_ataque_fisico(hab_usada):
+                            self.disparar_ataque_fisico_teleporte(entidade_atual, alvo_jogador, duracao=None)
                         velocidade_base = self.velocidade_esquiva(alvo_jogador)
 
                         self.minigame_esquiva.iniciar(
@@ -2891,19 +3232,36 @@ class GerenciadorJogo(TelaBase):
             return
 
         rect = entidade.rect
-        eh_aliado = self.eh_minion(entidade)
+        eh_aliado = self.eh_minion_jogador(entidade)
+        eh_minion_inimigo = self.eh_minion_inimigo(entidade)
         eh_santuario = getattr(entidade, "is_santuario", False)
+        eh_santuario_inimigo = eh_santuario and getattr(entidade, "lado", "inimigo") == "inimigo"
         classe_tag = f" [{entidade.classe}]" if getattr(entidade, "classe", None) else ""
         if eh_santuario:
             dur_txt = getattr(entidade, "duracao", 4)
             nome_texto = f"⛩ {entidade.nome} [Dur: {dur_txt} | {entidade.golpes_restantes()}/4]"
-            cor_nome = (255, 110, 110) if getattr(entidade, "lado", "inimigo") == "inimigo" else (170, 255, 235)
+            cor_nome = (255, 110, 110) if eh_santuario_inimigo else (170, 255, 235)
+        elif eh_minion_inimigo:
+            nome_texto = f"👾 {entidade.nome[:16]}"
+            if getattr(entidade, "congelado", False):
+                nome_texto = f"❄ {nome_texto}"
+            elif getattr(entidade, "eletrocutado", False):
+                nome_texto = f"⚡ {nome_texto}"
+            elif getattr(entidade, "atordoado", False):
+                nome_texto = f"💫 {nome_texto}"
+            elif getattr(entidade, "cego", False):
+                nome_texto = f"👁 {nome_texto}"
+            cor_nome = (255, 120, 100)
         else:
             nome_texto = f"★ {entidade.nome[:16]}" if eh_aliado else f"{entidade.nome[:22]}{classe_tag}"
             if getattr(entidade, "congelado", False):
                 nome_texto = f"❄ {nome_texto}"
-            if getattr(entidade, "atordoado", False):
+            elif getattr(entidade, "eletrocutado", False):
+                nome_texto = f"⚡ {nome_texto}"
+            elif getattr(entidade, "atordoado", False):
                 nome_texto = f"💫 {nome_texto}"
+            elif getattr(entidade, "cego", False):
+                nome_texto = f"👁 {nome_texto}"
             cor_nome = (170, 255, 235) if eh_aliado else ((255, 215, 90) if getattr(entidade, "tipo", "") == "chefe" else (240, 240, 240))
         txt_nome = self.fonte_inimigo.render(nome_texto, True, cor_nome)
 
@@ -2913,7 +3271,16 @@ class GerenciadorJogo(TelaBase):
         y_placa = rect.top - altura_placa - 14 + int(deslocamento_flutuacao)
 
         fundo_placa = pygame.Surface((largura_placa, altura_placa), pygame.SRCALPHA)
-        cor_borda = (235, 60, 60, 230) if eh_santuario else ((52, 210, 180, 230) if eh_aliado else ((255, 215, 90, 230) if getattr(entidade, "tipo", "") == "chefe" else (70, 80, 105, 220)))
+        if eh_santuario:
+            cor_borda = (235, 60, 60, 230) if eh_santuario_inimigo else (52, 210, 180, 230)
+        elif eh_minion_inimigo:
+            cor_borda = (235, 60, 60, 230)
+        elif eh_aliado:
+            cor_borda = (52, 210, 180, 230)
+        elif getattr(entidade, "tipo", "") == "chefe":
+            cor_borda = (255, 215, 90, 230)
+        else:
+            cor_borda = (70, 80, 105, 220)
         pygame.draw.rect(fundo_placa, (16, 22, 30, 205), (0, 0, largura_placa, altura_placa), border_radius=6)
         pygame.draw.rect(fundo_placa, cor_borda, (0, 0, largura_placa, altura_placa), width=1, border_radius=6)
         self.tela.blit(fundo_placa, (x_placa, y_placa))
@@ -2928,6 +3295,8 @@ class GerenciadorJogo(TelaBase):
             porc_hp = max(0.0, min(1.0, entidade.hp / entidade.max_hp))
             if eh_santuario:
                 cor_hp = (225, 45, 45) if porc_hp > 0.35 else (255, 130, 40)
+            elif eh_minion_inimigo:
+                cor_hp = (235, 65, 65) if porc_hp > 0.35 else (255, 120, 60)
             elif eh_aliado:
                 cor_hp = (52, 225, 185) if porc_hp > 0.35 else (235, 165, 50)
             else:
@@ -2978,14 +3347,36 @@ class GerenciadorJogo(TelaBase):
             if alfa_sombra > 0:
                 self._desenhar_sombra_contato(entidade, multiplicador_alfa=alfa_sombra)
 
-        entidades_ordenadas = sorted(entidades_para_desenhar, key=lambda e: e.rect.bottom)
+        def _chave_ordem_desenho(e):
+            if self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == e:
+                return e.rect.bottom + 1000
+            return e.rect.bottom
+
+        entidades_ordenadas = sorted(entidades_para_desenhar, key=_chave_ordem_desenho)
         for idx, entidade in enumerate(entidades_ordenadas):
             fase = idx * 1.3
             bob = (math.sin(self.tempo_animacao * 3.0 + fase) * 2.2) if getattr(entidade, 'hp', 0) > 0 else 0
+            if self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == entidade:
+                bob = 0
             rect_original = entidade.rect.copy()
             entidade.rect.y += int(bob)
 
-            if getattr(entidade, 'is_player', False):
+            esta_em_pendulo = bool(
+                self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == entidade
+            )
+            angulo_pendulo = self.animacao_ataque_fisico.get("angulo_rotacao", 0.0) if esta_em_pendulo else 0.0
+
+            if esta_em_pendulo and abs(angulo_pendulo) > 0.1 and hasattr(entidade, "imagem") and entidade.imagem:
+                if hasattr(entidade, "convertida") and not getattr(entidade, "convertida", False):
+                    try:
+                        entidade.imagem = entidade.imagem.convert_alpha()
+                    except Exception:
+                        pass
+                    entidade.convertida = True
+                surf_rot = pygame.transform.rotate(entidade.imagem, angulo_pendulo)
+                rect_rot = surf_rot.get_rect(center=entidade.rect.center)
+                self.tela.blit(surf_rot, rect_rot)
+            elif getattr(entidade, 'is_player', False):
                 entidade.desenhar(self.tela)
                 if getattr(entidade, 'hp', 0) > 0:
                     hovered_arena = desenhar_icones_entidade(
@@ -3040,7 +3431,7 @@ class GerenciadorJogo(TelaBase):
                     alvos_com_contorno.append(alvo)
                     break
         elif self.menu_acoes_estado in ("selecionar_minion_comando_defender", "selecionar_minion_comando_descansar"):
-            minions = self.obter_minions_vivos()
+            minions = self.obter_minions_jogador()
             for alvo in minions:
                 if alvo.rect.inflate(16, 16).collidepoint(posicao_mouse):
                     alvos_com_contorno.append(alvo)

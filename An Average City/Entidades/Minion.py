@@ -8,16 +8,41 @@ from Gameplay.Habilidades import Habilidade
 from Entidades.EntidadeCombate import EntidadeCombate
 
 
-def carregar_minions():
+def carregar_minions_personagem():
+    for nome_arq in ["minions_personagem.json", "minions_jogador.json"]:
+        try:
+            arquivo = caminho_dados(nome_arq)
+            if os.path.exists(arquivo):
+                with open(arquivo, "r", encoding="utf-8") as f:
+                    return json.load(f)
+        except Exception as e:
+            print(f"⚠️ Erro ao carregar {nome_arq}: {e}")
+    return {}
+
+
+def carregar_minions_inimigos():
     try:
-        arquivo = caminho_dados("minions.json")
-        with open(arquivo, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print("⚠️ Aviso: arquivo minions.json não encontrado.")
-        return {}
+        arquivo = caminho_dados("minions_inimigos.json")
+        if os.path.exists(arquivo):
+            with open(arquivo, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"⚠️ Erro ao carregar minions_inimigos.json: {e}")
+    return {}
 
 
+def carregar_minions():
+    personagem_minions = carregar_minions_personagem()
+    inimigo_minions = carregar_minions_inimigos()
+
+    unificado = {}
+    unificado.update(personagem_minions)
+    unificado.update(inimigo_minions)
+    return unificado
+
+
+BANCO_MINIONS_PERSONAGEM = carregar_minions_personagem()
+BANCO_MINIONS_INIMIGOS = carregar_minions_inimigos()
 BANCO_MINIONS = carregar_minions()
 
 
@@ -47,6 +72,7 @@ class Minion(EntidadeCombate):
 
         self.is_minion = True
         self.is_player = False
+        self.lado = "jogador" if (dono and getattr(dono, "is_player", False)) else "inimigo"
         self.congelado = False
         self.atordoado = False
         self.nivel = 1
@@ -147,16 +173,15 @@ class Minion(EntidadeCombate):
             altura_desejada = 82
             largura_desejada = max(45, int(w_orig * (altura_desejada / max(1, h_orig))))
             img_escala = pygame.transform.scale(self.imagem_original, (largura_desejada, altura_desejada))
-            # aliados e skins ficam virados para a direita; inimigos são forçados para a esquerda
-            if getattr(self, "is_minion", False):
-                if getattr(self, "inverter_horizontal", False):
-                    self.imagem = pygame.transform.flip(img_escala, True, False)
-                else:
-                    self.imagem = img_escala
-            elif getattr(self, "is_player", False):
-                self.imagem = img_escala
-            else:
+            self.imagem_base = img_escala
+
+            from Sistemas.SistemaOrientacao import sistema_orientacao
+            if getattr(self, "inverter_horizontal", False):
+                self.direcao_olhar = "oeste"
                 self.imagem = pygame.transform.flip(img_escala, True, False)
+            else:
+                self.direcao_olhar = "leste"
+                self.imagem = sistema_orientacao.aplicar_orientacao(self.imagem_base, nome_imagem, "leste")
         except (pygame.error, FileNotFoundError) as e:
             print(f"⚠️ Erro ao carregar imagem do minion ({nome_imagem}): {e}")
             self.imagem = pygame.Surface((70, 82))
@@ -165,6 +190,14 @@ class Minion(EntidadeCombate):
         self.rect = self.imagem.get_rect(topleft=(x, y))
         self.convertida = False
         self.fonte_nome = obter_fonte(11)
+
+    @property
+    def eh_do_jogador(self) -> bool:
+        return bool(self.dono and getattr(self.dono, "is_player", False))
+
+    @property
+    def eh_do_inimigo(self) -> bool:
+        return not self.eh_do_jogador
 
     def obter_habilidade(self, nome):
         if nome in self.habilidades:
@@ -252,9 +285,21 @@ class Minion(EntidadeCombate):
 
 
 def criar_minion(nome_minion, dono=None, x=0, y=0):
-    dados = BANCO_MINIONS.get(nome_minion)
+    dados = None
+    if dono is not None and getattr(dono, "is_player", False):
+        dados = BANCO_MINIONS_PERSONAGEM.get(nome_minion)
+    elif dono is not None and not getattr(dono, "is_player", False):
+        dados = BANCO_MINIONS_INIMIGOS.get(nome_minion)
+
     if not dados:
-        dados = next(iter(BANCO_MINIONS.values()), None)
+        dados = BANCO_MINIONS.get(nome_minion)
+    if not dados:
+        if dono is not None and getattr(dono, "is_player", False) and BANCO_MINIONS_PERSONAGEM:
+            dados = next(iter(BANCO_MINIONS_PERSONAGEM.values()), None)
+        elif BANCO_MINIONS_INIMIGOS:
+            dados = next(iter(BANCO_MINIONS_INIMIGOS.values()), None)
+        else:
+            dados = next(iter(BANCO_MINIONS.values()), None)
     if not dados:
         return Minion(x=x, y=y, nome=nome_minion, dono=dono)
 

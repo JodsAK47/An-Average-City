@@ -109,15 +109,17 @@ class Inimigo(EntidadeCombate):
 
         self.imagem_viva_base = self.imagem_base.copy()
 
+        from Sistemas.SistemaOrientacao import sistema_orientacao
         self.direcao_olhar = "oeste"
         self.quadrante = "leste"
-        self.imagem = pygame.transform.flip(self.imagem_base, True, False)  # padrão: olhando para oeste (esquerda)
+        self.imagem = sistema_orientacao.aplicar_orientacao(self.imagem_base, nome_imagem, "oeste")
         self.rect = self.imagem.get_rect(topleft=(x, y))
         self.convertida = False
         self.fonte_nome = obter_fonte(13)
 
-        # Atualiza a orientação inicial de acordo com o quadrante em que foi criado
-        self.atualizar_orientacao_por_quadrante()
+        # Atualiza a orientação inicial de acordo com o quadrante em que foi criado (se já tiver posição x definida)
+        if x > 0:
+            self.atualizar_orientacao_por_quadrante()
 
     def receber_dano(self, quantidade: int) -> int:
         dano_causado = super().receber_dano(quantidade)
@@ -132,10 +134,10 @@ class Inimigo(EntidadeCombate):
             if self.eh_confinamento and getattr(self, "imagem_destruida_base", None) is not None:
                 centro_x = self.rect.centerx
                 bottom_y = self.rect.bottom
-                if self.direcao_olhar == "oeste":
-                    self.imagem = pygame.transform.flip(self.imagem_destruida_base, True, False)
-                else:
-                    self.imagem = self.imagem_destruida_base.copy()
+                from Sistemas.SistemaOrientacao import sistema_orientacao
+                self.imagem = sistema_orientacao.aplicar_orientacao(
+                    self.imagem_destruida_base, "Confinamento_destruido.png", self.direcao_olhar
+                )
                 self.rect = self.imagem.get_rect(midbottom=(centro_x, bottom_y))
                 self.convertida = False
 
@@ -147,10 +149,10 @@ class Inimigo(EntidadeCombate):
             centro_x = self.rect.centerx
             bottom_y = self.rect.bottom
             self.imagem_base = self.imagem_viva_base.copy()
-            if self.direcao_olhar == "oeste":
-                self.imagem = pygame.transform.flip(self.imagem_base, True, False)
-            else:
-                self.imagem = self.imagem_base.copy()
+            from Sistemas.SistemaOrientacao import sistema_orientacao
+            self.imagem = sistema_orientacao.aplicar_orientacao(
+                self.imagem_base, self.arquivo_imagem, self.direcao_olhar
+            )
             self.rect = self.imagem.get_rect(midbottom=(centro_x, bottom_y))
             self.convertida = False
 
@@ -188,23 +190,9 @@ class Inimigo(EntidadeCombate):
         """
         Altera para qual lado o inimigo está virado ('leste' ou 'oeste').
         Preserva a posição central do rect para evitar deslocamento indesejado.
+        Utiliza o SistemaOrientacao para respeitar a orientação nativa do sprite.
         """
-        direcao_normalizada = "leste" if str(direcao).lower() in ("leste", "direita", "east", "right") else "oeste"
-        if getattr(self, "direcao_olhar", None) == direcao_normalizada and hasattr(self, "imagem"):
-            return
-
-        centro_anterior = self.rect.center if hasattr(self, "rect") else None
-
-        if direcao_normalizada == "leste":
-            self.imagem = self.imagem_base.copy()
-        else:
-            self.imagem = pygame.transform.flip(self.imagem_base, True, False)
-
-        self.convertida = False
-        self.direcao_olhar = direcao_normalizada
-
-        if centro_anterior and hasattr(self, "rect"):
-            self.rect = self.imagem.get_rect(center=centro_anterior)
+        return super().virar_para(direcao)
 
     def obter_quadrante(self, largura_tela=None) -> str:
         """
@@ -258,6 +246,8 @@ class Inimigo(EntidadeCombate):
         novo_inimigo.atordoado = self.atordoado
         novo_inimigo.queimando = getattr(self, "queimando", False)
         novo_inimigo.envenenado = getattr(self, "envenenado", False)
+        novo_inimigo.cego = getattr(self, "cego", False)
+        novo_inimigo.turnos_cegueira = getattr(self, "turnos_cegueira", 0)
         novo_inimigo.turnos_fogo = getattr(self, "turnos_fogo", 0)
         novo_inimigo.turnos_veneno = getattr(self, "turnos_veneno", 0)
         novo_inimigo.carga_confinamento = self.carga_confinamento

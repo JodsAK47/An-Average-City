@@ -80,7 +80,7 @@ def _criar_inimigo_a_partir_template(template, x=0, y=0, multiplicador=1.0):
         x,
         y,
         hp,
-        template.get("arquivo_imagem", "Maldicao1.png"),
+        template.get("arquivo_imagem", "Maldição 4.png"),
         template.get("nome", "Inimigo"),
         list(template.get("ataques", ["Soco"])),
         xp,

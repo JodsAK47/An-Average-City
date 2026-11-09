@@ -145,8 +145,8 @@ class GerenciadorCheatsTela(TelaBase):
             {"nome": "Campeão Dourado", "arquivo": "pixil_ouro.png", "desc": "Armadura de Ouro puro"},
             {"nome": "Agente Cibernético", "arquivo": "Cyborg Skin.png", "desc": "Tecnologia de ponta neon"},
             {"nome": "Guerreiro Sombrio", "arquivo": "pixil_sombra.png", "desc": "Energia do Vazio"},
-            {"nome": "Sukuna (Chefe)", "arquivo": "Sukuna1.png", "desc": "O Rei das Maldições"},
-            {"nome": "Maldição Espiritual", "arquivo": "Maldicao1.png", "desc": "Espírito amaldiçoado"},
+            {"nome": "Sukuna (Chefe)", "arquivo": "Sukuna.png", "desc": "O Rei das Maldições"},
+            {"nome": "Maldição Espiritual", "arquivo": "Maldição 4.png", "desc": "Espírito amaldiçoado"},
         ]
         self.miniaturas_skins = {}
         self._carregar_miniaturas_skins()
@@ -188,7 +188,7 @@ class GerenciadorCheatsTela(TelaBase):
 
     def _carregar_miniaturas_inimigos(self):
         for tmpl in BANCO_INIMIGOS:
-            img_arq = tmpl.get("arquivo_imagem", "Maldicao1.png")
+            img_arq = tmpl.get("arquivo_imagem", "Maldição 4.png")
             if img_arq not in self.miniaturas_inimigos:
                 try:
                     img = pygame.image.load(caminho_imagem(img_arq)).convert_alpha()
@@ -595,7 +595,7 @@ class GerenciadorCheatsTela(TelaBase):
                 pygame.draw.rect(self.tela, (26, 34, 46), rect_s, border_radius=6)
                 pygame.draw.rect(self.tela, cor_v, rect_s, width=2, border_radius=6)
 
-                img_arq = tmpl.get("arquivo_imagem", "Maldicao1.png")
+                img_arq = tmpl.get("arquivo_imagem", "Maldição 4.png")
                 if img_arq in self.miniaturas_inimigos:
                     mini = self.miniaturas_inimigos[img_arq]["slot"]
                     self.tela.blit(mini, (rect_s.x + 5, rect_s.y + 8))
@@ -679,7 +679,7 @@ class GerenciadorCheatsTela(TelaBase):
             pygame.draw.rect(self.tela, cor_borda, rect_card, width=esp_borda, border_radius=8)
 
             # Miniatura
-            img_arq = tmpl.get("arquivo_imagem", "Maldicao1.png")
+            img_arq = tmpl.get("arquivo_imagem", "Maldição 4.png")
             if img_arq in self.miniaturas_inimigos:
                 mini = self.miniaturas_inimigos[img_arq]["card"]
                 self.tela.blit(mini, (rect_card.x + 8, rect_card.y + 10))

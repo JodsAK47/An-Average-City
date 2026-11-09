@@ -366,6 +366,7 @@ class TestCombateHUDItensEAgir(unittest.TestCase):
 
         # Ao executar o turno do minion com golpe de alvo único, ele ataca o Inimigo Beta
         minion.escolher_ataque = lambda: "Ferrão Veloz"
+        minion.obter_habilidade("Ferrão Veloz").precisao = 1.0
         hp_beta_antes = inimigo2.hp
         hp_alfa_antes = inimigo1.hp
         self.jogo.executar_turno_minion(minion)

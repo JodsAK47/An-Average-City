@@ -299,7 +299,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Sobrevivente"
+    "verso": "Sobrevivente",
+    "minion": "Mãos das Sombras"
   },
   "Invocação: Fera do Breu": {
     "nome": "Invocação: Fera do Breu",
@@ -311,7 +312,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Sobrevivente"
+    "verso": "Sobrevivente",
+    "minion": "Fera do Breu"
   },
   "Invocação: Tentáculos das Trevas": {
     "nome": "Invocação: Tentáculos das Trevas",
@@ -323,7 +325,8 @@
     "efeito": "Congelar",
     "chance_efeito": 0.3,
     "em_area": false,
-    "verso": "Sobrevivente"
+    "verso": "Sobrevivente",
+    "minion": "Tentáculos das Trevas"
   },
   "Invocação: Enxame Noturno": {
     "nome": "Invocação: Enxame Noturno",
@@ -335,7 +338,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": true,
-    "verso": "Sobrevivente"
+    "verso": "Sobrevivente",
+    "minion": "Enxame Noturno"
   },
   "Plantar Spike": {
     "nome": "Plantar Spike",
@@ -373,6 +377,18 @@
     "efeito": "Atordoar",
     "chance_efeito": 1.0,
     "em_area": true,
+    "verso": "Agente"
+  },
+  "Descarga Elétrica": {
+    "nome": "Descarga Elétrica",
+    "tipo": "Distância",
+    "dano": 7,
+    "custo_mp": 2,
+    "precisao": 0.88,
+    "descricao": "Dispara uma descarga elétrica condensada que eletrocuta o alvo.",
+    "efeito": "Eletrocutar",
+    "chance_efeito": 0.6,
+    "em_area": false,
     "verso": "Agente"
   }
 }

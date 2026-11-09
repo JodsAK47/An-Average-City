@@ -724,59 +724,70 @@ def atualizar_estado_atual(posicao_mouse, estado_clique_mouse):
             estado = "pausa"
             return
         elif resultado_jogo == "game_over":
-            registrar_pontos_partida()
+            pontos_finais = registrar_pontos_partida()
+            game_over_tela.pontos = pontos_finais
             gerenciador_musica.parar()
 
             verso_derrota = getattr(jogo_tela, 'classe_atual', 'Sobrevivente')
+            perdeu_para_chefe = getattr(jogo_tela, 'perdeu_para_chefe', False)
             boss_nome = getattr(jogo_tela, 'ultimo_chefe_combate', None)
-            if not boss_nome:
-                for ent in getattr(jogo_tela, 'ordem_turnos', []):
-                    if jogo_tela.eh_inimigo(ent):
-                        nome_e = getattr(ent, 'nome', '').strip().lower()
-                        tipo_e = getattr(ent, 'tipo', '').strip().lower()
-                        if 'sukuna' in nome_e and (tipo_e == 'chefe' or nome_e == 'sukuna'):
-                            boss_nome = 'Sukuna'
-                            break
-                        elif 'charlie' in nome_e and (tipo_e == 'chefe' or nome_e == 'charlie'):
-                            boss_nome = 'Charlie'
-                            break
-                        elif 'estraga prazeres' in nome_e and (tipo_e == 'chefe' or 'estraga' in nome_e):
-                            boss_nome = 'Estraga Prazeres'
-                            break
 
-            # Mapeamento do chefe respectivo para cada verso
-            chefe_respectivo_por_verso = {
-                "feiticeiro": "Sukuna",
-                "sorcerer": "Sukuna",
-                "sobrevivente": "Charlie",
-                "survivor": "Charlie",
-                "agente": "Estraga Prazeres",
-                "agent": "Estraga Prazeres",
-            }
-            boss_esperado = chefe_respectivo_por_verso.get(str(verso_derrota).lower().strip(), "")
-
-            # A cutscene de derrota só deve ser exibida caso morra para o respectivo boss
-            morreu_para_boss_respectivo = bool(
-                boss_nome and
-                boss_esperado and
-                boss_nome.lower() == boss_esperado.lower()
-            )
-
-            if morreu_para_boss_respectivo:
-                def ao_concluir_cutscene_game_over():
-                    global estado
-                    game_over_tela.pontos = registrar_pontos_partida()
-                    game_over_tela.definir_verso(verso_derrota)
-                    tocar_musica("GameOver.mp3")
-                    estado = "game_over"
-
-                cutscene_tela.iniciar(boss_nome=boss_nome, verso=verso_derrota, callback_conclusao=ao_concluir_cutscene_game_over)
-                estado = "cutscene"
-            else:
-                game_over_tela.pontos = registrar_pontos_partida()
+            if not perdeu_para_chefe:
+                # O jogador foi derrotado por inimigos comuns: tela de game over direta sem cutscene
+                game_over_tela.pontos = pontos_finais
                 game_over_tela.definir_verso(verso_derrota)
                 tocar_musica("GameOver.mp3")
                 estado = "game_over"
+            else:
+                if not boss_nome:
+                    for ent in getattr(jogo_tela, 'ordem_turnos', []):
+                        if jogo_tela.eh_inimigo(ent) and getattr(ent, 'hp', 0) > 0:
+                            nome_e = getattr(ent, 'nome', '').strip().lower()
+                            tipo_e = getattr(ent, 'tipo', '').strip().lower()
+                            if 'sukuna' in nome_e and (tipo_e == 'chefe' or nome_e == 'sukuna'):
+                                boss_nome = 'Sukuna'
+                                break
+                            elif 'charlie' in nome_e and (tipo_e == 'chefe' or nome_e == 'charlie'):
+                                boss_nome = 'Charlie'
+                                break
+                            elif 'estraga prazeres' in nome_e and (tipo_e == 'chefe' or 'estraga' in nome_e):
+                                boss_nome = 'Estraga Prazeres'
+                                break
+
+                # Mapeamento do chefe respectivo para cada verso
+                chefe_respectivo_por_verso = {
+                    "feiticeiro": "Sukuna",
+                    "sorcerer": "Sukuna",
+                    "sobrevivente": "Charlie",
+                    "survivor": "Charlie",
+                    "agente": "Estraga Prazeres",
+                    "agent": "Estraga Prazeres",
+                }
+                boss_esperado = chefe_respectivo_por_verso.get(str(verso_derrota).lower().strip(), "")
+
+                # A cutscene de derrota so deve ser exibida caso morra para o respectivo boss
+                morreu_para_boss_respectivo = bool(
+                    boss_nome and (
+                        (boss_esperado and boss_nome.lower() == boss_esperado.lower()) or
+                        boss_nome in ("Sukuna", "Charlie", "Estraga Prazeres")
+                    )
+                )
+
+                if morreu_para_boss_respectivo:
+                    def ao_concluir_cutscene_game_over():
+                        global estado
+                        game_over_tela.pontos = registrar_pontos_partida()
+                        game_over_tela.definir_verso(verso_derrota)
+                        tocar_musica("GameOver.mp3")
+                        estado = "game_over"
+
+                    cutscene_tela.iniciar(boss_nome=boss_nome, verso=verso_derrota, callback_conclusao=ao_concluir_cutscene_game_over)
+                    estado = "cutscene"
+                else:
+                    game_over_tela.pontos = pontos_finais
+                    game_over_tela.definir_verso(verso_derrota)
+                    tocar_musica("GameOver.mp3")
+                    estado = "game_over"
         elif resultado_jogo == "vitoria":
             registrar_pontos_partida()
             tocar_musica("Menu.mp3")
@@ -788,7 +799,8 @@ def atualizar_estado_atual(posicao_mouse, estado_clique_mouse):
                 pos_luta_tela.definir_popup_notificacao(jogo_tela.ultimo_resultado_batalha)
             estado = "pos_luta"
         elif resultado_jogo == "fim_jogo":
-            registrar_pontos_partida()
+            pontos_finais = registrar_pontos_partida()
+            vitoria_tela.pontos = pontos_finais
             gerenciador_musica.parar()
 
             verso_batalha = getattr(jogo_tela, 'classe_atual', 'Feiticeiro')
@@ -804,6 +816,7 @@ def atualizar_estado_atual(posicao_mouse, estado_clique_mouse):
             def ao_concluir_cutscene():
                 global estado
                 tocar_musica("Vitoria.mp3")
+                vitoria_tela.pontos = registrar_pontos_partida()
                 estado = "tela_vitoria"
 
             cutscene_tela.iniciar(boss_nome=boss_nome, verso=verso_batalha, callback_conclusao=ao_concluir_cutscene)

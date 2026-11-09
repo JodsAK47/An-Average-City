@@ -1,0 +1,91 @@
+{
+    "_comentario": "Definição definitiva da orientação nativa das sprites de entidades (personagens, inimigos, minions e objetos). Quase todas as sprites foram desenhadas originalmente voltadas para a DIREITA (Leste). Ao serem posicionadas como inimigos no lado direito do combate, o sistema inverte-as horizontalmente para encararem o jogador à esquerda.",
+    "pixil.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Skin padrão do jogador (virada para a direita)"
+    },
+    "pixil_cyber.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Skin cibernética do jogador (virada para a direita)"
+    },
+    "pixil_ouro.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Skin dourada do jogador (virada para a direita)"
+    },
+    "pixil_sombra.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Skin sombria do jogador (virada para a direita)"
+    },
+    "Cyborg Skin.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Skin ciborgue do jogador (virada para a direita)"
+    },
+    "Abelha.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Abelha (cabeça/olhos desenhados voltados para a direita, ferrão à esquerda)"
+    },
+    "Hound.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Hound (focinho e mandíbulas desenhados voltados para a direita, cauda à esquerda)"
+    },
+    "Passaro.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Pássaro Alto (bico e olho desenhados voltados para a direita)"
+    },
+    "Passaro_Olhudo.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Pássaro Olhudo (bico e olho desenhados voltados para a direita)"
+    },
+    "Drone.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Drone Caçador (frente e sensores voltados para a direita)"
+    },
+    "Torreta.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Torreta Sentinela (cano da arma voltado para a direita)"
+    },
+    "Cachorro.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Cão Divino (focinho e corpo voltados naturalmente para a direita)"
+    },
+    "Nue.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Nue (olhar e postura voltados naturalmente para a direita)"
+    },
+    "Jogo.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Maldição Grau Especial Jogo (desenhado com pose e manto para a direita)"
+    },
+    "Sukuna.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Rei das Maldições Sukuna (desenhado com pose e olhar para a direita)"
+    },
+    "Maldição 4.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Maldição Grau 4 (olhos e boca orientados para a direita)"
+    },
+    "Confinamento.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Cubo de confinamento místico (face iluminada para a direita)"
+    },
+    "Confinamento_destruido.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Cubo de confinamento destruído"
+    },
+    "Mahoraga.png": {
+        "orientacao_nativa": "frontal",
+        "descricao": "General Divino Mahoraga (postura frontal simétrica)"
+    },
+    "Santuario.png": {
+        "orientacao_nativa": "frontal",
+        "descricao": "Santuário Malévolo (estrutura arquitetônica frontal)"
+    },
+    "Spike.png": {
+        "orientacao_nativa": "frontal",
+        "descricao": "Dispositivo Spike armado (simétrico)"
+    },
+    "Spike Desarmada.png": {
+        "orientacao_nativa": "frontal",
+        "descricao": "Dispositivo Spike desarmado (simétrico)"
+    }
+}
