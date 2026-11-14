@@ -197,12 +197,22 @@ class TestAnimacaoAtaqueFisico(unittest.TestCase):
         self.jogo.atualizar_posicoes_inimigos()
         pos_antes = personagem.rect.center
 
-        # Ataque de Magia "Azul"
+        # Ataque de Magia "Azul": usa modo "recuo" (não teleporta para a frente do inimigo) e dispara projétil
         self.jogo.executar_ataque_jogador("Azul", alvo_principal=self.inimigo_teste, jogador_ativo=personagem)
 
-        # Nenhuma animação de teleporte físico deve ser iniciada
+        self.assertIsNotNone(self.jogo.animacao_ataque_fisico)
+        self.assertEqual(self.jogo.animacao_ataque_fisico.get("modo"), "recuo")
+        self.assertGreater(len(self.jogo.projeteis_ataque), 0)
+
+        # Atualiza alguns frames: não deve teleportar para perto do inimigo
+        for _ in range(5):
+            self.jogo.atualizar((0, 0), False)
+        self.assertLess(personagem.rect.centerx, pos_antes[0] + 5)
+
+        # Ao terminar a animação, retorna à posição original
+        for _ in range(30):
+            self.jogo.atualizar((0, 0), False)
         self.assertIsNone(self.jogo.animacao_ataque_fisico)
-        self.jogo.atualizar((0, 0), False)
         self.assertEqual(personagem.rect.center, pos_antes)
 
     def test_inimigo_move_quadrado_e_barra_de_vida_juntos_com_pendulo_invertido(self):
@@ -246,6 +256,149 @@ class TestAnimacaoAtaqueFisico(unittest.TestCase):
             self.jogo.desenhar(posicao_mouse=(500, 384))
         except Exception as e:
             self.fail(f"desenhar() falhou com animação de ataque físico ativa: {e}")
+
+    def test_ataque_distancia_balanca_para_tras_e_dispara_projetil_com_sprite(self):
+        """Ataques à distância balançam rapidamente para trás e disparam projétil com a sprite do ataque."""
+        self.jogo.atualizar_posicoes_inimigos()
+        pos_base_jogador = personagem.rect.center
+
+        hab_dist = Habilidade("Boomerang", "Distância", 20, 4, 1.0, "Ataque à distância")
+        self.jogo.disparar_animacao_ataque_por_habilidade(personagem, self.inimigo_teste, hab_dist)
+
+        self.assertIsNotNone(self.jogo.animacao_ataque_fisico)
+        self.assertEqual(self.jogo.animacao_ataque_fisico.get("modo"), "recuo")
+        self.assertEqual(len(self.jogo.projeteis_ataque), 1)
+
+        proj = self.jogo.projeteis_ataque[0]
+        self.assertIsInstance(proj["sprite"], pygame.Surface)
+
+        # Durante os primeiros frames (wind-up), o jogador à esquerda deve recuar para trás (x <= base, ângulo > 0)
+        for _ in range(5):
+            self.jogo.atualizar((0, 0), False)
+        self.assertLessEqual(personagem.rect.centerx, pos_base_jogador[0])
+        self.assertGreater(self.jogo.animacao_ataque_fisico.get("angulo_rotacao", 0.0), 0.0)
+
+        # Após passar o delay inicial, o projétil avança em direção ao inimigo e desenha sem erros
+        for _ in range(8):
+            self.jogo.atualizar((0, 0), False)
+        self.assertGreater(self.jogo.projeteis_ataque[0]["x"], pos_base_jogador[0])
+        self.jogo.desenhar(posicao_mouse=(500, 384))
+
+        # Ao concluir o voo e a balançada, projétil desaparece e jogador volta à base
+        for _ in range(30):
+            self.jogo.atualizar((0, 0), False)
+        self.assertEqual(len(self.jogo.projeteis_ataque), 0)
+        self.assertIsNone(self.jogo.animacao_ataque_fisico)
+        self.assertEqual(personagem.rect.center, pos_base_jogador)
+
+    def test_ataque_inimigo_magico_balanca_para_tras_e_dispara_projetil(self):
+        """Inimigo à direita usando magia balança para trás (direita) e dispara projétil para a esquerda."""
+        self.jogo.atualizar_posicoes_inimigos()
+        pos_base_inimigo = self.inimigo_teste.rect.center
+
+        hab_mag = Habilidade("Vermelho", "Magia", 25, 6, 1.0, "Ataque mágico")
+        self.jogo.disparar_animacao_ataque_por_habilidade(self.inimigo_teste, personagem, hab_mag)
+
+        self.assertIsNotNone(self.jogo.animacao_ataque_fisico)
+        self.assertEqual(self.jogo.animacao_ataque_fisico.get("modo"), "recuo")
+        self.assertEqual(len(self.jogo.projeteis_ataque), 1)
+
+        # Para inimigo olhando para oeste, recuar para trás significa x >= base e ângulo < 0
+        for _ in range(5):
+            self.jogo.atualizar((0, 0), False)
+        self.assertGreaterEqual(self.inimigo_teste.rect.centerx, pos_base_inimigo[0])
+        self.assertLess(self.jogo.animacao_ataque_fisico.get("angulo_rotacao", 0.0), 0.0)
+
+        for _ in range(30):
+            self.jogo.atualizar((0, 0), False)
+        self.assertEqual(len(self.jogo.projeteis_ataque), 0)
+        self.assertEqual(self.inimigo_teste.rect.center, pos_base_inimigo)
+
+    def test_ataque_invocacao_balanca_levemente_para_frente_sem_projetil(self):
+        """Ataques de invocação fazem apenas uma leve balançada para frente e não disparam projétil."""
+        self.jogo.atualizar_posicoes_inimigos()
+        pos_base_jogador = personagem.rect.center
+
+        hab_invoc = Habilidade("Invocar Abelha", "Invocador", 0, 5, 1.0, "Invocação", minion="Abelha")
+        self.jogo.disparar_animacao_ataque_por_habilidade(personagem, self.inimigo_teste, hab_invoc)
+
+        self.assertIsNotNone(self.jogo.animacao_ataque_fisico)
+        self.assertEqual(self.jogo.animacao_ataque_fisico.get("modo"), "invocacao")
+        self.assertEqual(len(self.jogo.projeteis_ataque), 0)
+
+        # No meio da animação, o jogador olhando para leste inclina levemente para frente (x >= base, ângulo < 0)
+        for _ in range(10):
+            self.jogo.atualizar((0, 0), False)
+        self.assertGreaterEqual(personagem.rect.centerx, pos_base_jogador[0])
+        angulo = self.jogo.animacao_ataque_fisico.get("angulo_rotacao", 0.0)
+        self.assertLess(angulo, 0.0)
+        self.assertLessEqual(abs(angulo), 10.5)
+
+        for _ in range(25):
+            self.jogo.atualizar((0, 0), False)
+        self.assertIsNone(self.jogo.animacao_ataque_fisico)
+        self.assertEqual(personagem.rect.center, pos_base_jogador)
+
+    def test_todos_ataques_possuem_giro_booleano(self):
+        """Todos os ataques de jogador (normais e ultimates) e inimigos devem possuir 'giro' booleano."""
+        import json
+        from Gameplay.Habilidades import banco_habilidades
+        from Entidades.Inimigo import obter_banco_habilidades_inimigos
+        from Sistemas.Recursos import caminho_dados
+
+        with open(caminho_dados("habilidades_jogador.json"), "r", encoding="utf-8") as f:
+            hj = json.load(f)
+        for nome, dados in hj.get("habilidades", {}).items():
+            self.assertIn("giro", dados, f"Habilidade '{nome}' sem campo 'giro'")
+            self.assertIsInstance(dados["giro"], bool)
+            self.assertIs(banco_habilidades[nome].giro, dados["giro"])
+        for chave, dados in hj.get("ultimates", {}).items():
+            self.assertIn("giro", dados, f"Ultimate '{chave}' sem campo 'giro'")
+            self.assertIsInstance(dados["giro"], bool)
+            self.assertIs(banco_habilidades[dados["nome"]].giro, dados["giro"])
+
+        with open(caminho_dados("habilidades_inimigos.json"), "r", encoding="utf-8") as f:
+            hi = json.load(f)
+        banco_ini = obter_banco_habilidades_inimigos()
+        for nome, dados in hi.items():
+            self.assertIn("giro", dados, f"Habilidade inimiga '{nome}' sem campo 'giro'")
+            self.assertIsInstance(dados["giro"], bool)
+            self.assertIs(banco_ini[nome].giro, dados["giro"])
+
+    def test_projetil_giro_true_gira_e_giro_false_segue_reto(self):
+        """Com giro=True o sprite gira; com giro=False segue reto em direção ao alvo."""
+        self.jogo.atualizar_posicoes_inimigos()
+
+        # 1) giro=True
+        hab_gira = Habilidade("Boomerang", "Distância", 10, 0, 1.0, "Gira", giro=True)
+        self.jogo.disparar_animacao_ataque_por_habilidade(personagem, self.inimigo_teste, hab_gira)
+        angulos = []
+        for _ in range(10):
+            self.jogo.atualizar((0, 0), False)
+            if self.jogo.projeteis_ataque and self.jogo.projeteis_ataque[0]["delay"] == 0:
+                angulos.append(self.jogo.projeteis_ataque[0]["angulo"])
+        self.assertGreater(len(set(angulos)), 1, "Projétil com giro=True deve rotacionar continuamente.")
+
+        for _ in range(25):
+            self.jogo.atualizar((0, 0), False)
+
+        # 2) giro=False -> mesma altura y => trajeto perfeitamente reto (y constante = oy) e ângulo constante
+        personagem.rect.centery = 400
+        self.inimigo_teste.rect.centery = 400
+        hab_reto = Habilidade("Tiro", "Distância", 10, 0, 1.0, "Reto", giro=False)
+        self.jogo.disparar_animacao_ataque_por_habilidade(personagem, self.inimigo_teste, hab_reto)
+        ys = []
+        angulos_retos = []
+        for _ in range(12):
+            self.jogo.atualizar((0, 0), False)
+            if self.jogo.projeteis_ataque and self.jogo.projeteis_ataque[0]["delay"] == 0:
+                ys.append(self.jogo.projeteis_ataque[0]["y"])
+                angulos_retos.append(self.jogo.projeteis_ataque[0]["angulo"])
+        self.assertTrue(all(abs(y - 400.0) < 1e-6 for y in ys), f"Projétil com giro=False deve seguir reto, y={ys}")
+        self.assertEqual(len(set(angulos_retos)), 1)
+        for _ in range(20):
+            self.jogo.atualizar((0, 0), False)
+        self.assertEqual(len(self.jogo.projeteis_ataque), 0)
 
 
 if __name__ == "__main__":

@@ -120,7 +120,7 @@ class GerenciadorGameOver(TelaBase):
     def _gerar_fundo_procedural(self, chave_verso: str) -> pygame.Surface:
         """Gera uma atmosfera procedural temática caso a arte oficial não esteja presente no disco."""
         surf = pygame.Surface((self.largura, self.altura))
-        random.seed(42)
+        rng = random.Random(42)
 
         if chave_verso == "agente":
             # Estilo Cybernetic Blue/Slate
@@ -151,10 +151,10 @@ class GerenciadorGameOver(TelaBase):
 
             # Partículas de brasas/cinzas estáticas
             for _ in range(120):
-                px = random.randint(0, self.largura)
-                py = random.randint(0, self.altura)
-                raio = random.randint(1, 3)
-                cor_brasa = (random.randint(180, 240), random.randint(60, 110), 20)
+                px = rng.randint(0, self.largura)
+                py = rng.randint(0, self.altura)
+                raio = rng.randint(1, 3)
+                cor_brasa = (rng.randint(180, 240), rng.randint(60, 110), 20)
                 pygame.draw.circle(surf, cor_brasa, (px, py), raio)
 
         return surf

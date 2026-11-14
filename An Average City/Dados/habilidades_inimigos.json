@@ -9,7 +9,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Mordida": {
     "nome": "Mordida",
@@ -21,7 +22,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Ferroada": {
     "nome": "Ferroada",
@@ -33,7 +35,8 @@
     "efeito": "Veneno",
     "chance_efeito": 1.0,
     "em_area": false,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Mordida de Fogo": {
     "nome": "Mordida de Fogo",
@@ -45,7 +48,8 @@
     "efeito": "Queimar",
     "chance_efeito": 0.15,
     "em_area": false,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Mordida de Gelo": {
     "nome": "Mordida de Gelo",
@@ -57,7 +61,8 @@
     "efeito": "Congelar",
     "chance_efeito": 0.15,
     "em_area": false,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Mordida de Veneno": {
     "nome": "Mordida de Veneno",
@@ -69,7 +74,8 @@
     "efeito": "Veneno",
     "chance_efeito": 0.15,
     "em_area": false,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Porrete do Chefe": {
     "nome": "Porrete do Chefe",
@@ -81,7 +87,8 @@
     "efeito": "Atordoar",
     "chance_efeito": 0.2,
     "em_area": false,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Gelo": {
     "nome": "Gelo",
@@ -93,7 +100,8 @@
     "efeito": "Congelar",
     "chance_efeito": 0.2,
     "em_area": false,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Fogo": {
     "nome": "Fogo",
@@ -105,7 +113,8 @@
     "efeito": "Queimar",
     "chance_efeito": 0.15,
     "em_area": false,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Nevasca": {
     "nome": "Nevasca",
@@ -117,7 +126,8 @@
     "efeito": "Congelar",
     "chance_efeito": 0.15,
     "em_area": true,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Terremoto": {
     "nome": "Terremoto",
@@ -129,7 +139,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": true,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Tiro": {
     "nome": "Tiro",
@@ -141,7 +152,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Inimigo"
+    "verso": "Inimigo",
+    "giro": false
   },
   "Clivagem Amaldiçoada": {
     "nome": "Clivagem Amaldiçoada",
@@ -153,7 +165,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Feiticeiro"
+    "verso": "Feiticeiro",
+    "giro": false
   },
   "Desmantelar": {
     "nome": "Desmantelar",
@@ -165,7 +178,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Feiticeiro"
+    "verso": "Feiticeiro",
+    "giro": false
   },
   "Fúria das Chamas": {
     "nome": "Fúria das Chamas",
@@ -177,7 +191,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Feiticeiro"
+    "verso": "Feiticeiro",
+    "giro": false
   },
   "Santuário Malevolente": {
     "nome": "Santuário Malevolente",
@@ -191,7 +206,8 @@
     "em_area": true,
     "verso": "Feiticeiro",
     "minion": "Pequeno Santuário",
-    "is_ultimate": true
+    "is_ultimate": true,
+    "giro": false
   },
   "Garras da Noite": {
     "nome": "Garras da Noite",
@@ -203,7 +219,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Sobrevivente"
+    "verso": "Sobrevivente",
+    "giro": false
   },
   "Golpe do Porrete Espinhoso": {
     "nome": "Golpe do Porrete Espinhoso",
@@ -215,7 +232,8 @@
     "efeito": "Atordoar",
     "chance_efeito": 0.2,
     "em_area": false,
-    "verso": "Sobrevivente"
+    "verso": "Sobrevivente",
+    "giro": false
   },
   "Grito do Pesadelo": {
     "nome": "Grito do Pesadelo",
@@ -227,7 +245,8 @@
     "efeito": "Congelar",
     "chance_efeito": 0.3,
     "em_area": false,
-    "verso": "Sobrevivente"
+    "verso": "Sobrevivente",
+    "giro": false
   },
   "Onda de Escuridão": {
     "nome": "Onda de Escuridão",
@@ -239,7 +258,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": true,
-    "verso": "Sobrevivente"
+    "verso": "Sobrevivente",
+    "giro": false
   },
   "Disparo Tático": {
     "nome": "Disparo Tático",
@@ -251,7 +271,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Agente"
+    "verso": "Agente",
+    "giro": false
   },
   "Tiro Perfurador": {
     "nome": "Tiro Perfurador",
@@ -263,7 +284,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Agente"
+    "verso": "Agente",
+    "giro": false
   },
   "Granada de Concussão": {
     "nome": "Granada de Concussão",
@@ -275,7 +297,8 @@
     "efeito": "Congelar",
     "chance_efeito": 0.25,
     "em_area": true,
-    "verso": "Agente"
+    "verso": "Agente",
+    "giro": true
   },
   "Rajada de Artilharia": {
     "nome": "Rajada de Artilharia",
@@ -287,7 +310,8 @@
     "efeito": null,
     "chance_efeito": 0.0,
     "em_area": false,
-    "verso": "Agente"
+    "verso": "Agente",
+    "giro": false
   },
   "Invocação: Mãos das Sombras": {
     "nome": "Invocação: Mãos das Sombras",
@@ -300,7 +324,8 @@
     "chance_efeito": 0.0,
     "em_area": false,
     "verso": "Sobrevivente",
-    "minion": "Mãos das Sombras"
+    "minion": "Mãos das Sombras",
+    "giro": false
   },
   "Invocação: Fera do Breu": {
     "nome": "Invocação: Fera do Breu",
@@ -313,7 +338,8 @@
     "chance_efeito": 0.0,
     "em_area": false,
     "verso": "Sobrevivente",
-    "minion": "Fera do Breu"
+    "minion": "Fera do Breu",
+    "giro": false
   },
   "Invocação: Tentáculos das Trevas": {
     "nome": "Invocação: Tentáculos das Trevas",
@@ -326,7 +352,8 @@
     "chance_efeito": 0.3,
     "em_area": false,
     "verso": "Sobrevivente",
-    "minion": "Tentáculos das Trevas"
+    "minion": "Tentáculos das Trevas",
+    "giro": false
   },
   "Invocação: Enxame Noturno": {
     "nome": "Invocação: Enxame Noturno",
@@ -339,7 +366,8 @@
     "chance_efeito": 0.0,
     "em_area": true,
     "verso": "Sobrevivente",
-    "minion": "Enxame Noturno"
+    "minion": "Enxame Noturno",
+    "giro": false
   },
   "Plantar Spike": {
     "nome": "Plantar Spike",
@@ -352,7 +380,8 @@
     "chance_efeito": 0.0,
     "em_area": true,
     "verso": "Agente",
-    "is_ultimate": true
+    "is_ultimate": true,
+    "giro": false
   },
   "Spike": {
     "nome": "Spike",
@@ -365,7 +394,8 @@
     "chance_efeito": 0.0,
     "em_area": true,
     "verso": "Agente",
-    "is_ultimate": true
+    "is_ultimate": true,
+    "giro": false
   },
   "Confinamento": {
     "nome": "Confinamento",
@@ -377,7 +407,8 @@
     "efeito": "Atordoar",
     "chance_efeito": 1.0,
     "em_area": true,
-    "verso": "Agente"
+    "verso": "Agente",
+    "giro": false
   },
   "Descarga Elétrica": {
     "nome": "Descarga Elétrica",
@@ -389,6 +420,7 @@
     "efeito": "Eletrocutar",
     "chance_efeito": 0.6,
     "em_area": false,
-    "verso": "Agente"
+    "verso": "Agente",
+    "giro": false
   }
 }

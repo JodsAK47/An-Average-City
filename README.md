@@ -24,8 +24,9 @@ A estrutura atual do projeto está organizada em módulos e telas, com a lógica
 - Seleção de classes e seleção de verso
 - Fluxo principal do jogo em estados
 - Combate por turnos com ordem de ação dinâmica
-- Sistema de esquiva interativa durante o ataque inimigo
-- Fases e geração de inimigos por template
+- Minigames interativos de ataque por classe (Físico, Distância, Magia e Invocador) e de esquiva durante o ataque inimigo
+- Animações de ataque por tipo (teleporte com pêndulo para Físico, recuo com disparo de projéteis com suporte a `"giro"` para Distância/Magia e balanço para Invocação)
+- Estrutura de **9 fases normais + Chefe Final (10 partidas)**, com geração aleatória de inimigos por faixa de fase (1–3, 4–6 e 7–9)
 - Várias telas do jogo: menu, combate, descanso, loja, conquistas, configurações, game over e vitória
 
 ### Progressão e RPG
@@ -40,7 +41,7 @@ A estrutura atual do projeto está organizada em módulos e telas, com a lógica
 ### Inventário e economia
 
 - Inventário com consumíveis, materiais e equipamentos
-- Equipamentos por categoria: arma, capacete, peitoral, calça, bota e amuleto
+- Equipamentos por categoria: arma, capacete, peitoral, calça, bota e amuleto (com troca de posição entre mochila e slot equipado sem perda de itens)
 - Melhoria e polimento de itens
 - Loja com compra e venda
 - Loja segura e loja clandestina
@@ -56,7 +57,7 @@ A estrutura atual do projeto está organizada em módulos e telas, com a lógica
 
 ### Conteúdo extra
 
-- Modo cooperativo de 2 jogadores
+- Modo cooperativo de 2 jogadores com escalonamento próprio de inimigos, chefe, IA e recuperação pós-batalha
 - Acesso restrito por Member Card
 - Eventos neutros com testes de atributo e recompensas/penalidades
 - Sistema de conquistas e feedback visual
@@ -157,6 +158,7 @@ An-Avarage-City/
 │   ├── Saves/
 │   ├── Dados/
 │   └── Sprites/
+├── tests/
 └── OSTs/
 ```
 

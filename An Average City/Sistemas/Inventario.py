@@ -647,6 +647,14 @@ class SistemaInventario:
             return mapa_slot.get(cat) is None
         return True
 
+    _MAPA_ATRIBUTO_SLOT = {
+        "arma": "equipamento_slot",
+        "capacete": "capacete_slot",
+        "peitoral": "peitoral_slot",
+        "calca": "calca_slot",
+        "bota": "bota_slot",
+    }
+
     def equipar(self, equipamento):
         if equipamento is None:
             return False
@@ -665,53 +673,25 @@ class SistemaInventario:
             sistema_conquistas.desbloquear('moda_em_primeiro_lugar')
             return True
 
-        if cat == "capacete":
-            if self.capacete_slot is not None and self.capacete_slot is not equipamento:
-                if self.capacete_slot not in self.equipamentos_inventario:
-                    self.equipamentos_inventario.append(self.capacete_slot)
-            if equipamento in self.equipamentos_inventario:
-                self.equipamentos_inventario.remove(equipamento)
-            self.capacete_slot = equipamento
+        attr_slot = self._MAPA_ATRIBUTO_SLOT.get(cat, "equipamento_slot")
+        atual = getattr(self, attr_slot)
+        if atual is equipamento:
             self.equipamento_selecionado = equipamento
-            sistema_conquistas.desbloquear('moda_em_primeiro_lugar')
             return True
 
-        if cat == "peitoral":
-            if self.peitoral_slot is not None and self.peitoral_slot is not equipamento:
-                if self.peitoral_slot not in self.equipamentos_inventario:
-                    self.equipamentos_inventario.append(self.peitoral_slot)
-            if equipamento in self.equipamentos_inventario:
-                self.equipamentos_inventario.remove(equipamento)
-            self.peitoral_slot = equipamento
-            self.equipamento_selecionado = equipamento
-            sistema_conquistas.desbloquear('moda_em_primeiro_lugar')
-            return True
-
-        if cat == "calca":
-            if self.calca_slot is not None and self.calca_slot is not equipamento:
-                if self.calca_slot not in self.equipamentos_inventario:
-                    self.equipamentos_inventario.append(self.calca_slot)
-            if equipamento in self.equipamentos_inventario:
-                self.equipamentos_inventario.remove(equipamento)
-            self.calca_slot = equipamento
-            self.equipamento_selecionado = equipamento
-            sistema_conquistas.desbloquear('moda_em_primeiro_lugar')
-            return True
-
-        if cat == "bota":
-            if self.bota_slot is not None and self.bota_slot is not equipamento:
-                if self.bota_slot not in self.equipamentos_inventario:
-                    self.equipamentos_inventario.append(self.bota_slot)
-            if equipamento in self.equipamentos_inventario:
-                self.equipamentos_inventario.remove(equipamento)
-            self.bota_slot = equipamento
-            self.equipamento_selecionado = equipamento
-            sistema_conquistas.desbloquear('moda_em_primeiro_lugar')
-            return True
-
+        indice_origem = None
         if equipamento in self.equipamentos_inventario:
-            self.equipamentos_inventario.remove(equipamento)
-        self.equipamento_slot = equipamento
+            indice_origem = self.equipamentos_inventario.index(equipamento)
+
+        if atual is not None and atual not in self.equipamentos_inventario:
+            if indice_origem is not None:
+                self.equipamentos_inventario[indice_origem] = atual
+            else:
+                self.equipamentos_inventario.append(atual)
+        elif indice_origem is not None:
+            self.equipamentos_inventario.pop(indice_origem)
+
+        setattr(self, attr_slot, equipamento)
         self.equipamento_selecionado = equipamento
         sistema_conquistas.desbloquear('moda_em_primeiro_lugar')
         return True

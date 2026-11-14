@@ -20,6 +20,7 @@ class Habilidade:
         is_ultimate=False,
         minion=None,
         estilo=None,
+        giro=False,
     ):
         self.nome = nome
         self.tipo = tipo
@@ -34,6 +35,7 @@ class Habilidade:
         self.is_ultimate = is_ultimate
         self.minion = minion
         self.estilo = estilo
+        self.giro = bool(giro)
 
     def custo_para(self, entidade=None):
         if callable(self.custo_mp):
@@ -67,6 +69,7 @@ def carregar_habilidades_jogador():
                     is_ultimate=False,
                     minion=v.get("minion"),
                     estilo=v["estilo"],
+                    giro=bool(v.get("giro", False)),
                 )
                 banco_habilidades[k] = hab
 
@@ -87,6 +90,7 @@ def carregar_habilidades_jogador():
                         verso=v.get("verso", "Nenhum"),
                         is_ultimate=True,
                         minion=v.get("minion"),
+                        giro=bool(v.get("giro", False)),
                     )
                     ULTIMATES_POR_VERSO_CLASSE[(verso, classe)] = ult
                     banco_habilidades[ult.nome] = ult

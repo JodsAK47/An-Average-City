@@ -46,7 +46,7 @@ from Sistemas import (
 def esta_em_cutscene() -> bool:
     return sistema_cutscene.esta_em_cutscene() or estado == "cutscene" 
 from Entidades import personagem
-from Gameplay import obter_dialogo_evento
+from Gameplay import obter_dialogo_evento, TOTAL_PARTIDAS_JOGO
 
 pygame.init()
 pygame.mixer.init()
@@ -102,6 +102,16 @@ intro_tela.iniciar(tocar_trilha=True)
 estado = "intro"
 rodando = True
 
+def _resetar_progresso_fases():
+    jogo_tela.partida_atual = 1
+    jogo_tela.total_partidas = TOTAL_PARTIDAS_JOGO
+    jogo_tela.fase_numero = 1
+    if hasattr(jogo_tela, 'gerador_fases'):
+        jogo_tela.gerador_fases.fase_num = 1
+    jogo_tela.evento_neutro = None
+    jogo_tela.mensagem_log = ''
+    jogo_tela.ordem_turnos = [personagem]
+
 def reiniciar_para_menu():
     global alvo_classes, verso_jogador1, verso_jogador2, classe_jogador1, classe_jogador2
     alvo_classes = None
@@ -112,7 +122,7 @@ def reiniciar_para_menu():
     from Sistemas.Inventario import inventario_global
     inventario_global.resetar()
     personagem.resetar()
-    jogo_tela.partida_atual = 1
+    _resetar_progresso_fases()
     jogo_tela.pontos_jogo = max(0, jogo_tela.pontos_jogo)
     jogo_tela.classe_atual = "Nenhuma"
     jogo_tela.duas_pessoas = False
@@ -321,7 +331,8 @@ def tratar_eventos_classes(evento, posicao_mouse):
                 jogo_tela.personagem2 = None
                 jogo_tela.classe_jogador2 = None
                 jogo_tela.classe_jogador2_tipo = None
-                jogo_tela.reiniciar()
+                _resetar_progresso_fases()
+                jogo_tela.reiniciar(forcar_novos_inimigos=True)
                 tocar_musica(jogo_tela.musica_luta)
                 alvo_classes = None
                 return "jogo"
@@ -331,7 +342,8 @@ def tratar_eventos_classes(evento, posicao_mouse):
             jogo_tela.classe_jogador2 = verso_jogador2
             jogo_tela.classe_jogador2_tipo = classe_jogador2
             jogo_tela.duas_pessoas = True
-            jogo_tela.reiniciar()
+            _resetar_progresso_fases()
+            jogo_tela.reiniciar(forcar_novos_inimigos=True)
             if jogo_tela.personagem2 is not None:
                 verso_tela.aplicar_talentos_ao_personagem(jogo_tela.personagem2, verso=verso_jogador2)
                 jogo_tela.personagem2.classe_aplicada = None
@@ -344,7 +356,8 @@ def tratar_eventos_classes(evento, posicao_mouse):
             inventario_global.resetar()
             jogo_tela.configurar_classe(verso_escolhido, classe_escolhida)
             verso_tela.aplicar_talentos_ao_personagem(personagem, verso=verso_escolhido)
-            jogo_tela.reiniciar()
+            _resetar_progresso_fases()
+            jogo_tela.reiniciar(forcar_novos_inimigos=True)
             tocar_musica(jogo_tela.musica_luta)
             alvo_classes = None
             return "jogo"
@@ -659,9 +672,9 @@ def tratar_eventos_game_over(evento, posicao_mouse):
         if getattr(jogo_tela, 'duas_pessoas', False) and getattr(jogo_tela, 'personagem2', None) is not None:
             verso_tela.aplicar_talentos_ao_personagem(jogo_tela.personagem2, verso=getattr(jogo_tela, 'classe_jogador2', verso_atual))
             jogo_tela._aplicar_classe_personagem2()
-        jogo_tela.partida_atual = 1
+        _resetar_progresso_fases()
         jogo_tela.pontos_jogo = 0
-        jogo_tela.reiniciar()
+        jogo_tela.reiniciar(forcar_novos_inimigos=True)
         tocar_musica(jogo_tela.musica_luta)
         return "jogo"
     return None

@@ -81,27 +81,34 @@ class GerenciadorMinigameAtaque:
         # Variáveis de estado para cada minigame
         # Invocador 1 (Spam)
         self.invoc_progresso: float = 0.0
+        self.invoc_cooldown_input: int = 0
 
-        # Invocador 2 (Sequência)
+        # Invocador 2 (Tecla por tecla por tempo)
         self.seq_teclas: List[Tuple[str, int, int]] = []
+        self.seq_tecla_atual: Tuple[str, int, int] = ("W", pygame.K_w, pygame.K_UP)
         self.seq_indice: int = 0
         self.seq_erros: int = 0
+        self.seq_feedback_erro_timer: int = 0
 
-        # Distância 1 (Alvo Rápido)
+        # Distância 1 (Múltiplos Alvos Rápidos)
         self.dist_alvo_x: float = 500.0
         self.dist_alvo_y: float = 400.0
-        self.dist_alvo_raio: float = 38.0
-        self.dist_anel_escala: float = 2.6
+        self.dist_alvo_raio: float = 30.0
+        self.dist_anel_escala: float = 1.0
+        self.dist_meta_alvos: int = 5
+        self.dist_alvos_atingidos: int = 0
+        self.dist_alvos_gerados: int = 0
+        self.dist_alvos: List[Dict[str, Any]] = []
 
         # Distância 2 (Alinhamento de 2 barras)
         self.alin_ponto_centro: float = 500.0
         self.alin_trilha_x: float = 300.0
         self.alin_trilha_w: float = 400.0
-        self.alin_velocidade_base: float = 5.8
+        self.alin_velocidade_base: float = 4.7
         self.alin_barra1_x: float = 310.0
         self.alin_barra2_x: float = 690.0
-        self.alin_barra1_vel: float = 5.8
-        self.alin_barra2_vel: float = -5.8
+        self.alin_barra1_vel: float = 4.7
+        self.alin_barra2_vel: float = -4.7
         self.alin_barra1_ativa: bool = True
         self.alin_barra1_travada: bool = False
         self.alin_barra2_ativa: bool = False
@@ -110,21 +117,29 @@ class GerenciadorMinigameAtaque:
 
         # Feiticeiro 1 (Esfera móvel)
         self.esfera_pos: List[float] = [500.0, 400.0]
-        self.esfera_raio: float = 44.0
+        self.esfera_raio: float = 38.0
         self.esfera_tempo_dentro: int = 0
         self.esfera_tempo_decorrido: float = 0.0
 
-        # Feiticeiro 2 (Arrastar objeto)
+        # Feiticeiro 2 (Arrastar objeto por caminho dinâmico)
         self.drag_origem: Tuple[float, float] = (330.0, 400.0)
         self.drag_destino: Tuple[float, float] = (670.0, 400.0)
-        self.drag_raio_origem: float = 30.0
-        self.drag_raio_destino: float = 44.0
+        self.drag_raio_origem: float = 28.0
+        self.drag_raio_destino: float = 40.0
         self.drag_pos_atual: List[float] = [330.0, 400.0]
         self.drag_segurando: bool = False
+        self.drag_caminho_pontos: List[Tuple[float, float]] = []
+        self.drag_caminho_tipo: str = "arco_superior"
+        self.drag_raio_caminho: float = 34.0
+        self.drag_fora_caminho: bool = False
+        self.drag_obstaculo_base: Tuple[float, float] = (500.0, 400.0)
+        self.drag_obstaculo_pos: List[float] = [500.0, 400.0]
+        self.drag_obstaculo_normal: Tuple[float, float] = (0.0, 1.0)
+        self.drag_obstaculo_raio: float = 16.0
 
         # Lutador 1 (Combo rítmico)
         self.combo_cursor_x: float = 500.0
-        self.combo_cursor_vel: float = 6.8
+        self.combo_cursor_vel: float = 5.8
         self.combo_trilha_x: float = 300.0
         self.combo_trilha_w: float = 400.0
         self.combo_zona_w: float = 68.0
@@ -135,6 +150,7 @@ class GerenciadorMinigameAtaque:
         self.forca_atual: float = 0.0
         self.forca_segurando: bool = False
         self.forca_overcharge: bool = False
+        self.forca_tempo_topo: int = 0
 
         # Rastro de partículas e animações
         self.particulas: List[Dict[str, Any]] = []
@@ -181,42 +197,43 @@ class GerenciadorMinigameAtaque:
                 # Spam de espaço
                 self.tempo_total = 160  # ~2.6 segundos
                 self.tempo_restante = self.tempo_total
-                self.invoc_progresso = 15.0
+                self.invoc_progresso = 10.0
+                self.invoc_cooldown_input = 0
             else:
-                # Sequência de teclas
-                self.tempo_total = 210  # ~3.5 segundos
+                # Tecla por tecla contínua até o tempo acabar
+                self.tempo_total = 180  # 3.0 segundos
                 self.tempo_restante = self.tempo_total
-                opcoes_teclas = [
-                    ("W", pygame.K_w, pygame.K_UP),
-                    ("A", pygame.K_a, pygame.K_LEFT),
-                    ("S", pygame.K_s, pygame.K_DOWN),
-                    ("D", pygame.K_d, pygame.K_RIGHT),
-                ]
-                self.seq_teclas = [random.choice(opcoes_teclas) for _ in range(4)]
+                self.seq_tecla_atual = self._sortear_proxima_tecla_invocador()
+                self.seq_teclas = [self.seq_tecla_atual]
                 self.seq_indice = 0
                 self.seq_erros = 0
+                self.seq_feedback_erro_timer = 0
 
         elif self.classe_normalizada == "Distância":
             if self.estilo == 1:
-                # Alvo rápido de precisão: janela de tempo bem mais rápida para reflexo ágil
-                self.tempo_total = 54  # ~0.9 segundos (bem mais rápido!)
+                # Múltiplos alvos rápidos: pontua pela quantidade de alvos atingidos
+                self.tempo_total = 165  # ~2.75 segundos
                 self.tempo_restante = self.tempo_total
-                margem_x = 110
-                margem_y = 65
-                self.dist_alvo_x = random.randint(self.x_painel + margem_x, self.x_painel + self.largura_painel - margem_x)
-                self.dist_alvo_y = random.randint(self.y_painel + margem_y + 40, self.y_painel + self.altura_painel - margem_y)
-                self.dist_alvo_raio = 36.0
-                self.dist_anel_escala = 2.6
+                self.dist_meta_alvos = 5
+                self.dist_alvos_atingidos = 0
+                self.dist_alvos_gerados = 0
+                self.dist_alvo_raio = 30.0
+                self.dist_anel_escala = 1.0
+                self.dist_alvos = []
+                for _ in range(3):
+                    self.dist_alvos.append(self._gerar_alvo_distancia())
+                    self.dist_alvos_gerados += 1
+                self._sincronizar_alvo_distancia_legado()
             else:
                 # Alinhamento de duas barras: surgem uma por vez em lados opostos com a mesma velocidade
-                self.tempo_total = 220  # ~3.6 segundos para as duas etapas
+                self.tempo_total = 240  # 4.0 segundos para as duas etapas
                 self.tempo_restante = self.tempo_total
                 self.alin_ponto_centro = float(self.x_painel + self.largura_painel // 2)
                 self.alin_trilha_w = 380.0
                 self.alin_trilha_x = float(self.x_painel + (self.largura_painel - self.alin_trilha_w) // 2)
 
                 # Mesma velocidade constante para ambas as barras
-                self.alin_velocidade_base = 5.8
+                self.alin_velocidade_base = 4.7
                 self.alin_etapa = 1
 
                 # Barra 1: surge no lado esquerdo
@@ -233,23 +250,23 @@ class GerenciadorMinigameAtaque:
 
         elif self.classe_normalizada == "Magia":
             if self.estilo == 1:
-                # Manter o mouse na esfera móvel
+                # Manter o mouse na esfera móvel (maior amplitude, menor velocidade)
                 self.tempo_total = 170  # ~2.8 segundos
                 self.tempo_restante = self.tempo_total
                 self.esfera_pos = [float(self.x_painel + self.largura_painel // 2), float(self.y_painel + self.altura_painel // 2 + 10)]
-                self.esfera_raio = 44.0
+                self.esfera_raio = 38.0
                 self.esfera_tempo_dentro = 0
                 self.esfera_tempo_decorrido = 0.0
             else:
-                # Arrastar runa para o glifo ritual
-                self.tempo_total = 180  # 3.0 segundos
+                # Arrastar runa para o glifo ritual por caminho e posições dinâmicas
+                self.tempo_total = 195  # ~3.25 segundos
                 self.tempo_restante = self.tempo_total
-                self.drag_origem = (float(self.x_painel + 90), float(self.y_painel + 185))
-                self.drag_destino = (float(self.x_painel + self.largura_painel - 90), float(self.y_painel + 185))
-                self.drag_raio_origem = 30.0
-                self.drag_raio_destino = 44.0
-                self.drag_pos_atual = list(self.drag_origem)
+                self.drag_raio_origem = 28.0
+                self.drag_raio_destino = 40.0
                 self.drag_segurando = False
+                self.drag_fora_caminho = False
+                self._configurar_caminho_arrastar()
+                self.drag_pos_atual = list(self.drag_origem)
 
         else:  # Físico / Lutadores
             if self.estilo == 1:
@@ -259,7 +276,7 @@ class GerenciadorMinigameAtaque:
                 self.combo_trilha_w = 380.0
                 self.combo_trilha_x = float(self.x_painel + (self.largura_painel - self.combo_trilha_w) // 2)
                 self.combo_cursor_x = self.combo_trilha_x + 20.0
-                self.combo_cursor_vel = 7.0
+                self.combo_cursor_vel = 5.8
                 self.combo_zona_w = 66.0
                 self.combo_atual = 0
                 self.combo_maximo = 5
@@ -270,11 +287,151 @@ class GerenciadorMinigameAtaque:
                 self.forca_atual = 0.0
                 self.forca_segurando = False
                 self.forca_overcharge = False
+                self.forca_tempo_topo = 0
 
         try:
             tocar_sfx("Interface.wav", volume_relativo=0.6)
         except Exception:
             pass
+
+    def _sortear_proxima_tecla_invocador(
+        self, anterior: Optional[Tuple[str, int, int]] = None
+    ) -> Tuple[str, int, int]:
+        """Sorteia a próxima tecla de canalização evitando repetição imediata."""
+        opcoes_teclas = [
+            ("W", pygame.K_w, pygame.K_UP),
+            ("A", pygame.K_a, pygame.K_LEFT),
+            ("S", pygame.K_s, pygame.K_DOWN),
+            ("D", pygame.K_d, pygame.K_RIGHT),
+        ]
+        if anterior is not None:
+            opcoes_teclas = [t for t in opcoes_teclas if t[0] != anterior[0]]
+        return random.choice(opcoes_teclas)
+
+    def _gerar_alvo_distancia(self) -> Dict[str, Any]:
+        """Cria um novo alvo para Distância Estilo 1 sem sobrepor os existentes."""
+        min_x = self.x_painel + 85
+        max_x = self.x_painel + self.largura_painel - 85
+        min_y = self.y_painel + 115
+        max_y = self.y_painel + 215
+
+        ax, ay = float((min_x + max_x) // 2), float((min_y + max_y) // 2)
+        for _ in range(25):
+            cand_x = float(random.randint(min_x, max_x))
+            cand_y = float(random.randint(min_y, max_y))
+            if all(math.hypot(cand_x - a["x"], cand_y - a["y"]) > 70.0 for a in self.dist_alvos):
+                ax, ay = cand_x, cand_y
+                break
+            ax, ay = cand_x, cand_y
+
+        return {
+            "x": ax,
+            "y": ay,
+            "raio": 30.0,
+            "tempo_vida": 80,
+            "tempo_max": 80,
+        }
+
+    def _sincronizar_alvo_distancia_legado(self):
+        """Mantém dist_alvo_x/y alinhados com o primeiro alvo ativo."""
+        if self.dist_alvos:
+            self.dist_alvo_x = float(self.dist_alvos[0]["x"])
+            self.dist_alvo_y = float(self.dist_alvos[0]["y"])
+            self.dist_alvo_raio = float(self.dist_alvos[0]["raio"])
+
+    def _configurar_caminho_arrastar(self):
+        """Define posições aleatórias de origem/destino, trilha arcana e orbe de interferência."""
+        x_esq = float(self.x_painel + 85)
+        x_dir = float(self.x_painel + self.largura_painel - 85)
+        y_top = float(self.y_painel + 124)
+        y_mid = float(self.y_painel + 162)
+        y_bot = float(self.y_painel + 200)
+
+        pares = [
+            ((x_esq, y_top), (x_dir, y_bot)),
+            ((x_esq, y_bot), (x_dir, y_top)),
+            ((x_dir, y_top), (x_esq, y_bot)),
+            ((x_dir, y_bot), (x_esq, y_top)),
+            ((x_esq, y_mid), (x_dir, y_mid)),
+            ((x_dir, y_mid), (x_esq, y_mid)),
+        ]
+        base_orig, base_dest = random.choice(pares)
+
+        def _com_jitter(pt: Tuple[float, float]) -> Tuple[float, float]:
+            px = max(float(self.x_painel + 70), min(pt[0] + random.uniform(-16.0, 16.0), float(self.x_painel + self.largura_painel - 70)))
+            py = max(float(self.y_painel + 115), min(pt[1] + random.uniform(-12.0, 12.0), float(self.y_painel + 210)))
+            return (px, py)
+
+        self.drag_origem = _com_jitter(base_orig)
+        self.drag_destino = _com_jitter(base_dest)
+        self.drag_caminho_tipo = random.choice(["arco_superior", "arco_inferior", "curva_s", "ziguezague"])
+
+        dx = self.drag_destino[0] - self.drag_origem[0]
+        dy = self.drag_destino[1] - self.drag_origem[1]
+        comp = max(1.0, math.hypot(dx, dy))
+        nx, ny = -dy / comp, dx / comp
+        if ny > 0:
+            nx, ny = -nx, -ny
+
+        pontos: List[Tuple[float, float]] = []
+        min_x_p = float(self.x_painel + 45)
+        max_x_p = float(self.x_painel + self.largura_painel - 45)
+        min_y_p = float(self.y_painel + 95)
+        max_y_p = float(self.y_painel + self.altura_painel - 68)
+
+        passos = 24
+        for i in range(passos + 1):
+            t = i / passos
+            bx = self.drag_origem[0] + dx * t
+            by = self.drag_origem[1] + dy * t
+
+            if self.drag_caminho_tipo == "arco_superior":
+                desvio = 50.0 * math.sin(math.pi * t)
+            elif self.drag_caminho_tipo == "arco_inferior":
+                desvio = -50.0 * math.sin(math.pi * t)
+            elif self.drag_caminho_tipo == "curva_s":
+                desvio = 48.0 * math.sin(2.0 * math.pi * t)
+            else:  # ziguezague
+                if t <= 0.25:
+                    desvio = (t / 0.25) * 44.0
+                elif t <= 0.75:
+                    desvio = ((0.5 - t) / 0.25) * 44.0
+                else:
+                    desvio = ((t - 1.0) / 0.25) * 44.0
+
+            px = max(min_x_p, min(bx + nx * desvio, max_x_p))
+            py = max(min_y_p, min(by + ny * desvio, max_y_p))
+            pontos.append((px, py))
+
+        self.drag_caminho_pontos = pontos
+        self.drag_raio_caminho = 34.0
+
+        t_obs = 0.5 if self.drag_caminho_tipo in ("arco_superior", "arco_inferior") else 0.25
+        self.drag_obstaculo_base = (self.drag_origem[0] + dx * t_obs, self.drag_origem[1] + dy * t_obs)
+        self.drag_obstaculo_normal = (nx, ny)
+        self.drag_obstaculo_pos = list(self.drag_obstaculo_base)
+
+    def _distancia_ponto_ao_caminho(self, px: float, py: float) -> float:
+        """Retorna a menor distância do ponto (px, py) até a polilinha do caminho arcano."""
+        if len(self.drag_caminho_pontos) < 2:
+            return math.hypot(px - self.drag_origem[0], py - self.drag_origem[1])
+
+        menor = float("inf")
+        for i in range(len(self.drag_caminho_pontos) - 1):
+            x1, y1 = self.drag_caminho_pontos[i]
+            x2, y2 = self.drag_caminho_pontos[i + 1]
+            vx, vy = x2 - x1, y2 - y1
+            seg_len_sq = vx * vx + vy * vy
+            if seg_len_sq <= 1e-6:
+                d = math.hypot(px - x1, py - y1)
+            else:
+                t = max(0.0, min(1.0, ((px - x1) * vx + (py - y1) * vy) / seg_len_sq))
+                proj_x = x1 + t * vx
+                proj_y = y1 + t * vy
+                d = math.hypot(px - proj_x, py - proj_y)
+            if d < menor:
+                menor = d
+        return menor
 
     def concluir_instantaneamente(self, sucesso: bool = True):
         """Conclui o minigame de imediato (usado por testes ou skips)."""
@@ -294,46 +451,79 @@ class GerenciadorMinigameAtaque:
 
         # 1. Invocador Estilo 1: Spam de Espaço
         if self.classe_normalizada == "Invocador" and self.estilo == 1:
-            if evento.type == pygame.KEYDOWN and evento.key == pygame.K_SPACE:
-                self.invoc_progresso = min(100.0, self.invoc_progresso + 11.5)
-                self._gerar_particulas(self.x_painel + self.largura_painel // 2, self.y_painel + 175, (60, 240, 130), 4)
+            acionou_espaco = evento.type == pygame.KEYDOWN and evento.key == pygame.K_SPACE
+            acionou_clique = (
+                evento.type == pygame.MOUSEBUTTONDOWN
+                and evento.button == 1
+                and self.rect_painel.collidepoint(posicao_mouse)
+            )
+            if (acionou_espaco or acionou_clique) and self.invoc_cooldown_input <= 0:
+                self.invoc_progresso = min(100.0, self.invoc_progresso + 10.5)
+                self.invoc_cooldown_input = 2
+                px = self.x_painel + self.largura_painel // 2 if acionou_espaco else posicao_mouse[0]
+                py = self.y_painel + 175 if acionou_espaco else posicao_mouse[1]
+                self._gerar_particulas(px, py, (60, 240, 130), 4)
                 try:
                     tocar_sfx("Interface.wav", volume_relativo=0.4)
                 except Exception:
                     pass
                 if self.invoc_progresso >= 100.0:
                     self._finalizar_invocador_spam()
-            elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
-                if self.rect_painel.collidepoint(posicao_mouse):
-                    self.invoc_progresso = min(100.0, self.invoc_progresso + 9.5)
-                    self._gerar_particulas(posicao_mouse[0], posicao_mouse[1], (60, 240, 130), 3)
 
-        # 2. Invocador Estilo 2: Sequência de Teclas
+        # 2. Invocador Estilo 2: Tecla por tecla contínua por tempo
         elif self.classe_normalizada == "Invocador" and self.estilo == 2:
-            if evento.type == pygame.KEYDOWN:
-                if self.seq_indice < len(self.seq_teclas):
-                    alvo_nome, k_char, k_arrow = self.seq_teclas[self.seq_indice]
+            if evento.type == pygame.KEYDOWN and self.seq_feedback_erro_timer <= 0:
+                modificadores = (
+                    pygame.K_LSHIFT, pygame.K_RSHIFT,
+                    pygame.K_LCTRL, pygame.K_RCTRL,
+                    pygame.K_LALT, pygame.K_RALT,
+                    pygame.K_CAPSLOCK,
+                )
+                if evento.key not in modificadores:
+                    _, k_char, k_arrow = self.seq_tecla_atual
                     if evento.key in (k_char, k_arrow):
                         self.seq_indice += 1
+                        self.seq_tecla_atual = self._sortear_proxima_tecla_invocador(self.seq_tecla_atual)
+                        self.seq_teclas = [self.seq_tecla_atual]
+                        self._gerar_particulas(self.x_painel + self.largura_painel // 2, self.y_painel + 165, (60, 240, 130), 5)
                         try:
                             tocar_sfx("Interface.wav", volume_relativo=0.7)
                         except Exception:
                             pass
-                        if self.seq_indice >= len(self.seq_teclas):
-                            self._finalizar_invocador_sequencia()
                     else:
                         self.seq_erros += 1
+                        self.tempo_restante = max(0, self.tempo_restante - 15)
+                        self.seq_feedback_erro_timer = 8
                         try:
                             tocar_sfx("Dano.wav", volume_relativo=0.4)
                         except Exception:
                             pass
 
-        # 3. Distância Estilo 1: Retículo / Alvo Rápido
+        # 3. Distância Estilo 1: Múltiplos alvos por quantidade
         elif self.classe_normalizada == "Distância" and self.estilo == 1:
-            if (evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1) or \
-               (evento.type == pygame.KEYDOWN and evento.key in (pygame.K_SPACE, pygame.K_RETURN)):
-                dist = math.hypot(posicao_mouse[0] - self.dist_alvo_x, posicao_mouse[1] - self.dist_alvo_y)
-                self._finalizar_distancia_alvo(dist)
+            if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                alvo_acertado = None
+                menor_dist = float("inf")
+                for alvo_item in self.dist_alvos:
+                    dist = math.hypot(posicao_mouse[0] - alvo_item["x"], posicao_mouse[1] - alvo_item["y"])
+                    if dist <= (alvo_item["raio"] + 6.0) and dist < menor_dist:
+                        menor_dist = dist
+                        alvo_acertado = alvo_item
+
+                if alvo_acertado is not None:
+                    self.dist_alvos.remove(alvo_acertado)
+                    self.dist_alvos_atingidos += 1
+                    self._gerar_particulas(alvo_acertado["x"], alvo_acertado["y"], (80, 220, 255), 7)
+                    try:
+                        tocar_sfx("Interface.wav", volume_relativo=0.75)
+                    except Exception:
+                        pass
+                    if self.dist_alvos_gerados < self.dist_meta_alvos:
+                        self.dist_alvos.append(self._gerar_alvo_distancia())
+                        self.dist_alvos_gerados += 1
+                    self._sincronizar_alvo_distancia_legado()
+                    if self.dist_alvos_atingidos >= self.dist_meta_alvos:
+                        self._finalizar_distancia_alvo()
 
         # 4. Distância Estilo 2: Alinhamento das Barras (1 por vez em lados opostos com mesma velocidade)
         elif self.classe_normalizada == "Distância" and self.estilo == 2:
@@ -354,26 +544,19 @@ class GerenciadorMinigameAtaque:
                     self.alin_barra2_travada = True
                     self._finalizar_distancia_alinhamento()
 
-        # 5. Feiticeiro Estilo 1: Disparo antecipado de concentração
+        # 5. Feiticeiro Estilo 1: Apenas tracking com cursor (sem encerramento acidental por clique/espaço)
         elif self.classe_normalizada == "Magia" and self.estilo == 1:
-            if (evento.type == pygame.KEYDOWN and evento.key in (pygame.K_SPACE, pygame.K_RETURN)) or \
-               (evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1):
-                self._finalizar_feiticeiro_esfera()
+            pass
 
-        # 6. Feiticeiro Estilo 2: Arrastar Runa
+        # 6. Feiticeiro Estilo 2: Arrastar Runa (sem atalhos de teletransporte)
         elif self.classe_normalizada == "Magia" and self.estilo == 2:
             if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
                 dist_pos = math.hypot(posicao_mouse[0] - self.drag_pos_atual[0], posicao_mouse[1] - self.drag_pos_atual[1])
                 dist_orig = math.hypot(posicao_mouse[0] - self.drag_origem[0], posicao_mouse[1] - self.drag_origem[1])
-                dist_dest = math.hypot(posicao_mouse[0] - self.drag_destino[0], posicao_mouse[1] - self.drag_destino[1])
 
                 # Clique na runa ou próximo à base de origem inicia o arrasto
                 if dist_pos <= self.drag_raio_origem + 28 or dist_orig <= self.drag_raio_origem + 28:
                     self.drag_segurando = True
-                # Se clicou diretamente no glifo de destino, teletransporta e ativa
-                elif dist_dest <= self.drag_raio_destino + 15:
-                    self.drag_pos_atual = list(self.drag_destino)
-                    self._finalizar_feiticeiro_arrastar(0.0)
 
             elif evento.type == pygame.MOUSEBUTTONUP and evento.button == 1:
                 if self.drag_segurando:
@@ -383,10 +566,6 @@ class GerenciadorMinigameAtaque:
                         self._finalizar_feiticeiro_arrastar(dist_dest)
                     else:
                         self._gerar_particulas(self.drag_pos_atual[0], self.drag_pos_atual[1], (180, 110, 255), 4)
-
-            elif evento.type == pygame.KEYDOWN and evento.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_d, pygame.K_RIGHT):
-                self.drag_pos_atual = list(self.drag_destino)
-                self._finalizar_feiticeiro_arrastar(0.0)
 
         # 7. Lutador Estilo 1: Combo de Timing
         elif self.classe_normalizada == "Físico" and self.estilo == 1:
@@ -401,13 +580,13 @@ class GerenciadorMinigameAtaque:
                     except Exception:
                         pass
                     self._gerar_particulas(self.combo_cursor_x, self.y_painel + 185, (255, 190, 40), 6)
-                    # Inverte e aumenta velocidade
+                    # Inverte e aumenta velocidade de forma progressiva e reagível
                     direcao = -1 if self.combo_cursor_vel > 0 else 1
-                    self.combo_cursor_vel = direcao * (abs(self.combo_cursor_vel) + 1.8)
+                    self.combo_cursor_vel = direcao * (abs(self.combo_cursor_vel) + 1.1)
                     if self.combo_atual >= self.combo_maximo:
                         self._finalizar_lutador_combo()
                 else:
-                    # Errou o tempo da barra
+                    # Errou o tempo da barra, mas preserva o nível do combo já conquistado
                     self._finalizar_lutador_combo(errou=True)
 
         # 8. Lutador Estilo 2: Carregar Força
@@ -455,21 +634,33 @@ class GerenciadorMinigameAtaque:
         # Lógica contínua por minigame
         if self.classe_normalizada == "Invocador":
             if self.estilo == 1:
-                # Decaimento suave da barra
-                self.invoc_progresso = max(0.0, self.invoc_progresso - 0.28)
+                self.invoc_cooldown_input = max(0, self.invoc_cooldown_input - 1)
+                # Decaimento progressivo conforme a barra se aproxima do máximo
+                taxa_decay = 0.22 + 0.20 * (self.invoc_progresso / 100.0)
+                self.invoc_progresso = max(0.0, self.invoc_progresso - taxa_decay)
                 if self.tempo_restante <= 0:
                     self._finalizar_invocador_spam()
             else:
+                self.seq_feedback_erro_timer = max(0, self.seq_feedback_erro_timer - 1)
                 if self.tempo_restante <= 0:
                     self._finalizar_invocador_sequencia()
 
         elif self.classe_normalizada == "Distância":
             if self.estilo == 1:
-                # Anel de mira contrai de forma bem mais rápida
-                progresso_tempo = max(0.0, self.tempo_restante / max(1, self.tempo_total))
-                self.dist_anel_escala = 1.0 + (progresso_tempo * 1.8)
-                if self.tempo_restante <= 0 and not self.concluido:
-                    self._finalizar_distancia_alvo(999.0)
+                # Alvos múltiplos com tempo de vida individual
+                for alvo_item in self.dist_alvos[:]:
+                    alvo_item["tempo_vida"] -= 1
+                    if alvo_item["tempo_vida"] <= 0:
+                        self.dist_alvos.remove(alvo_item)
+                        if self.dist_alvos_gerados < self.dist_meta_alvos:
+                            self.dist_alvos.append(self._gerar_alvo_distancia())
+                            self.dist_alvos_gerados += 1
+                self._sincronizar_alvo_distancia_legado()
+
+                if (not self.dist_alvos and self.dist_alvos_gerados >= self.dist_meta_alvos) or (
+                    self.tempo_restante <= 0 and not self.concluido
+                ):
+                    self._finalizar_distancia_alvo()
             else:
                 # Etapa 1: Movimento da Barra 1 (surgida na esquerda)
                 if self.alin_etapa == 1 and self.alin_barra1_ativa and not self.alin_barra1_travada:
@@ -490,12 +681,12 @@ class GerenciadorMinigameAtaque:
 
         elif self.classe_normalizada == "Magia":
             if self.estilo == 1:
-                # Esfera se move em órbita suave
-                self.esfera_tempo_decorrido += 0.04
+                # Esfera se move em órbita mais ampla e menos veloz
+                self.esfera_tempo_decorrido += 0.025
                 cx = self.x_painel + self.largura_painel // 2
                 cy = self.y_painel + self.altura_painel // 2 + 10
-                self.esfera_pos[0] = cx + math.sin(self.esfera_tempo_decorrido * 1.1) * 150 + math.cos(self.esfera_tempo_decorrido * 0.6) * 45
-                self.esfera_pos[1] = cy + math.cos(self.esfera_tempo_decorrido * 1.3) * 60 + math.sin(self.esfera_tempo_decorrido * 0.8) * 30
+                self.esfera_pos[0] = cx + math.sin(self.esfera_tempo_decorrido * 1.0) * 165 + math.cos(self.esfera_tempo_decorrido * 0.55) * 48
+                self.esfera_pos[1] = cy + math.cos(self.esfera_tempo_decorrido * 1.15) * 68 + math.sin(self.esfera_tempo_decorrido * 0.7) * 32
 
                 # Verifica se o mouse está dentro da esfera
                 dist_mouse = math.hypot(posicao_mouse[0] - self.esfera_pos[0], posicao_mouse[1] - self.esfera_pos[1])
@@ -503,14 +694,21 @@ class GerenciadorMinigameAtaque:
                     self.esfera_tempo_dentro += 1
                     if random.random() < 0.4:
                         self._gerar_particulas(posicao_mouse[0], posicao_mouse[1], (180, 100, 255), 2)
-                    # Encerra antecipadamente se atingir 75% de canalização perfeita
+                    # Encerra antecipadamente se atingir 72% de canalização perfeita
                     if self.esfera_tempo_dentro >= int(self.tempo_total * 0.72):
                         self._finalizar_feiticeiro_esfera()
 
                 if self.tempo_restante <= 0 and not self.concluido:
                     self._finalizar_feiticeiro_esfera()
             else:
-                # Arrastar runa com o mouse
+                # Atualiza posição do orbe de interferência arcana
+                ox_b, oy_b = self.drag_obstaculo_base
+                nx, ny = self.drag_obstaculo_normal
+                desl_obs = math.sin(self.tempo_animacao * 2.5) * 16.0
+                self.drag_obstaculo_pos[0] = ox_b + nx * desl_obs
+                self.drag_obstaculo_pos[1] = oy_b + ny * desl_obs
+
+                # Arrastar runa com o mouse seguindo o caminho dinâmico
                 clicando = estado_clique_mouse[0] if estado_clique_mouse else False
 
                 # Detecção contínua de clique para não perder início de arrasto
@@ -526,35 +724,56 @@ class GerenciadorMinigameAtaque:
                     min_y = float(self.y_painel + 80)
                     max_y = float(self.y_painel + self.altura_painel - 30)
 
-                    self.drag_pos_atual[0] = max(min_x, min(float(posicao_mouse[0]), max_x))
-                    self.drag_pos_atual[1] = max(min_y, min(float(posicao_mouse[1]), max_y))
+                    alvo_x = max(min_x, min(float(posicao_mouse[0]), max_x))
+                    alvo_y = max(min_y, min(float(posicao_mouse[1]), max_y))
+
+                    dist_trilha = self._distancia_ponto_ao_caminho(self.drag_pos_atual[0], self.drag_pos_atual[1])
+                    dist_obs = math.hypot(self.drag_pos_atual[0] - self.drag_obstaculo_pos[0], self.drag_pos_atual[1] - self.drag_obstaculo_pos[1])
+
+                    if dist_trilha <= self.drag_raio_caminho and dist_obs > (self.drag_obstaculo_raio + 10.0):
+                        vel_max = 16.0
+                        self.drag_fora_caminho = False
+                    else:
+                        vel_max = 1.8
+                        self.drag_fora_caminho = True
+
+                    dx_m = alvo_x - self.drag_pos_atual[0]
+                    dy_m = alvo_y - self.drag_pos_atual[1]
+                    dist_m = math.hypot(dx_m, dy_m)
+                    if dist_m > 0.0:
+                        passo = min(dist_m, vel_max)
+                        self.drag_pos_atual[0] += (dx_m / dist_m) * passo
+                        self.drag_pos_atual[1] += (dy_m / dist_m) * passo
 
                     if not clicando:
                         self.drag_segurando = False
+                        self.drag_fora_caminho = False
                         dist_dest = math.hypot(self.drag_pos_atual[0] - self.drag_destino[0], self.drag_pos_atual[1] - self.drag_destino[1])
                         if dist_dest <= self.drag_raio_destino * 1.5:
                             self._finalizar_feiticeiro_arrastar(dist_dest)
                     else:
                         dist_dest = math.hypot(self.drag_pos_atual[0] - self.drag_destino[0], self.drag_pos_atual[1] - self.drag_destino[1])
 
-                        # Efeito magnético de atração suave ao se aproximar do centro do glifo
-                        if dist_dest <= self.drag_raio_destino + 25:
-                            fator_ima = 0.22
+                        # Atração magnética sutil apenas quando dentro do caminho próximo ao glifo
+                        if not self.drag_fora_caminho and dist_dest <= self.drag_raio_destino + 12:
+                            fator_ima = 0.16
                             self.drag_pos_atual[0] += (self.drag_destino[0] - self.drag_pos_atual[0]) * fator_ima
                             self.drag_pos_atual[1] += (self.drag_destino[1] - self.drag_pos_atual[1]) * fator_ima
                             dist_dest = math.hypot(self.drag_pos_atual[0] - self.drag_destino[0], self.drag_pos_atual[1] - self.drag_destino[1])
 
                         if random.random() < 0.4:
-                            self._gerar_particulas(self.drag_pos_atual[0], self.drag_pos_atual[1], (180, 120, 255), 2)
+                            cor_part = (255, 110, 90) if self.drag_fora_caminho else (180, 120, 255)
+                            self._gerar_particulas(self.drag_pos_atual[0], self.drag_pos_atual[1], cor_part, 2)
 
-                        # Encaixe automático imediato ao alcançar o núcleo do glifo!
-                        if dist_dest <= 26.0:
+                        # Encaixe automático ao alcançar o núcleo do glifo
+                        if dist_dest <= 24.0:
                             self.drag_pos_atual = list(self.drag_destino)
                             self._finalizar_feiticeiro_arrastar(dist_dest)
                 else:
+                    self.drag_fora_caminho = False
                     # Se solta longe do destino, retorna suavemente para a origem
                     dist_orig = math.hypot(self.drag_pos_atual[0] - self.drag_origem[0], self.drag_pos_atual[1] - self.drag_origem[1])
-                    if dist_orig > 4.0 and not self.concluido:
+                    if dist_orig > 1.0 and not self.concluido:
                         self.drag_pos_atual[0] += (self.drag_origem[0] - self.drag_pos_atual[0]) * 0.18
                         self.drag_pos_atual[1] += (self.drag_origem[1] - self.drag_pos_atual[1]) * 0.18
 
@@ -588,14 +807,16 @@ class GerenciadorMinigameAtaque:
                         self.forca_segurando = False
                         self._finalizar_lutador_forca()
                     else:
-                        self.forca_atual += 1.65
+                        self.forca_atual = min(100.0, self.forca_atual + 1.28)
                         if random.random() < 0.3:
                             self._gerar_particulas(self.x_painel + self.largura_painel // 2, self.y_painel + 185, (255, 120, 40), 2)
 
                         if self.forca_atual >= 100.0:
-                            self.forca_overcharge = True
-                            self.forca_segurando = False
-                            self._finalizar_lutador_forca()
+                            self.forca_tempo_topo += 1
+                            if self.forca_tempo_topo >= 12:
+                                self.forca_overcharge = True
+                                self.forca_segurando = False
+                                self._finalizar_lutador_forca()
 
                 if self.tempo_restante <= 0 and not self.concluido:
                     self._finalizar_lutador_forca()
@@ -609,7 +830,7 @@ class GerenciadorMinigameAtaque:
                     self._finalizar_invocador_sequencia()
             elif self.classe_normalizada == "Distância":
                 if self.estilo == 1:
-                    self._finalizar_distancia_alvo(999.0)
+                    self._finalizar_distancia_alvo()
                 else:
                     self._finalizar_distancia_alinhamento()
             elif self.classe_normalizada == "Magia":
@@ -662,39 +883,39 @@ class GerenciadorMinigameAtaque:
 
     def _finalizar_invocador_spam(self):
         pct = self.invoc_progresso
-        if pct >= 88.0:
+        if pct >= 92.0:
             self._definir_resultado(1.40, "⚡ INCRÍVEL! Sincronização Perfeita (+40%)", sucesso=True, desempenho=1.0, chance_erro=0.0)
-        elif pct >= 55.0:
+        elif pct >= 65.0:
             self._definir_resultado(1.20, "✨ BOM! Invocação Estável (+20%)", sucesso=True, desempenho=0.85, chance_erro=0.0)
-        elif pct >= 25.0:
+        elif pct >= 35.0:
             self._definir_resultado(1.00, "CANALIZAÇÃO REGULAR", sucesso=True, desempenho=0.50, chance_erro=0.20)
         else:
             self._definir_resultado(0.85, "⚠️ Invocação Fraca (-15%)", sucesso=False, desempenho=0.15, chance_erro=(0.75 if pct > 0 else 1.0))
 
     def _finalizar_invocador_sequencia(self):
-        total = len(self.seq_teclas)
         acertos = self.seq_indice
-        if acertos == total and self.seq_erros == 0:
-            self._definir_resultado(1.40, "⚡ PERFEITO! Sequência Rápida (+40%)", sucesso=True, desempenho=1.0, chance_erro=0.0)
-        elif acertos == total:
-            self._definir_resultado(1.20, "✨ SUCESSO! Sequência Concluída (+20%)", sucesso=True, desempenho=0.85, chance_erro=0.0)
-        elif acertos >= 2:
-            self._definir_resultado(1.00, "COMANDO PARCIAL", sucesso=True, desempenho=0.50, chance_erro=0.25)
+        if acertos >= 7 and self.seq_erros <= 1:
+            self._definir_resultado(1.40, f"⚡ PERFEITO! {acertos} Teclas Canalizadas (+40%)", sucesso=True, desempenho=1.0, chance_erro=0.0)
+        elif acertos >= 5:
+            self._definir_resultado(1.20, f"✨ SUCESSO! {acertos} Teclas Canalizadas (+20%)", sucesso=True, desempenho=0.85, chance_erro=0.0)
+        elif acertos >= 3:
+            self._definir_resultado(1.00, f"COMANDO PARCIAL ({acertos} TECLAS)", sucesso=True, desempenho=0.50, chance_erro=0.25)
         else:
-            self._definir_resultado(0.75, "❌ SEQUÊNCIA INTERROMPIDA (-25%)", sucesso=False, desempenho=(0.10 if acertos == 1 else 0.0), chance_erro=(0.80 if acertos == 1 else 1.0))
+            self._definir_resultado(0.75, "❌ CANALIZAÇÃO INSUFICIENTE (-25%)", sucesso=False, desempenho=(0.15 if acertos >= 1 else 0.0), chance_erro=(0.80 if acertos >= 1 else 1.0))
 
-    def _finalizar_distancia_alvo(self, dist: float):
-        if dist <= 22.0:
-            self._definir_resultado(1.45, "🎯 BULLSEYE! TIRO PERFEITO (+45%)", sucesso=True, screen_shake=True, desempenho=1.0, chance_erro=0.0)
-        elif dist <= 50.0:
-            self._definir_resultado(1.20, "🏹 BOM DISPARO! (+20%)", sucesso=True, desempenho=0.80, chance_erro=0.0)
-        elif dist <= 85.0:
-            self._definir_resultado(1.00, "TIRO REGULAR", sucesso=True, desempenho=0.50, chance_erro=0.25)
+    def _finalizar_distancia_alvo(self, dist: Optional[float] = None):
+        acertos = self.dist_alvos_atingidos
+        if acertos >= self.dist_meta_alvos:
+            self._definir_resultado(1.45, f"🎯 BULLSEYE! {acertos}/{self.dist_meta_alvos} ALVOS ATINGIDOS (+45%)", sucesso=True, screen_shake=True, desempenho=1.0, chance_erro=0.0)
+        elif acertos >= 3:
+            self._definir_resultado(1.20, f"🏹 BOM DISPARO! ({acertos}/{self.dist_meta_alvos} ALVOS! +20%)", sucesso=True, desempenho=0.80, chance_erro=0.0)
+        elif acertos >= 1:
+            self._definir_resultado(1.00, f"TIRO REGULAR ({acertos}/{self.dist_meta_alvos} ALVOS)", sucesso=True, desempenho=0.50, chance_erro=0.20)
         else:
-            self._definir_resultado(0.70, "❌ ERROU O ALVO! (-30%)", sucesso=False, desempenho=0.0, chance_erro=1.0)
+            self._definir_resultado(0.70, "❌ NENHUM ALVO ATINGIDO! (-30%)", sucesso=False, desempenho=0.0, chance_erro=1.0)
 
     def _finalizar_distancia_alinhamento(self):
-        if self.tempo_restante <= 0 and not (self.alin_barra1_travada and self.alin_barra2_travada):
+        if self.tempo_restante <= 0 and not self.alin_barra1_travada:
             self._definir_resultado(0.70, "❌ TEMPO ESGOTADO! (MIRA PERDIDA)", sucesso=False, desempenho=0.0, chance_erro=1.0)
             try:
                 tocar_sfx("Dano.wav", volume_relativo=0.5)
@@ -705,22 +926,24 @@ class GerenciadorMinigameAtaque:
         diff = abs(self.alin_barra1_x - self.alin_barra2_x)
         dist_centro = abs(((self.alin_barra1_x + self.alin_barra2_x) / 2) - self.alin_ponto_centro)
         erro_total = diff + dist_centro * 0.35
+        if self.tempo_restante <= 0 and self.alin_barra1_travada and not self.alin_barra2_travada:
+            erro_total += 25.0
 
-        if erro_total <= 24.0:
+        if erro_total <= 30.0:
             self._definir_resultado(1.45, "🎯 MIRA PERFEITAMENTE ALINHADA! (+45%)", sucesso=True, screen_shake=True, desempenho=1.0, chance_erro=0.0)
             self._gerar_particulas(self.alin_barra2_x, self.y_painel + 155, (255, 220, 80), 12)
             try:
                 tocar_sfx("Acerto.wav", volume_relativo=1.0)
             except Exception:
                 pass
-        elif erro_total <= 65.0:
+        elif erro_total <= 75.0:
             self._definir_resultado(1.25, "🏹 MIRA SINCRONIZADA (+25%)", sucesso=True, desempenho=0.85, chance_erro=0.0)
             self._gerar_particulas(self.alin_barra2_x, self.y_painel + 155, (50, 210, 255), 8)
             try:
                 tocar_sfx("Acerto.wav", volume_relativo=0.8)
             except Exception:
                 pass
-        elif erro_total <= 120.0:
+        elif erro_total <= 125.0:
             self._definir_resultado(1.05, "MIRA PARCIAL (+5%)", sucesso=True, desempenho=0.55, chance_erro=0.20)
             try:
                 tocar_sfx("Interface.wav", volume_relativo=0.7)
@@ -774,7 +997,7 @@ class GerenciadorMinigameAtaque:
                 pass
 
     def _finalizar_lutador_combo(self, errou: bool = False):
-        if errou or self.combo_atual == 0:
+        if self.combo_atual == 0:
             self._definir_resultado(0.70, "❌ ERROU O TEMPO DE IMPACTO (-30%)", sucesso=False, desempenho=0.0, chance_erro=1.0)
         elif self.combo_atual >= 4:
             self._definir_resultado(1.45, f"💥 COMBO DEVASTADOR! ({self.combo_atual} HITS! +45%)", sucesso=True, screen_shake=True, desempenho=1.0, chance_erro=0.0)
@@ -886,12 +1109,12 @@ class GerenciadorMinigameAtaque:
         pygame.draw.rect(tela, (25, 30, 42), (bx, by, bw, bh), border_radius=8)
         largura_ativa = int(bw * (self.invoc_progresso / 100.0))
         if largura_ativa > 0:
-            cor_barra = (60, 220, 130) if self.invoc_progresso < 88.0 else (255, 220, 60)
+            cor_barra = (60, 220, 130) if self.invoc_progresso < 92.0 else (255, 220, 60)
             pygame.draw.rect(tela, cor_barra, (bx, by, largura_ativa, bh), border_radius=8)
         pygame.draw.rect(tela, cor_tema, (bx, by, bw, bh), width=2, border_radius=8)
 
-        # Marcador da meta 88%
-        x_meta = bx + int(bw * 0.88)
+        # Marcador da meta 92%
+        x_meta = bx + int(bw * 0.92)
         pygame.draw.line(tela, (255, 255, 255), (x_meta, by - 4), (x_meta, by + bh + 4), 2)
 
         txt_pct = self.fonte_status.render(f"{int(self.invoc_progresso)}%", True, (255, 255, 255))
@@ -901,59 +1124,70 @@ class GerenciadorMinigameAtaque:
         tela.blit(txt_instr, (self.x_painel + (self.largura_painel - txt_instr.get_width()) // 2, self.y_painel + 225))
 
     def _desenhar_invocador_sequencia(self, tela: pygame.Surface, cor_tema: Tuple[int, int, int]):
-        num_teclas = len(self.seq_teclas)
-        tamanho_caixa = 54
-        espacamento = 24
-        largura_total = num_teclas * tamanho_caixa + (num_teclas - 1) * espacamento
-        x_inicio = self.x_painel + (self.largura_painel - largura_total) // 2
-        y_pos = self.y_painel + 140
+        tamanho_caixa = 76
+        cx = self.x_painel + (self.largura_painel - tamanho_caixa) // 2
+        y_pos = self.y_painel + 114
+        rect_caixa = pygame.Rect(cx, y_pos, tamanho_caixa, tamanho_caixa)
 
-        for i, (nome_tecla, _, _) in enumerate(self.seq_teclas):
-            cx = x_inicio + i * (tamanho_caixa + espacamento)
-            rect_caixa = pygame.Rect(cx, y_pos, tamanho_caixa, tamanho_caixa)
+        em_erro = self.seq_feedback_erro_timer > 0
+        cor_fundo = (90, 28, 35) if em_erro else (42, 54, 78)
+        cor_borda = (255, 80, 80) if em_erro else (255, 220, 60)
+        cor_letra = (255, 110, 110) if em_erro else (255, 230, 80)
 
-            if i < self.seq_indice:
-                # Concluída
-                pygame.draw.rect(tela, (35, 130, 70), rect_caixa, border_radius=10)
-                pygame.draw.rect(tela, (60, 240, 130), rect_caixa, width=3, border_radius=10)
-                txt_ok = self.fonte_tecla.render("✓", True, (255, 255, 255))
-                tela.blit(txt_ok, (cx + (tamanho_caixa - txt_ok.get_width()) // 2, y_pos + (tamanho_caixa - txt_ok.get_height()) // 2))
-            elif i == self.seq_indice:
-                # Tecla ativa
-                pygame.draw.rect(tela, (55, 65, 90), rect_caixa, border_radius=10)
-                pygame.draw.rect(tela, (255, 220, 60), rect_caixa, width=3, border_radius=10)
-                txt_letra = self.fonte_tecla.render(nome_tecla, True, (255, 220, 60))
-                tela.blit(txt_letra, (cx + (tamanho_caixa - txt_letra.get_width()) // 2, y_pos + (tamanho_caixa - txt_letra.get_height()) // 2))
-            else:
-                # Próximas
-                pygame.draw.rect(tela, (25, 30, 42), rect_caixa, border_radius=10)
-                pygame.draw.rect(tela, (60, 70, 90), rect_caixa, width=2, border_radius=10)
-                txt_letra = self.fonte_tecla.render(nome_tecla, True, (150, 160, 180))
-                tela.blit(txt_letra, (cx + (tamanho_caixa - txt_letra.get_width()) // 2, y_pos + (tamanho_caixa - txt_letra.get_height()) // 2))
+        pygame.draw.rect(tela, cor_fundo, rect_caixa, border_radius=12)
+        pygame.draw.rect(tela, cor_borda, rect_caixa, width=3, border_radius=12)
 
-        txt_instr = self.fonte_instrucao.render("DIGITE A SEQUÊNCIA DE TECLAS NO MOMENTO CERTO!", True, (240, 245, 255))
-        tela.blit(txt_instr, (self.x_painel + (self.largura_painel - txt_instr.get_width()) // 2, self.y_painel + 225))
+        nome_tecla = self.seq_tecla_atual[0] if self.seq_tecla_atual else "W"
+        txt_letra = self.fonte_tecla.render(nome_tecla, True, cor_letra)
+        tela.blit(
+            txt_letra,
+            (cx + (tamanho_caixa - txt_letra.get_width()) // 2, y_pos + (tamanho_caixa - txt_letra.get_height()) // 2),
+        )
+
+        txt_acertos = self.fonte_status.render(
+            f"ACERTOS: {self.seq_indice}  •  META PERFEITA: 7+",
+            True,
+            (130, 245, 170) if self.seq_indice >= 7 else (220, 230, 245),
+        )
+        tela.blit(txt_acertos, (self.x_painel + (self.largura_painel - txt_acertos.get_width()) // 2, self.y_painel + 204))
+
+        txt_instr = self.fonte_instrucao.render(
+            "APERTE A TECLA EXIBIDA ATÉ O TEMPO ACABAR!",
+            True,
+            (240, 245, 255),
+        )
+        tela.blit(txt_instr, (self.x_painel + (self.largura_painel - txt_instr.get_width()) // 2, self.y_painel + 238))
 
     def _desenhar_distancia_alvo(self, tela: pygame.Surface, cor_tema: Tuple[int, int, int]):
-        ax, ay = int(self.dist_alvo_x), int(self.dist_alvo_y)
+        txt_cont = self.fonte_status.render(
+            f"ALVOS ATINGIDOS: {self.dist_alvos_atingidos} / {self.dist_meta_alvos}",
+            True,
+            (110, 230, 255),
+        )
+        tela.blit(txt_cont, (self.x_painel + (self.largura_painel - txt_cont.get_width()) // 2, self.y_painel + 82))
 
-        # Anel de contração de tempo rápida
-        raio_anel = int(self.dist_alvo_raio * self.dist_anel_escala)
-        if raio_anel > 0:
-            pygame.draw.circle(tela, (255, 215, 60), (ax, ay), raio_anel, width=2)
+        for alvo_item in self.dist_alvos:
+            ax, ay = int(alvo_item["x"]), int(alvo_item["y"])
+            raio = int(alvo_item["raio"])
+            frac_vida = max(0.0, alvo_item["tempo_vida"] / max(1, alvo_item["tempo_max"]))
 
-        # Retículo central
-        pygame.draw.circle(tela, (20, 50, 80), (ax, ay), int(self.dist_alvo_raio))
-        pygame.draw.circle(tela, (40, 160, 240), (ax, ay), int(self.dist_alvo_raio), width=2)
-        pygame.draw.circle(tela, (255, 60, 60), (ax, ay), 18)
-        pygame.draw.circle(tela, (255, 255, 255), (ax, ay), 7)
+            # Anel de tempo restante ao redor do alvo
+            raio_anel = int(raio * (1.0 + frac_vida * 0.65))
+            if raio_anel > 0:
+                pygame.draw.circle(tela, (255, 215, 60), (ax, ay), raio_anel, width=2)
 
-        # Cruz de mira
-        pygame.draw.line(tela, (240, 240, 240), (ax - 48, ay), (ax + 48, ay), 2)
-        pygame.draw.line(tela, (240, 240, 240), (ax, ay - 48), (ax, ay + 48), 2)
+            # Retículo do alvo
+            pygame.draw.circle(tela, (20, 50, 80), (ax, ay), raio)
+            pygame.draw.circle(tela, (40, 160, 240), (ax, ay), raio, width=2)
+            pygame.draw.circle(tela, (255, 60, 60), (ax, ay), 14)
+            pygame.draw.circle(tela, (255, 255, 255), (ax, ay), 5)
 
-        txt_instr = self.fonte_instrucao.render("DISPARO RÁPIDO! CLIQUE NO CENTRO DO ALVO AGORA!", True, (255, 230, 90))
-        tela.blit(txt_instr, (self.x_painel + (self.largura_painel - txt_instr.get_width()) // 2, self.y_painel + 240))
+            # Cruz de mira
+            pygame.draw.line(tela, (240, 240, 240), (ax - 36, ay), (ax + 36, ay), 2)
+            pygame.draw.line(tela, (240, 240, 240), (ax, ay - 36), (ax, ay + 36), 2)
+
+        txt_instr = self.fonte_instrucao.render("CLIQUE NOS ALVOS ANTES QUE DESAPAREÇAM!", True, (255, 230, 90))
+        tela.blit(txt_instr, (self.x_painel + (self.largura_painel - txt_instr.get_width()) // 2, self.y_painel + 248))
 
     def _desenhar_distancia_alinhamento(self, tela: pygame.Surface, cor_tema: Tuple[int, int, int]):
         tx = int(self.alin_trilha_x)
@@ -1005,7 +1239,7 @@ class GerenciadorMinigameAtaque:
 
         # 6. Texto de Instrução Dinâmico
         if self.alin_etapa == 1:
-            msg_instr = "ETAPA 1/2: TRAVE A PRIMEIRA BARRA COM [ESPAÇO] OU CLIQUE!"
+            msg_instr = "ETAPA 1/2: TRAVE A PRIMEIRA BARRA NO CENTRO COM [ESPAÇO] OU CLIQUE!"
         else:
             msg_instr = "ETAPA 2/2: ALINHE A SEGUNDA BARRA NA MESMA POSIÇÃO DA PRIMEIRA!"
         txt_instr = self.fonte_instrucao.render(msg_instr, True, (240, 245, 255))
@@ -1014,26 +1248,31 @@ class GerenciadorMinigameAtaque:
     def _desenhar_feiticeiro_esfera(self, tela: pygame.Surface, cor_tema: Tuple[int, int, int]):
         ex, ey = int(self.esfera_pos[0]), int(self.esfera_pos[1])
         raio = int(self.esfera_raio)
+        pct = self.esfera_tempo_dentro / max(1, self.tempo_total)
+        prog_meta = min(1.0, pct / 0.72)
 
-        # Esfera mágica com pulso
+        # Esfera mágica com pulso e anel externo de progresso
         pygame.draw.circle(tela, (55, 20, 85), (ex, ey), raio)
         pygame.draw.circle(tela, (180, 90, 255), (ex, ey), raio, width=3)
-        pygame.draw.circle(tela, (230, 180, 255), (ex, ey), max(4, raio - 18), width=2)
-        pygame.draw.circle(tela, (255, 255, 255), (ex, ey), 8)
+        pygame.draw.circle(tela, (230, 180, 255), (ex, ey), max(4, raio - 16), width=2)
+        pygame.draw.circle(tela, (255, 255, 255), (ex, ey), 7)
+
+        if prog_meta > 0.01:
+            rect_arco = pygame.Rect(ex - raio - 6, ey - raio - 6, (raio + 6) * 2, (raio + 6) * 2)
+            pygame.draw.arc(tela, (255, 220, 90), rect_arco, math.pi / 2, math.pi / 2 + (2 * math.pi * prog_meta), 3)
 
         # Barra de canalização na base
         bx = self.x_painel + 70
-        by = self.y_painel + 205
+        by = self.y_painel + 210
         bw = self.largura_painel - 140
         bh = 16
-        pct = self.esfera_tempo_dentro / max(1, self.tempo_total)
         pygame.draw.rect(tela, (25, 30, 42), (bx, by, bw, bh), border_radius=6)
         if pct > 0:
-            pygame.draw.rect(tela, (180, 90, 255), (bx, by, int(bw * min(1.0, pct)), bh), border_radius=6)
+            pygame.draw.rect(tela, (180, 90, 255), (bx, by, int(bw * min(1.0, prog_meta)), bh), border_radius=6)
         pygame.draw.rect(tela, (100, 70, 140), (bx, by, bw, bh), width=2, border_radius=6)
 
-        txt_instr = self.fonte_instrucao.render("MANTENHA O MOUSE DENTRO DA ESFERA MÁGICA!", True, (240, 245, 255))
-        tela.blit(txt_instr, (self.x_painel + (self.largura_painel - txt_instr.get_width()) // 2, self.y_painel + 240))
+        txt_instr = self.fonte_instrucao.render("SIGA E MANTENHA O MOUSE DENTRO DA ESFERA MÁGICA!", True, (240, 245, 255))
+        tela.blit(txt_instr, (self.x_painel + (self.largura_painel - txt_instr.get_width()) // 2, self.y_painel + 244))
 
     def _desenhar_feiticeiro_arrastar(self, tela: pygame.Surface, cor_tema: Tuple[int, int, int]):
         origem = getattr(self, "drag_origem", None) or (float(self.x_painel + 90), float(self.y_painel + 185))
@@ -1043,62 +1282,76 @@ class GerenciadorMinigameAtaque:
         fonte_badge = getattr(self, "fonte_badge", None) or getattr(self, "fonte_subtitulo", None) or obter_fonte(10)
         tempo_anim = getattr(self, "tempo_animacao", 0.0)
 
-        # 1. Base / Pedestal de Origem
-        pygame.draw.circle(tela, (24, 28, 42), (ox, oy), int(self.drag_raio_origem) + 6)
-        pygame.draw.circle(tela, (70, 85, 120), (ox, oy), int(self.drag_raio_origem) + 6, width=2)
+        # 1. Trilha Arcana (corredor que deve ser seguido)
+        pontos = getattr(self, "drag_caminho_pontos", None) or [origem, destino]
+        if len(pontos) >= 2:
+            for pt in pontos:
+                pygame.draw.circle(tela, (30, 36, 62), (int(pt[0]), int(pt[1])), int(self.drag_raio_caminho * 0.72))
+            pygame.draw.lines(tela, (115, 95, 195), False, [(int(p[0]), int(p[1])) for p in pontos], 3)
+            for idx in range(2, len(pontos) - 1, 3):
+                pt = pontos[idx]
+                pulso = 2 + int((math.sin(tempo_anim * 4.5 + idx) + 1.0) * 1.2)
+                pygame.draw.circle(tela, (185, 150, 255), (int(pt[0]), int(pt[1])), pulso)
+
+        # 2. Orbe de Interferência Arcana
+        obs_x, obs_y = int(self.drag_obstaculo_pos[0]), int(self.drag_obstaculo_pos[1])
+        obs_r = int(self.drag_obstaculo_raio)
+        pygame.draw.circle(tela, (140, 28, 60), (obs_x, obs_y), obs_r)
+        pygame.draw.circle(tela, (255, 95, 130), (obs_x, obs_y), obs_r, width=2)
+
+        # 3. Base / Pedestal de Origem
+        pygame.draw.circle(tela, (24, 28, 42), (ox, oy), int(self.drag_raio_origem) + 5)
+        pygame.draw.circle(tela, (70, 85, 120), (ox, oy), int(self.drag_raio_origem) + 5, width=2)
         txt_origem = fonte_badge.render("ORIGEM", True, (140, 160, 190))
-        tela.blit(txt_origem, (ox - txt_origem.get_width() // 2, oy + int(self.drag_raio_origem) + 10))
+        y_lbl_orig = oy - int(self.drag_raio_origem) - 20 if oy > self.y_painel + 175 else oy + int(self.drag_raio_origem) + 8
+        tela.blit(txt_origem, (ox - txt_origem.get_width() // 2, y_lbl_orig))
 
-        # 2. Conduíte Mágico entre Origem e Glifo (pontos de fluxo guiando até o destino)
-        pygame.draw.line(tela, (45, 55, 80), (ox, oy), (dx, dy), 2)
-        passos = 6
-        for p in range(1, passos):
-            frac = p / passos
-            fx = ox + (dx - ox) * frac
-            fy = oy + (dy - oy) * frac
-            pulso_seta = int(math.sin(tempo_anim * 5.0 + p) * 3)
-            pygame.draw.circle(tela, (140, 115, 210), (int(fx + pulso_seta), int(fy)), 3)
-
-        # 3. Glifo Ritual de Destino (Receptáculo Arcano)
+        # 4. Glifo Ritual de Destino (Receptáculo Arcano)
         dist_atual_dest = math.hypot(self.drag_pos_atual[0] - dx, self.drag_pos_atual[1] - dy)
-        glifo_destaque = dist_atual_dest <= self.drag_raio_destino + 30
+        glifo_destaque = dist_atual_dest <= self.drag_raio_destino + 25
 
         cor_borda_glifo = (255, 215, 80) if glifo_destaque else (170, 95, 245)
         cor_fundo_glifo = (45, 30, 65) if glifo_destaque else (28, 22, 45)
 
         pygame.draw.circle(tela, cor_fundo_glifo, (dx, dy), int(self.drag_raio_destino))
         pygame.draw.circle(tela, cor_borda_glifo, (dx, dy), int(self.drag_raio_destino), width=3)
-        pulso_r = 14 + int(math.sin(tempo_anim * 4.0) * 3)
+        pulso_r = 12 + int(math.sin(tempo_anim * 4.0) * 3)
         pygame.draw.circle(tela, (255, 230, 120) if glifo_destaque else (190, 140, 255), (dx, dy), pulso_r, width=2)
 
         txt_dest = self.fonte_subtitulo.render("GLIFO", True, (255, 240, 180) if glifo_destaque else (210, 190, 255))
         tela.blit(txt_dest, (dx - txt_dest.get_width() // 2, dy - 7))
 
         txt_glifo_sub = fonte_badge.render("DESTINO", True, (180, 160, 220))
-        tela.blit(txt_glifo_sub, (dx - txt_glifo_sub.get_width() // 2, dy + int(self.drag_raio_destino) + 10))
+        y_lbl_dest = dy - int(self.drag_raio_destino) - 18 if dy > self.y_painel + 175 else dy + int(self.drag_raio_destino) + 8
+        tela.blit(txt_glifo_sub, (dx - txt_glifo_sub.get_width() // 2, y_lbl_dest))
 
-        # 4. Runa que é arrastada
+        # 5. Runa que é arrastada
         px, py = int(self.drag_pos_atual[0]), int(self.drag_pos_atual[1])
 
-        # Feixe de energia conectando a runa ao seu altar de origem enquanto arrastada
-        if self.drag_segurando or math.hypot(px - ox, py - oy) > 10:
-            pygame.draw.line(tela, (140, 100, 240), (ox, oy), (px, py), 2)
-
-        cor_runa_borda = (255, 220, 80) if self.drag_segurando else (110, 200, 255)
-        cor_runa_corpo = (50, 40, 80) if self.drag_segurando else (30, 45, 75)
+        if self.drag_fora_caminho:
+            cor_runa_borda = (255, 90, 70)
+            cor_runa_corpo = (95, 30, 40)
+        elif self.drag_segurando:
+            cor_runa_borda = (255, 220, 80)
+            cor_runa_corpo = (50, 40, 80)
+        else:
+            cor_runa_borda = (110, 200, 255)
+            cor_runa_corpo = (30, 45, 75)
 
         if self.drag_segurando:
-            pygame.draw.circle(tela, (180, 130, 255), (px, py), int(self.drag_raio_origem) + 5, width=1)
+            pygame.draw.circle(tela, cor_runa_borda, (px, py), int(self.drag_raio_origem) + 5, width=1)
 
         pygame.draw.circle(tela, cor_runa_corpo, (px, py), int(self.drag_raio_origem))
         pygame.draw.circle(tela, cor_runa_borda, (px, py), int(self.drag_raio_origem), width=3)
-        pygame.draw.circle(tela, (255, 255, 255), (px, py), 7)
+        pygame.draw.circle(tela, (255, 255, 255), (px, py), 6)
 
-        if self.drag_segurando:
-            txt_instr = self.fonte_instrucao.render("CONDUZA A RUNA ATÉ O CENTRO DO GLIFO RITUAL!", True, (255, 230, 100))
+        if self.drag_fora_caminho:
+            txt_instr = self.fonte_instrucao.render("⚠️ FORA DA TRILHA ARCANA! VELOCIDADE REDUZIDA!", True, (255, 120, 90))
+        elif self.drag_segurando:
+            txt_instr = self.fonte_instrucao.render("SIGA O CAMINHO ARCANO ATÉ O GLIFO RITUAL!", True, (255, 230, 100))
         else:
-            txt_instr = self.fonte_instrucao.render("CLIQUE E ARRASTE A RUNA ATÉ O GLIFO! (OU [D] / [ESPAÇO])", True, (240, 245, 255))
-        tela.blit(txt_instr, (self.x_painel + (self.largura_painel - txt_instr.get_width()) // 2, self.y_painel + 242))
+            txt_instr = self.fonte_instrucao.render("CLIQUE E ARRASTE A RUNA PELO CAMINHO ATÉ O GLIFO!", True, (240, 245, 255))
+        tela.blit(txt_instr, (self.x_painel + (self.largura_painel - txt_instr.get_width()) // 2, self.y_painel + 252))
 
     def _desenhar_lutador_combo(self, tela: pygame.Surface, cor_tema: Tuple[int, int, int]):
         tx = int(self.combo_trilha_x)
@@ -1119,7 +1372,7 @@ class GerenciadorMinigameAtaque:
         pygame.draw.rect(tela, (255, 240, 240), (cx - 6, ty - 6, 12, th + 12), border_radius=3)
 
         # Contador de combo
-        txt_combo = self.fonte_titulo.render(f"COMBO: {self.combo_atual} / {self.combo_maximo}", True, (255, 200, 50))
+        txt_combo = self.fonte_titulo.render(f"COMBO: {self.combo_atual} / {self.combo_maximo}  (2+ BOM • 4+ MÁX)", True, (255, 200, 50))
         tela.blit(txt_combo, (self.x_painel + (self.largura_painel - txt_combo.get_width()) // 2, self.y_painel + 195))
 
         txt_instr = self.fonte_instrucao.render("ACERTE A ZONA CENTRAL VÁRIAS VEZES EM SEGUIDA!", True, (240, 245, 255))
@@ -1142,7 +1395,12 @@ class GerenciadorMinigameAtaque:
         # Barra carregada
         w_ativa = int(bw * min(1.0, self.forca_atual / 100.0))
         if w_ativa > 0:
-            cor_forca = (255, 60, 60) if self.forca_overcharge else ((255, 215, 60) if 80.0 <= self.forca_atual <= 95.0 else (255, 140, 40))
+            if self.forca_overcharge or self.forca_tempo_topo > 0:
+                cor_forca = (255, 60, 60)
+            elif 80.0 <= self.forca_atual <= 95.0:
+                cor_forca = (255, 215, 60)
+            else:
+                cor_forca = (255, 140, 40)
             pygame.draw.rect(tela, cor_forca, (bx, by, w_ativa, bh), border_radius=8)
 
         pygame.draw.rect(tela, cor_tema, (bx, by, bw, bh), width=2, border_radius=8)

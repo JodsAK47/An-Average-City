@@ -20,7 +20,7 @@ from Sistemas.Constantes import (
 )
 from Gameplay.Habilidades import banco_habilidades, obter_ultimate
 from Sistemas.Fontes import obter_fonte, quebrar_texto
-from Gameplay.GeracaoFases import GeradorFase, BANCO_INIMIGOS, _criar_inimigo_a_partir_template, executar_efeito_evento
+from Gameplay.GeracaoFases import GeradorFase, BANCO_INIMIGOS, TOTAL_PARTIDAS_JOGO, _criar_inimigo_a_partir_template, executar_efeito_evento
 from Sistemas.Recursos import caminho_imagem, caminho_sfx, caminho_vfx
 from Sistemas.GerenciadorAudio import tocar_sfx
 from Sistemas.SistemaEfeitos import (
@@ -182,7 +182,7 @@ class GerenciadorJogo(TelaBase):
         self.fase_numero = 1
         self.gerador_fases = GeradorFase(self.fase_numero)
         self.partida_atual = 1
-        self.total_partidas = 9
+        self.total_partidas = TOTAL_PARTIDAS_JOGO
         self.pontos_jogo = 0
         self.kills_total = 0
         self.dano_causado_total = 0
@@ -252,6 +252,8 @@ class GerenciadorJogo(TelaBase):
         self.fundo_luta_tamanho = None
         self.tempo_animacao = 0.0
         self.animacao_ataque_fisico = None
+        self.projeteis_ataque = []
+        self.cache_sprites_ataque = {}
 
         try:
             img_c = pygame.image.load(caminho_imagem("Cortes.png"))
@@ -484,18 +486,127 @@ class GerenciadorJogo(TelaBase):
 
         return False
 
-    def disparar_ataque_fisico_teleporte(self, atacante, alvo, duracao=45):
-        """Teleporta temporariamente a sprite do atacante para a frente do alvo e aciona balanço físico."""
-        if not atacante or not alvo or atacante == alvo:
-            return
-        if not hasattr(atacante, "rect") or not hasattr(alvo, "rect"):
-            return
+    def _normalizar_texto_ataque(self, texto):
+        import unicodedata
+        s = unicodedata.normalize("NFKD", str(texto or "")).encode("ASCII", "ignore").decode("ASCII")
+        return s.strip().lower()
 
+    def obter_categoria_animacao_ataque(self, hab):
+        """Classifica a animação de ataque em 'fisico', 'projetil', 'invocacao' ou None."""
+        if not hab:
+            return None
+        if self.eh_ataque_fisico(hab):
+            return "fisico"
+        tipo = hab.tipo if hasattr(hab, "tipo") else ""
+        tipo_norm = self._normalizar_texto_ataque(tipo)
+        if "invoc" in tipo_norm:
+            return "invocacao"
+        if "dist" in tipo_norm or "mag" in tipo_norm or "feitic" in tipo_norm:
+            return "projetil"
+        return None
+
+    def _criar_sprite_projetil_padrao(self, tipo_norm):
+        """Gera uma sprite procedural luminosa caso a habilidade não possua arquivo próprio."""
+        surf = pygame.Surface((44, 44), pygame.SRCALPHA)
+        if "mag" in tipo_norm or "feitic" in tipo_norm:
+            cor_ext = (180, 75, 255, 190)
+            cor_int = (235, 185, 255, 240)
+        else:
+            cor_ext = (50, 195, 255, 190)
+            cor_int = (255, 240, 150, 240)
+        pygame.draw.circle(surf, cor_ext, (22, 22), 18)
+        pygame.draw.circle(surf, cor_int, (22, 22), 10)
+        pygame.draw.circle(surf, (255, 255, 255, 255), (22, 22), 5)
+        return surf
+
+    def obter_sprite_ataque(self, hab):
+        """Carrega e armazena em cache a sprite do projétil associada à habilidade."""
+        nome_raw = getattr(hab, "nome", str(hab or ""))
+        tipo_raw = getattr(hab, "tipo", "")
+        nome_norm = self._normalizar_texto_ataque(nome_raw)
+        tipo_norm = self._normalizar_texto_ataque(tipo_raw)
+        chave = (nome_norm, tipo_norm)
+
+        if chave in self.cache_sprites_ataque:
+            return self.cache_sprites_ataque[chave]
+
+        mapa_sprites = {
+            "azul": "Azul.gif",
+            "vermelho": "Vermelho.gif",
+            "roxo": "Roxo.gif",
+            "vazio roxo": "Roxo.gif",
+            "boomerang": "Bomerang.png",
+            "bomerang": "Bomerang.png",
+            "chamas das trevas": "Chamas Negras.png",
+            "chamas negras": "Chamas Negras.png",
+            "domo compressado": "Domo Comprensado.png",
+            "domo comprensado": "Domo Comprensado.png",
+            "mare dagua": "Mare Dagua.png",
+            "tour de force": "Tour.png",
+            "corte": "Corte.png",
+            "clivagem amaldicoada": "Corte.png",
+            "desmantelar": "Cortes.png",
+            "cortes": "Cortes.png",
+            "explosivo": "Explosivo.png",
+            "granada de concussao": "Explosivo.png",
+            "fogo": "Explosivo.png",
+            "labareda de umbra": "Explosivo.png",
+            "furia das chamas": "Explosivo.png",
+            "smoke": "Smoke.png",
+            "apagao": "Smoke.png",
+            "nevasca": "Smoke.png",
+            "placa": "Placa.png",
+            "terremoto": "Placa.png",
+            "flash negro": "Flash Negro.png",
+        }
+
+        candidatos = []
+        if nome_norm in mapa_sprites:
+            candidatos.append(mapa_sprites[nome_norm])
+        else:
+            for palavra, arquivo in mapa_sprites.items():
+                if palavra in nome_norm:
+                    candidatos.append(arquivo)
+                    break
+        if nome_raw:
+            candidatos.extend([f"{nome_raw}.png", f"{nome_raw}.gif"])
+
+        sprite_carregada = None
+        for nome_arq in candidatos:
+            caminho = caminho_imagem(nome_arq)
+            if caminho and os.path.exists(caminho):
+                try:
+                    img = pygame.image.load(caminho)
+                    if pygame.display.get_surface() is not None:
+                        img = img.convert_alpha()
+                    w, h = img.get_size()
+                    if w > 0 and h > 0:
+                        escala = 52.0 / max(w, h)
+                        nova_w = max(16, int(w * escala))
+                        nova_h = max(16, int(h * escala))
+                        sprite_carregada = pygame.transform.smoothscale(img, (nova_w, nova_h))
+                        break
+                except Exception:
+                    sprite_carregada = None
+
+        if sprite_carregada is None:
+            sprite_carregada = self._criar_sprite_projetil_padrao(tipo_norm)
+
+        self.cache_sprites_ataque[chave] = sprite_carregada
+        return sprite_carregada
+
+    def _preparar_estado_balanco(self, atacante, alvo, duracao, modo):
+        """Inicializa o dicionário de animação em pêndulo preservando a posição original."""
         pos_original = getattr(atacante, "posicao_base", (atacante.rect.centerx, atacante.rect.centery))
         direcao_original = getattr(atacante, "direcao_olhar", "leste")
         if self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == atacante:
             pos_original = self.animacao_ataque_fisico.get("pos_original", pos_original)
             direcao_original = self.animacao_ataque_fisico.get("direcao_original", direcao_original)
+
+        if alvo and hasattr(alvo, "rect"):
+            direcao = 1 if pos_original[0] <= alvo.rect.centerx else -1
+        else:
+            direcao = -1 if direcao_original == "oeste" else 1
 
         self.animacao_ataque_fisico = {
             "atacante": atacante,
@@ -505,22 +616,123 @@ class GerenciadorJogo(TelaBase):
             "pos_original": pos_original,
             "direcao_original": direcao_original,
             "em_espera": duracao is None,
+            "modo": modo,
+            "direcao_fixa": direcao,
+            "angulo_rotacao": 0.0,
         }
 
+    def disparar_ataque_fisico_teleporte(self, atacante, alvo, duracao=45):
+        """Teleporta temporariamente a sprite do atacante para a frente do alvo e aciona balanço físico."""
+        if not atacante or not alvo or atacante == alvo:
+            return
+        if not hasattr(atacante, "rect") or not hasattr(alvo, "rect"):
+            return
+        self._preparar_estado_balanco(atacante, alvo, duracao, modo="fisico")
+
+    def disparar_animacao_ataque_distancia_magia(self, atacante, alvos, hab, duracao=22):
+        """Faz uma rápida balançada para trás e dispara um projétil com a sprite do ataque."""
+        if not atacante or not hasattr(atacante, "rect"):
+            return
+        lista_alvos = [a for a in (alvos if isinstance(alvos, (list, tuple)) else [alvos]) if a and hasattr(a, "rect") and a != atacante]
+        alvo_ref = lista_alvos[0] if lista_alvos else None
+        self._preparar_estado_balanco(atacante, alvo_ref, duracao, modo="recuo")
+
+        sprite_ataque = self.obter_sprite_ataque(hab)
+        girar = bool(getattr(hab, "giro", False))
+
+        for alvo_item in lista_alvos:
+            self.projeteis_ataque.append({
+                "atacante": atacante,
+                "alvo": alvo_item,
+                "origem": (float(atacante.rect.centerx), float(atacante.rect.centery)),
+                "destino": (float(alvo_item.rect.centerx), float(alvo_item.rect.centery)),
+                "x": float(atacante.rect.centerx),
+                "y": float(atacante.rect.centery),
+                "delay": 6,
+                "timer": 0,
+                "duracao": 18,
+                "sprite": sprite_ataque,
+                "girar": girar,
+                "angulo": 0.0,
+            })
+
+    def disparar_animacao_ataque_invocacao(self, atacante, alvo=None, duracao=24):
+        """Faz apenas uma leve balançada para frente para ataques de invocação."""
+        if not atacante or not hasattr(atacante, "rect"):
+            return
+        self._preparar_estado_balanco(atacante, alvo, duracao, modo="invocacao")
+
+    def disparar_animacao_ataque_por_habilidade(self, atacante, alvo_ou_alvos, hab, duracao_fisico=75):
+        """Seleciona e inicia a animação adequada conforme o tipo da habilidade."""
+        categoria = self.obter_categoria_animacao_ataque(hab)
+        if not categoria:
+            return
+        alvos_lista = alvo_ou_alvos if isinstance(alvo_ou_alvos, (list, tuple)) else ([alvo_ou_alvos] if alvo_ou_alvos else [])
+        alvo_principal = alvos_lista[0] if alvos_lista else None
+
+        if categoria == "fisico" and alvo_principal:
+            self.disparar_ataque_fisico_teleporte(atacante, alvo_principal, duracao=duracao_fisico)
+        elif categoria == "projetil" and alvos_lista:
+            self.disparar_animacao_ataque_distancia_magia(atacante, alvos_lista, hab)
+        elif categoria == "invocacao":
+            self.disparar_animacao_ataque_invocacao(atacante, alvo=alvo_principal)
+
+    def atualizar_projeteis_ataque(self):
+        """Atualiza o deslocamento dos projéteis de ataques à distância e mágicos."""
+        if not self.projeteis_ataque:
+            return
+        ativos = []
+        for proj in self.projeteis_ataque:
+            if proj["delay"] > 0:
+                proj["delay"] -= 1
+                ativos.append(proj)
+                continue
+
+            proj["timer"] += 1
+            t = min(1.0, proj["timer"] / max(1, proj["duracao"]))
+            ox, oy = proj["origem"]
+            dx, dy = proj["destino"]
+            proj["x"] = ox + (dx - ox) * t
+            if proj.get("girar"):
+                proj["y"] = oy + (dy - oy) * t - math.sin(math.pi * t) * 18.0
+                proj["angulo"] = (proj.get("angulo", 0.0) + 18.0) % 360.0
+            else:
+                proj["y"] = oy + (dy - oy) * t
+                proj["angulo"] = -math.degrees(math.atan2(dy - oy, dx - ox))
+
+            if t < 1.0:
+                ativos.append(proj)
+        self.projeteis_ataque = ativos
+
+    def desenhar_projeteis_ataque(self):
+        """Renderiza os projéteis ativos contendo a sprite do ataque."""
+        if not self.projeteis_ataque:
+            return
+        for proj in self.projeteis_ataque:
+            if proj["delay"] > 0:
+                continue
+            sprite = proj.get("sprite")
+            if sprite:
+                angulo = proj.get("angulo", 0.0)
+                surf = pygame.transform.rotate(sprite, angulo) if abs(angulo) > 0.1 else sprite
+                rect = surf.get_rect(center=(int(proj["x"]), int(proj["y"])))
+                self.tela.blit(surf, rect)
+
     def atualizar_animacao_ataque_fisico(self):
-        """Atualiza a posição e a oscilação de balanço do ataque físico a cada frame."""
+        """Atualiza a posição e a oscilação de balanço dos ataques (físico, recuo e invocação)."""
         if not self.animacao_ataque_fisico:
             return
 
         atacante = self.animacao_ataque_fisico.get("atacante")
         alvo = self.animacao_ataque_fisico.get("alvo")
         pos_orig = self.animacao_ataque_fisico.get("pos_original")
+        modo = self.animacao_ataque_fisico.get("modo", "fisico")
 
         if not atacante or not hasattr(atacante, "rect") or getattr(atacante, "hp", 0) <= 0:
             self.animacao_ataque_fisico = None
             return
 
-        if not alvo or not hasattr(alvo, "rect"):
+        if modo == "fisico" and (not alvo or not hasattr(alvo, "rect")):
             if pos_orig and hasattr(atacante, "rect"):
                 atacante.rect.center = pos_orig
             direcao_orig = self.animacao_ataque_fisico.get("direcao_original")
@@ -550,6 +762,38 @@ class GerenciadorJogo(TelaBase):
                     self.animacao_ataque_fisico = None
                     return
 
+        altura = atacante.rect.height
+        raio_pendulo = max(50, altura)
+
+        if modo in ("recuo", "invocacao"):
+            base_x, base_y = pos_orig if pos_orig else (atacante.rect.centerx, atacante.rect.centery)
+            direcao = self.animacao_ataque_fisico.get("direcao_fixa", 1)
+            if hasattr(atacante, "virar_para"):
+                atacante.virar_para("leste" if direcao >= 0 else "oeste")
+
+            dur_total = max(1, self.animacao_ataque_fisico.get("duracao_total") or 22)
+            timer_atual = max(0, self.animacao_ataque_fisico.get("timer") or 0)
+            progresso = max(0.0, min(1.0, 1.0 - (timer_atual / float(dur_total))))
+
+            if modo == "recuo":
+                # Rápida balançada para trás e retorno ao centro
+                if progresso < 0.45:
+                    fator = math.sin((progresso / 0.45) * (math.pi / 2.0))
+                else:
+                    fator = math.cos(((progresso - 0.45) / 0.55) * (math.pi / 2.0))
+                theta = -direcao * math.radians(16.0) * fator
+            else:
+                # Leve balançada para frente
+                fator = math.sin(math.pi * progresso)
+                theta = direcao * math.radians(10.0) * fator
+
+            desloc_x = int(raio_pendulo * math.sin(theta))
+            desloc_y = int(raio_pendulo * (1.0 - math.cos(theta)))
+            atacante.rect.center = (base_x + desloc_x, base_y + desloc_y)
+            self.animacao_ataque_fisico["angulo_rotacao"] = -math.degrees(theta)
+            self.animacao_ataque_fisico["pivo_base"] = (base_x, base_y + (altura // 2))
+            return
+
         orig_x = pos_orig[0] if pos_orig else atacante.rect.centerx
         if orig_x <= alvo.rect.centerx:
             dest_x = alvo.rect.left - (atacante.rect.width // 2) - 15
@@ -565,8 +809,6 @@ class GerenciadorJogo(TelaBase):
         dest_y = alvo.rect.centery
 
         # Movimento leve e rápido de pêndulo invertido na frente do personagem
-        altura = atacante.rect.height
-        raio_pendulo = max(50, altura)
         y_pivo = dest_y + (altura // 2)
 
         # Oscilação suave e ágil de pêndulo (sem tremer/vibração)
@@ -1756,7 +1998,7 @@ class GerenciadorJogo(TelaBase):
 
         self.classe_atual = novo_verso
         self.classe_dano_atual = nova_classe_dano
-        self.musica_luta = self.obter_musica_combate(eh_chefe=(getattr(self, 'partida_atual', 1) >= getattr(self, 'total_partidas', 3)), verso=novo_verso)
+        self.musica_luta = self.obter_musica_combate(eh_chefe=(getattr(self, 'partida_atual', 1) >= getattr(self, 'total_partidas', TOTAL_PARTIDAS_JOGO)), verso=novo_verso)
         try:
             from Sistemas import gerenciador_musica
             gerenciador_musica.definir_verso(novo_verso)
@@ -1826,51 +2068,45 @@ class GerenciadorJogo(TelaBase):
                 self.personagem2.minions.clear()
             self._aplicar_classe_personagem2()
 
+        eh_coop = bool(getattr(self, 'duas_pessoas', False))
         if id_cenario in ("ignorar_evento", "cancelar_evento", "dormir"):
             self.fase_numero += 1
             self.gerador_fases.fase_num = self.fase_numero
             if self.partida_atual >= self.total_partidas:
-                chefe = self.gerador_fases.gerar_chefe_verso(self.classe_atual)
+                chefe = self.gerador_fases.gerar_chefe_verso(self.classe_atual, duas_pessoas=eh_coop)
                 inimigos_fase = [chefe]
                 self.musica_luta = self.obter_musica_combate(eh_chefe=True)
                 self.mensagem_log = "👑 CHEFE FINAL APARECEU!"
             else:
-                inimigos_fase = self.gerador_fases.gerar_inimigos_aleatorios(self.fase_numero, quantidade=2, verso=self.classe_atual)
+                inimigos_fase = self.gerador_fases.gerar_inimigos_aleatorios(self.fase_numero, verso=self.classe_atual, duas_pessoas=eh_coop)
                 self.musica_luta = self.obter_musica_combate(eh_chefe=False)
                 if id_cenario == "dormir":
                     self.mensagem_log = "💤 Você descansou no dormitório e seguiu para a próxima batalha!"
                 else:
                     self.mensagem_log = "⚑ Você ignorou o evento e seguiu para a próxima batalha!"
         elif id_cenario.startswith("evento_acao:") or id_cenario.startswith("evento_neutro_"):
-            if id_cenario.startswith("evento_neutro_"):
-                prefixo_id = id_cenario.split(":", 1)[0]
-                sufixo_num = prefixo_id.split("_")[-1]
-                if sufixo_num.isdigit():
-                    self.fase_numero = int(sufixo_num)
-                else:
-                    self.fase_numero += 1
-            else:
-                self.fase_numero += 1
+            self.fase_numero += 1
             self.gerador_fases.fase_num = self.fase_numero
             dados_efeito = executar_efeito_evento(id_cenario, jogo_tela=self, rolagem_forcada=rolagem_forcada)
             self.evento_neutro = dados_efeito["evento"]
             self.multiplicador_recompensa = dados_efeito.get("multiplicador_recompensa", 1.0)
             if self.partida_atual >= self.total_partidas:
-                chefe = self.gerador_fases.gerar_chefe_verso(self.classe_atual)
+                chefe = self.gerador_fases.gerar_chefe_verso(self.classe_atual, duas_pessoas=eh_coop)
                 inimigos_fase = [chefe]
                 self.musica_luta = self.obter_musica_combate(eh_chefe=True)
                 self.mensagem_log = f"👑 CHEFE FINAL! {dados_efeito['mensagem']}"
             else:
                 inimigos_fase = self.gerador_fases.gerar_inimigos_aleatorios(
                     self.fase_numero,
-                    quantidade=dados_efeito["quantidade_inimigos"],
+                    quantidade=dados_efeito.get("quantidade_inimigos"),
                     verso=self.classe_atual,
                     multiplicador_extra=dados_efeito["multiplicador_forca"],
+                    duas_pessoas=eh_coop,
                 )
                 self.musica_luta = self.obter_musica_combate(eh_chefe=(len(inimigos_fase) == 1 and self.multiplicador_recompensa > 1.0))
                 self.mensagem_log = dados_efeito["mensagem"]
         elif self.partida_atual >= self.total_partidas:
-            chefe = self.gerador_fases.gerar_chefe_verso(self.classe_atual)
+            chefe = self.gerador_fases.gerar_chefe_verso(self.classe_atual, duas_pessoas=eh_coop)
             inimigos_fase = [chefe]
             self.musica_luta = self.obter_musica_combate(eh_chefe=True)
             self.mensagem_log = "👑 CHEFE FINAL APARECEU!"
@@ -1903,11 +2139,17 @@ class GerenciadorJogo(TelaBase):
         self.dados_ultimo_evento = dados_efeito
         return dados_efeito
 
-    def reiniciar(self):
+    def reiniciar(self, forcar_novos_inimigos=False):
         self.animacao_ataque_fisico = None
-        inimigos_atuais = [entidade for entidade in self.ordem_turnos if self.eh_inimigo(entidade)]
+        self.projeteis_ataque.clear()
+        self.gerador_fases.fase_num = self.fase_numero
+        inimigos_atuais = [] if forcar_novos_inimigos else [entidade for entidade in self.ordem_turnos if self.eh_inimigo(entidade)]
         if not inimigos_atuais:
-            inimigos_atuais = self.gerador_fases.gerar_inimigos_aleatorios(self.fase_numero, quantidade=2, verso=self.classe_atual)
+            inimigos_atuais = self.gerador_fases.gerar_inimigos_aleatorios(
+                self.fase_numero,
+                verso=self.classe_atual,
+                duas_pessoas=bool(getattr(self, 'duas_pessoas', False)),
+            )
 
         self.minions_ativos.clear()
         if hasattr(personagem, "minions"):
@@ -2017,8 +2259,15 @@ class GerenciadorJogo(TelaBase):
             if inventario_global.consumir_bilhete_dormitorio(1):
                 dormiu = True
 
-        percentual_hp = 0.70 if dormiu else 0.30
-        pontos_mp = 7 if dormiu else 3
+        if dormiu:
+            percentual_hp = 0.70
+            pontos_mp = 7
+        elif getattr(self, 'duas_pessoas', False):
+            percentual_hp = 0.20
+            pontos_mp = 2
+        else:
+            percentual_hp = 0.30
+            pontos_mp = 3
 
         cura_info = {
             "hp": 0,
@@ -2193,8 +2442,7 @@ class GerenciadorJogo(TelaBase):
         alvo_principal = alvo_prioritario if (alvo_prioritario in inimigos_vivos) else random.choice(inimigos_vivos)
         alvos = inimigos_vivos if hab.em_area else [alvo_principal]
 
-        if self.eh_ataque_fisico(hab) and alvo_principal:
-            self.disparar_ataque_fisico_teleporte(minion, alvo_principal, duracao=75)
+        self.disparar_animacao_ataque_por_habilidade(minion, alvos, hab, duracao_fisico=75)
 
         nome_hab_minion = (hab.nome or "").lower()
         if "mordida" in nome_hab_minion:
@@ -2449,9 +2697,13 @@ class GerenciadorJogo(TelaBase):
         texto_alvo = "EM ÁREA (TODOS OS INIMIGOS)" if hab.em_area else (self.nome_exibicao(alvo_principal) if alvo_principal else "alvo")
 
         alvo_teleporte = alvo_principal or (alvos[0] if alvos else None)
-        if alvo_teleporte and self.eh_ataque_fisico(hab):
-            cd_frames = 35 if (desempenho_minigame is not None or chance_erro_minigame is not None) else 75
-            self.disparar_ataque_fisico_teleporte(jogador_ativo, alvo_teleporte, duracao=cd_frames)
+        cd_frames = 35 if (desempenho_minigame is not None or chance_erro_minigame is not None) else 75
+        self.disparar_animacao_ataque_por_habilidade(
+            jogador_ativo,
+            alvos if alvos else alvo_teleporte,
+            hab,
+            duracao_fisico=cd_frames,
+        )
 
         if not critico and errou:
             if minion_invocado is not None:
@@ -2563,6 +2815,7 @@ class GerenciadorJogo(TelaBase):
         self.tempo_animacao += 0.04
         self.atualizar_posicoes_inimigos()
         self.atualizar_animacao_ataque_fisico()
+        self.atualizar_projeteis_ataque()
         self.atualizar_cortes_santuario()
         self.atualizar_spike_e_detonacao()
 
@@ -2999,7 +3252,12 @@ class GerenciadorJogo(TelaBase):
                         especiais = [a for a in ataques_possiveis if a not in ("Santuário Malevolente", "Plantar Spike", "Spike")]
                     if not especiais:
                         especiais = ataques_possiveis
-                    if especiais and random.random() < 0.70:
+
+                    jogadores_vivos_ia = [j for j in self.obter_jogadores() if j.hp > 0]
+                    especiais_area = [a for a in especiais if getattr(entidade_atual.obter_habilidade(a), "em_area", False)]
+                    if getattr(self, 'duas_pessoas', False) and len(jogadores_vivos_ia) > 1 and especiais_area and random.random() < 0.75:
+                        nome_golpe_inimigo = random.choice(especiais_area)
+                    elif especiais and random.random() < 0.70:
                         nome_golpe_inimigo = random.choice(especiais)
                     else:
                         nome_golpe_inimigo = random.choice(ataques_possiveis)
@@ -3077,6 +3335,9 @@ class GerenciadorJogo(TelaBase):
                     critico = True
                     dano_inimigo = int(dano_inimigo * 1.5)
 
+                if getattr(self, 'duas_pessoas', False):
+                    dano_inimigo = max(1, int(round(dano_inimigo * 1.15)))
+
                 jogadores_vivos = [j for j in self.obter_jogadores() if j.hp > 0]
                 minions_vivos = self.obter_minions_jogador()
 
@@ -3084,8 +3345,7 @@ class GerenciadorJogo(TelaBase):
                 if minions_defendendo:
                     alvo_minion = random.choice(minions_defendendo)
                     self.alvo_destaque = alvo_minion
-                    if self.eh_ataque_fisico(hab_usada):
-                        self.disparar_ataque_fisico_teleporte(entidade_atual, alvo_minion, duracao=75)
+                    self.disparar_animacao_ataque_por_habilidade(entidade_atual, alvo_minion, hab_usada, duracao_fisico=75)
                     efeitos_ataque, chance_efeito = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
                     precisao_atk = hab_usada.precisao
                     if getattr(entidade_atual, "cego", False):
@@ -3113,8 +3373,7 @@ class GerenciadorJogo(TelaBase):
                 elif minions_vivos and random.random() < 0.45:
                     alvo_minion = random.choice(minions_vivos)
                     self.alvo_destaque = alvo_minion
-                    if self.eh_ataque_fisico(hab_usada):
-                        self.disparar_ataque_fisico_teleporte(entidade_atual, alvo_minion, duracao=75)
+                    self.disparar_animacao_ataque_por_habilidade(entidade_atual, alvo_minion, hab_usada, duracao_fisico=75)
                     efeitos_ataque, chance_efeito = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
                     precisao_atk = hab_usada.precisao
                     if getattr(entidade_atual, "cego", False):
@@ -3154,8 +3413,7 @@ class GerenciadorJogo(TelaBase):
                     precisao_inimigo = max(0.0, precisao_inimigo - 0.20)
 
                 if not critico and random.random() > precisao_inimigo:
-                    if self.eh_ataque_fisico(hab_usada):
-                        self.disparar_ataque_fisico_teleporte(entidade_atual, alvo_jogador, duracao=75)
+                    self.disparar_animacao_ataque_por_habilidade(entidade_atual, alvo_jogador, hab_usada, duracao_fisico=75)
                     self.mensagem_log = f"💨 {nome_inimigo} usou {hab_usada.nome} no alvo {self.nome_exibicao(alvo_jogador)}, mas ERROU!"
                     self.iniciar_cooldown_feedback(75, self.avancar_turno)
                 else:
@@ -3169,8 +3427,7 @@ class GerenciadorJogo(TelaBase):
                     dano_inimigo = max(1, dano_inimigo - defesa_passiva)
 
                     if alvo_jogador.bloqueando:
-                        if self.eh_ataque_fisico(hab_usada):
-                            self.disparar_ataque_fisico_teleporte(entidade_atual, alvo_jogador, duracao=75)
+                        self.disparar_animacao_ataque_por_habilidade(entidade_atual, alvo_jogador, hab_usada, duracao_fisico=75)
                         dano_reduzido = max(1, int(dano_inimigo * 0.5))
                         if getattr(alvo_jogador, 'god_mode', False):
                             dano_reduzido = 0
@@ -3189,6 +3446,8 @@ class GerenciadorJogo(TelaBase):
                         self.efeitos_pendentes, self.chance_efeito_pendente = self.obter_efeitos_ataque_inimigo(entidade_atual, hab_usada)
                         if self.eh_ataque_fisico(hab_usada):
                             self.disparar_ataque_fisico_teleporte(entidade_atual, alvo_jogador, duracao=None)
+                        else:
+                            self.disparar_animacao_ataque_por_habilidade(entidade_atual, alvo_jogador, hab_usada)
                         velocidade_base = self.velocidade_esquiva(alvo_jogador)
 
                         self.minigame_esquiva.iniciar(
@@ -3348,7 +3607,11 @@ class GerenciadorJogo(TelaBase):
                 self._desenhar_sombra_contato(entidade, multiplicador_alfa=alfa_sombra)
 
         def _chave_ordem_desenho(e):
-            if self.animacao_ataque_fisico and self.animacao_ataque_fisico.get("atacante") == e:
+            if (
+                self.animacao_ataque_fisico
+                and self.animacao_ataque_fisico.get("atacante") == e
+                and self.animacao_ataque_fisico.get("modo", "fisico") == "fisico"
+            ):
                 return e.rect.bottom + 1000
             return e.rect.bottom
 
@@ -3414,6 +3677,9 @@ class GerenciadorJogo(TelaBase):
                     pos_x = int(p["x"] - surf.get_width() // 2)
                     pos_y = int(p["y"] - surf.get_height() // 2)
                     self.tela.blit(surf, (pos_x, pos_y), special_flags=pygame.BLEND_ADD)
+
+        # Renderização dos projéteis de ataques à distância e mágicos
+        self.desenhar_projeteis_ataque()
 
         indice_seguro = self.indice_turno if self.indice_turno < len(self.ordem_turnos) else 0
         turno_ativo = self.ordem_turnos[indice_seguro] if self.ordem_turnos else None
@@ -3507,10 +3773,10 @@ class GerenciadorJogo(TelaBase):
                     if bar_x <= bx <= bar_x + bar_w:
                         pygame.draw.rect(self.tela, (255, 60, 60), (bx, bar_y - 6, 8, bar_h + 12), border_radius=2)
 
-        contador_partida = pygame.Rect(30, 25, 175, 42)
+        texto_partida = self.fonte_titulos.render(f"PARTIDA {self.partida_atual}/{self.total_partidas}", True, (255, 255, 255))
+        contador_partida = pygame.Rect(30, 25, max(175, texto_partida.get_width() + 28), 42)
         pygame.draw.rect(self.tela, (24, 26, 36), contador_partida, border_radius=10)
         pygame.draw.rect(self.tela, (255, 210, 90), contador_partida, width=2, border_radius=10)
-        texto_partida = self.fonte_titulos.render(f"PARTIDA {self.partida_atual}/{self.total_partidas}", True, (255, 255, 255))
         self.tela.blit(texto_partida, (contador_partida.x + 14, contador_partida.y + 11))
         self.btn_pausa.desenhar(self.tela)
 

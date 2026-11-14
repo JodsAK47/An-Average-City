@@ -41,7 +41,7 @@ class TestMinigamesAtaque(unittest.TestCase):
     # ==================== TESTES DE INVOCADOR ====================
 
     def test_invocador_estilo1_spam_espaco(self):
-        """Invocador Tipo 1: Spam de Espaço para encher a barra de invocação."""
+        """Invocador Tipo 1: Spam de Espaço para encher a barra de invocação sem duplo input no mesmo frame."""
         hab = Habilidade("Invocar Abelha", "Invocador", 20, 10, 1.0, "Invocação", estilo=1)
         self.mg.iniciar(hab)
         self.assertTrue(self.mg.esta_ativo())
@@ -49,57 +49,81 @@ class TestMinigamesAtaque(unittest.TestCase):
         self.assertEqual(self.mg.estilo, 1)
 
         progresso_inicial = self.mg.invoc_progresso
-        # Pressiona ESPAÇO várias vezes
         ev_space = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE)
-        for _ in range(8):
-            self.mg.processar_evento(ev_space, (0, 0))
+        ev_click = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=(500, 400))
 
+        # Pressionar espaço e clicar no mesmo frame não deve somar duas vezes
+        self.mg.processar_evento(ev_space, (500, 400))
+        prog_apos_espaco = self.mg.invoc_progresso
+        self.mg.processar_evento(ev_click, (500, 400))
+        self.assertEqual(self.mg.invoc_progresso, prog_apos_espaco)
         self.assertGreater(self.mg.invoc_progresso, progresso_inicial)
 
-        # Continua até 100% para concluir com perfeição
-        for _ in range(10):
-            self.mg.processar_evento(ev_space, (0, 0))
+        # Continua pressionando espaço respeitando o cooldown de frames até 100%
+        for _ in range(15):
+            if self.mg.concluido:
+                break
+            self.mg.atualizar((500, 400), (False, False, False))
+            self.mg.atualizar((500, 400), (False, False, False))
+            self.mg.processar_evento(ev_space, (500, 400))
 
         self.assertTrue(self.mg.concluido)
         self.assertGreaterEqual(self.mg.resultado["multiplicador"], 1.35)
         self.assertTrue(self.mg.resultado["sucesso"])
 
     def test_invocador_estilo2_sequencia_teclas(self):
-        """Invocador Tipo 2: Sequência de Teclas no tempo correto."""
+        """Invocador Tipo 2: Exibe 1 tecla por vez até o tempo acabar, avaliando pelos acertos."""
         hab = Habilidade("Invocar Pássaro", "Invocador", 25, 12, 1.0, "Invocação", estilo=2)
         self.mg.iniciar(hab)
         self.assertEqual(self.mg.classe_normalizada, "Invocador")
         self.assertEqual(self.mg.estilo, 2)
-        self.assertEqual(len(self.mg.seq_teclas), 4)
+        self.assertEqual(len(self.mg.seq_teclas), 1)
 
-        # Digita as teclas corretas em sequência
-        for item in self.mg.seq_teclas:
-            _, key_char, _ = item
+        # Acerta 7 teclas uma por uma; nenhuma deve encerrar o minigame antes do tempo acabar
+        for _ in range(7):
+            tecla_anterior, key_char, _ = self.mg.seq_tecla_atual
             ev = pygame.event.Event(pygame.KEYDOWN, key=key_char)
             self.mg.processar_evento(ev, (0, 0))
+            self.assertFalse(self.mg.concluido)
+            self.assertNotEqual(self.mg.seq_tecla_atual[0], tecla_anterior)
+
+        self.assertEqual(self.mg.seq_indice, 7)
+        self.assertFalse(self.mg.concluido)
+
+        # Só conclui quando o tempo termina
+        while not self.mg.concluido:
+            self.mg.atualizar((0, 0), (False, False, False))
 
         self.assertTrue(self.mg.concluido)
-        self.assertEqual(self.mg.seq_indice, 4)
-        self.assertGreaterEqual(self.mg.resultado["multiplicador"], 1.20)
+        self.assertGreaterEqual(self.mg.resultado["multiplicador"], 1.35)
         self.assertTrue(self.mg.resultado["sucesso"])
 
     # ==================== TESTES DE DISTÂNCIA ====================
 
     def test_distancia_estilo1_alvo_reflexo(self):
-        """Distância Tipo 1: Retículo/Alvo com tempo de clique bem mais rápido (~0.9s)."""
+        """Distância Tipo 1: Múltiplos alvos que contam por quantidade atingida sem encerrar no primeiro."""
         hab = Habilidade("Boomerang", "Distância", 22, 8, 1.0, "Disparo", estilo=1)
         self.mg.iniciar(hab)
         self.assertEqual(self.mg.classe_normalizada, "Distância")
         self.assertEqual(self.mg.estilo, 1)
-        # Verifica se o tempo total foi reduzido para ser bem mais rápido
-        self.assertLessEqual(self.mg.tempo_total, 60)
+        self.assertEqual(len(self.mg.dist_alvos), 3)
+        self.assertEqual(self.mg.dist_meta_alvos, 5)
 
-        # Clica exatamente no centro do alvo
-        alvo_pos = (int(self.mg.dist_alvo_x), int(self.mg.dist_alvo_y))
+        # Clica no primeiro alvo: conta 1 acerto e NÃO conclui ainda
+        alvo_pos = (int(self.mg.dist_alvos[0]["x"]), int(self.mg.dist_alvos[0]["y"]))
         ev_click = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=alvo_pos)
         self.mg.processar_evento(ev_click, alvo_pos)
+        self.assertEqual(self.mg.dist_alvos_atingidos, 1)
+        self.assertFalse(self.mg.concluido)
+
+        # Atinge os alvos restantes até completar os 5
+        for _ in range(4):
+            alvo_pos = (int(self.mg.dist_alvos[0]["x"]), int(self.mg.dist_alvos[0]["y"]))
+            ev_click = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=alvo_pos)
+            self.mg.processar_evento(ev_click, alvo_pos)
 
         self.assertTrue(self.mg.concluido)
+        self.assertEqual(self.mg.dist_alvos_atingidos, 5)
         self.assertGreaterEqual(self.mg.resultado["multiplicador"], 1.40)
         self.assertIn("BULLSEYE", self.mg.resultado["feedback"])
 
@@ -140,14 +164,21 @@ class TestMinigamesAtaque(unittest.TestCase):
     # ==================== TESTES DE FEITICEIRO (MAGIA) ====================
 
     def test_feiticeiro_estilo1_esfera_movel(self):
-        """Feiticeiro Tipo 1: Manter o cursor dentro de uma esfera em movimento."""
+        """Feiticeiro Tipo 1: Manter o cursor dentro de uma esfera em movimento sem encerramento por clique."""
         hab = Habilidade("Azul", "Magia", 35, 15, 1.0, "Arcano", estilo=1)
         self.mg.iniciar(hab)
         self.assertEqual(self.mg.classe_normalizada, "Magia")
         self.assertEqual(self.mg.estilo, 1)
 
-        # Simula manter o mouse na posição da esfera durante todos os frames
+        # Clicar ou apertar espaço não deve encerrar acidentalmente o minigame
+        ev_click = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=(500, 400))
+        self.mg.processar_evento(ev_click, (500, 400))
+        self.assertFalse(self.mg.concluido)
+
+        # Simula manter o mouse na posição da esfera durante os frames necessários
         for _ in range(self.mg.tempo_total):
+            if self.mg.concluido:
+                break
             pos_esfera = (int(self.mg.esfera_pos[0]), int(self.mg.esfera_pos[1]))
             self.mg.atualizar(pos_esfera, (False, False, False))
 
@@ -155,8 +186,19 @@ class TestMinigamesAtaque(unittest.TestCase):
         self.assertGreaterEqual(self.mg.resultado["multiplicador"], 1.35)
         self.assertIn("CANALIZAÇÃO PERFEITA", self.mg.resultado["feedback"])
 
+    def _conduzir_runa_pelo_caminho(self):
+        """Helper de teste para arrastar a runa ao longo dos pontos do caminho arcano."""
+        for pt in self.mg.drag_caminho_pontos:
+            if self.mg.concluido:
+                break
+            alvo = (int(pt[0]), int(pt[1]))
+            for _ in range(3):
+                if self.mg.concluido:
+                    break
+                self.mg.atualizar(alvo, (True, False, False))
+
     def test_feiticeiro_estilo2_arrastar_runa(self):
-        """Feiticeiro Tipo 2: Arrastar a runa/objeto até o glifo ritual."""
+        """Feiticeiro Tipo 2: Arrastar a runa pelo caminho arcano até o glifo ritual."""
         hab = Habilidade("Vermelho", "Magia", 40, 18, 1.0, "Arcano", estilo=2)
         self.mg.iniciar(hab)
         self.assertEqual(self.mg.classe_normalizada, "Magia")
@@ -168,73 +210,103 @@ class TestMinigamesAtaque(unittest.TestCase):
         self.mg.processar_evento(ev_down, pos_origem)
         self.assertTrue(self.mg.drag_segurando)
 
-        # Arrasta até o destino
-        pos_destino = (int(self.mg.drag_destino[0]), int(self.mg.drag_destino[1]))
-        self.mg.atualizar(pos_destino, (True, False, False))
-        ev_up = pygame.event.Event(pygame.MOUSEBUTTONUP, button=1, pos=pos_destino)
-        self.mg.processar_evento(ev_up, pos_destino)
+        # Conduz seguindo o caminho até o glifo
+        self._conduzir_runa_pelo_caminho()
+        if not self.mg.concluido:
+            pos_destino = (int(self.mg.drag_destino[0]), int(self.mg.drag_destino[1]))
+            ev_up = pygame.event.Event(pygame.MOUSEBUTTONUP, button=1, pos=pos_destino)
+            self.mg.processar_evento(ev_up, pos_destino)
 
         self.assertTrue(self.mg.concluido)
         self.assertGreaterEqual(self.mg.resultado["multiplicador"], 1.35)
         self.assertIn("RITUAL", self.mg.resultado["feedback"])
 
     def test_feiticeiro_estilo2_auto_ativacao_ao_alcancar_centro(self):
-        """Feiticeiro Tipo 2: Auto-conclusão imediata ao conduzir a runa até o centro do glifo sem travar."""
+        """Feiticeiro Tipo 2: Auto-conclusão imediata ao conduzir a runa até o centro do glifo."""
         hab = Habilidade("Vermelho", "Magia", 40, 18, 1.0, "Arcano", estilo=2)
         self.mg.iniciar(hab)
 
-        # Clica na runa e arrasta
+        # Clica na runa e arrasta seguindo o caminho até o destino
         pos_origem = (int(self.mg.drag_origem[0]), int(self.mg.drag_origem[1]))
         ev_down = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=pos_origem)
         self.mg.processar_evento(ev_down, pos_origem)
         self.assertTrue(self.mg.drag_segurando)
 
-        # Move mouse até o centro exato do glifo com botão ainda segurado
-        pos_destino = (int(self.mg.drag_destino[0]), int(self.mg.drag_destino[1]))
-        self.mg.atualizar(pos_destino, (True, False, False))
+        self._conduzir_runa_pelo_caminho()
 
-        # Deve auto-ativar instantaneamente sem precisar esperar soltura do clique
+        # Deve auto-ativar ao alcançar o núcleo sem precisar soltar o clique
         self.assertTrue(self.mg.concluido)
         self.assertGreaterEqual(self.mg.resultado["multiplicador"], 1.35)
         self.assertIn("RITUAL PERFEITO", self.mg.resultado["feedback"])
 
-    def test_feiticeiro_estilo2_atalhos_teclado_e_clique_glifo(self):
-        """Feiticeiro Tipo 2: Suporte a teclas de atalho e clique direto no glifo de destino."""
+    def test_feiticeiro_estilo2_caminho_dinamico_e_lentidao_fora_da_trilha(self):
+        """Feiticeiro Tipo 2: Posições/caminhos variam, atalhos não vencem e sair da trilha reduz velocidade."""
         hab = Habilidade("Chamas Das Trevas", "Magia", 30, 10, 1.0, "Arcano", estilo=2)
-        self.mg.iniciar(hab)
+        configuracoes = set()
+        for _ in range(12):
+            self.mg.iniciar(hab)
+            configuracoes.add((
+                round(self.mg.drag_origem[0], 1),
+                round(self.mg.drag_origem[1], 1),
+                round(self.mg.drag_destino[0], 1),
+                round(self.mg.drag_destino[1], 1),
+                self.mg.drag_caminho_tipo,
+            ))
+        self.assertGreater(len(configuracoes), 1)
 
-        # Pressiona tecla D para conduzir a runa
+        # Tecla D e clique direto no glifo não teletransportam mais
         ev_key = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_d)
         self.mg.processar_evento(ev_key, (0, 0))
+        self.assertFalse(self.mg.concluido)
 
-        self.assertTrue(self.mg.concluido)
-        self.assertGreaterEqual(self.mg.resultado["multiplicador"], 1.35)
+        pos_dest = (int(self.mg.drag_destino[0]), int(self.mg.drag_destino[1]))
+        ev_click_dest = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=pos_dest)
+        self.mg.processar_evento(ev_click_dest, pos_dest)
+        self.assertFalse(self.mg.concluido)
+
+        # Inicia arrasto e força a runa para longe da trilha para medir lentidão
+        pos_origem = (int(self.mg.drag_origem[0]), int(self.mg.drag_origem[1]))
+        ev_down = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=pos_origem)
+        self.mg.processar_evento(ev_down, pos_origem)
+        self.assertTrue(self.mg.drag_segurando)
+
+        self.mg.drag_pos_atual = [float(self.mg.x_painel + 40), float(self.mg.y_painel + 90)]
+        # Garante que esse ponto esteja fora da trilha caso a origem tenha ficado perto
+        if self.mg._distancia_ponto_ao_caminho(*self.mg.drag_pos_atual) <= self.mg.drag_raio_caminho:
+            self.mg.drag_pos_atual = [float(self.mg.x_painel + self.mg.largura_painel // 2), float(self.mg.y_painel + self.mg.altura_painel - 40)]
+
+        pos_antes = list(self.mg.drag_pos_atual)
+        alvo_longe = (self.mg.x_painel + self.mg.largura_painel - 40, self.mg.y_painel + 160)
+        self.mg.atualizar(alvo_longe, (True, False, False))
+        deslocamento = math.hypot(self.mg.drag_pos_atual[0] - pos_antes[0], self.mg.drag_pos_atual[1] - pos_antes[1])
+        self.assertTrue(self.mg.drag_fora_caminho)
+        self.assertLessEqual(deslocamento, 2.0)
 
     def test_feiticeiro_estilo2_recuperacao_ao_soltar_longe(self):
         """Feiticeiro Tipo 2: Soltar longe não trava o jogo e retorna suavemente para a origem."""
         hab = Habilidade("Mare Dagua", "Magia", 25, 8, 1.0, "Arcano", estilo=2)
         self.mg.iniciar(hab)
 
-        # Inicia arrasto
+        # Inicia arrasto e desloca seguindo os primeiros pontos do caminho
         pos_origem = (int(self.mg.drag_origem[0]), int(self.mg.drag_origem[1]))
         ev_down = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=pos_origem)
         self.mg.processar_evento(ev_down, pos_origem)
 
-        # Move até metade do caminho e solta o clique longe do destino
-        pos_meio = (int(self.mg.x_painel + self.mg.largura_painel // 2), int(self.mg.drag_origem[1]))
-        self.mg.atualizar(pos_meio, (False, False, False))  # soltou
+        ponto_meio = self.mg.drag_caminho_pontos[3]
+        self.mg.atualizar((int(ponto_meio[0]), int(ponto_meio[1])), (True, False, False))
+        self.mg.atualizar((int(ponto_meio[0]), int(ponto_meio[1])), (False, False, False))  # soltou
 
         self.assertFalse(self.mg.drag_segurando)
         self.assertFalse(self.mg.concluido)
 
         # Atualiza frames subsequentes: a runa deve flutuar em direção à origem
         dist_antes = math.hypot(self.mg.drag_pos_atual[0] - self.mg.drag_origem[0], self.mg.drag_pos_atual[1] - self.mg.drag_origem[1])
-        self.mg.atualizar(pos_meio, (False, False, False))
+        self.mg.atualizar((int(ponto_meio[0]), int(ponto_meio[1])), (False, False, False))
         dist_depois = math.hypot(self.mg.drag_pos_atual[0] - self.mg.drag_origem[0], self.mg.drag_pos_atual[1] - self.mg.drag_origem[1])
         self.assertLess(dist_depois, dist_antes)
 
     def test_feiticeiro_estilo2_renderizacao_e_animacao(self):
-        """Feiticeiro Tipo 2: Renderização visual de origem, conduíte, glifo e runa sem exceções."""
+        """Feiticeiro Tipo 2: Renderização visual de origem, caminho dinâmico, glifo e runa sem exceções."""
         hab = Habilidade("Vermelho", "Magia", 40, 18, 1.0, "Arcano", estilo=2)
         self.mg.iniciar(hab)
 
@@ -279,6 +351,27 @@ class TestMinigamesAtaque(unittest.TestCase):
         self.assertGreaterEqual(self.mg.resultado["multiplicador"], 1.45)
         self.assertIn("COMBO DEVASTADOR", self.mg.resultado["feedback"])
 
+    def test_lutador_estilo1_preserva_combo_ao_errar_ultimo(self):
+        """Lutador Tipo 1: Errar após já ter 3 hits preserva o Bom Combo (1.25x)."""
+        hab = Habilidade("Machadada", "Físico", 30, 8, 1.0, "Golpe", estilo=1)
+        self.mg.iniciar(hab)
+
+        centro_zona = self.mg.combo_trilha_x + self.mg.combo_trilha_w / 2
+        ev_click = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE)
+        for _ in range(3):
+            self.mg.combo_cursor_x = centro_zona
+            self.mg.processar_evento(ev_click, (0, 0))
+
+        self.assertFalse(self.mg.concluido)
+        # Erra o 4º golpe fora da zona
+        self.mg.combo_cursor_x = self.mg.combo_trilha_x
+        self.mg.processar_evento(ev_click, (0, 0))
+
+        self.assertTrue(self.mg.concluido)
+        self.assertTrue(self.mg.resultado["sucesso"])
+        self.assertAlmostEqual(self.mg.resultado["multiplicador"], 1.25, places=2)
+        self.assertIn("BOM COMBO", self.mg.resultado["feedback"])
+
     def test_lutador_estilo2_carregar_forca(self):
         """Lutador Tipo 2: Segurar tecla para carregar barra de força e soltar no ponto ideal (80-95%)."""
         hab = Habilidade("HamBat", "Físico", 38, 14, 1.0, "Impacto", estilo=2)
@@ -299,6 +392,30 @@ class TestMinigamesAtaque(unittest.TestCase):
         self.assertTrue(self.mg.concluido)
         self.assertGreaterEqual(self.mg.resultado["multiplicador"], 1.40)
         self.assertIn("FORÇA MÁXIMA DEVASTADORA", self.mg.resultado["feedback"])
+
+    def test_lutador_estilo2_tolerancia_no_topo_antes_sobrecarga(self):
+        """Lutador Tipo 2: Pequena tolerância ao tocar 100% antes de acionar sobrecarga."""
+        hab = Habilidade("HamBat", "Físico", 38, 14, 1.0, "Impacto", estilo=2)
+        self.mg.iniciar(hab)
+
+        self.mg.forca_segurando = True
+        self.mg.forca_atual = 99.5
+
+        class TeclasSimuladas:
+            def __getitem__(self, key):
+                return key == pygame.K_SPACE
+
+        # Primeiro frame ao bater 100%: ainda não estoura em overcharge
+        self.mg.atualizar((0, 0), (False, False, False), teclas_pressionadas=TeclasSimuladas())
+        self.assertFalse(self.mg.forca_overcharge)
+        self.assertFalse(self.mg.concluido)
+
+        # Segurar continuamente por >= 12 frames no topo aciona sobrecarga
+        for _ in range(11):
+            self.mg.atualizar((0, 0), (False, False, False), teclas_pressionadas=TeclasSimuladas())
+
+        self.assertTrue(self.mg.forca_overcharge)
+        self.assertTrue(self.mg.concluido)
 
     # ==================== TESTE DE INTEGRAÇÃO COM COMBATE ====================
 

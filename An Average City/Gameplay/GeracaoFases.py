@@ -5,6 +5,52 @@ from Sistemas.Recursos import caminho_dados
 
 CAMINHO_DADOS = caminho_dados()
 
+TOTAL_FASES_NORMAIS = 9
+TOTAL_PARTIDAS_JOGO = 10  # 9 fases normais + 1 combate contra o chefe (partida 10)
+
+MAPA_CATEGORIAS_INIMIGO = {
+    "fraco": "pequeno",
+    "fraca": "pequeno",
+    "pequeno": "pequeno",
+    "pequena": "pequeno",
+    "menor": "pequeno",
+    "comum": "pequeno",
+    "medio": "medio",
+    "médio": "medio",
+    "media": "medio",
+    "média": "medio",
+    "grande": "grande",
+    "elite": "grande",
+    "chefe": "chefe",
+    "boss": "chefe",
+}
+
+
+def normalizar_categoria_inimigo(tipo_ou_template):
+    """Normaliza o tipo/tamanho de um inimigo para 'pequeno', 'medio', 'grande' ou 'chefe'."""
+    if isinstance(tipo_ou_template, dict):
+        valor = tipo_ou_template.get("tamanho") or tipo_ou_template.get("tipo", "medio")
+    else:
+        valor = tipo_ou_template
+    chave = str(valor or "medio").strip().lower()
+    return MAPA_CATEGORIAS_INIMIGO.get(chave, "medio")
+
+
+def obter_regras_fase(fase_num, duas_pessoas=False):
+    """Retorna (min_inimigos, max_inimigos, pesos_por_categoria) conforme a faixa da fase e modo."""
+    fase = max(1, int(fase_num or 1))
+    if duas_pessoas:
+        if fase <= 3:
+            return 2, 4, {"pequeno": 60, "medio": 40}
+        if fase <= 6:
+            return 3, 4, {"medio": 55, "pequeno": 25, "grande": 20}
+        return 3, 4, {"medio": 60, "grande": 40}
+    if fase <= 3:
+        return 1, 4, {"pequeno": 70, "medio": 30}
+    if fase <= 6:
+        return 2, 4, {"medio": 55, "pequeno": 30, "grande": 15}
+    return 2, 4, {"medio": 68, "grande": 32}
+
 class EventoNeutro:
     def __init__(self, nome, tipo, descricao, atributo_chave="For", dificuldade=10, vitoria=None, derrota=None):
         self.nome = nome
@@ -59,21 +105,33 @@ def carregar_inimigos():
 
 BANCO_INIMIGOS = carregar_inimigos()
 
-def _criar_inimigo_a_partir_template(template, x=0, y=0, multiplicador=1.0):
-    hp = max(12, int(template.get("max_hp", 20) * multiplicador + random.randint(0, 12)))
+def _criar_inimigo_a_partir_template(
+    template,
+    x=0,
+    y=0,
+    multiplicador=1.0,
+    multiplicador_hp=None,
+    multiplicador_atributos=None,
+    multiplicador_mp=None,
+):
+    mult_hp = multiplicador if multiplicador_hp is None else multiplicador_hp
+    mult_attr = multiplicador if multiplicador_atributos is None else multiplicador_atributos
+    mult_mp = multiplicador if multiplicador_mp is None else multiplicador_mp
+
+    hp = max(12, int(template.get("max_hp", 20) * mult_hp + random.randint(0, 12)))
     xp = int(template.get("xp", 10) * multiplicador)
 
     atributos_base = template.get("atributos", {"For": 1, "Agi": 1, "Int": 1, "Sor": 1})
     atributos = {}
     for attr_nome, attr_val in atributos_base.items():
         passo = 2 if attr_nome == "Sor" else 3
-        atributos[attr_nome] = max(1, int(attr_val + (multiplicador - 1) * passo))
+        atributos[attr_nome] = max(1, int(attr_val + (mult_attr - 1) * passo))
     for padrao in ("For", "Agi", "Int", "Sor"):
         if padrao not in atributos:
             atributos[padrao] = 1
 
     max_mp_base = template.get("max_mp")
-    max_mp_calc = int(max_mp_base * multiplicador) if max_mp_base is not None else None
+    max_mp_calc = int(max_mp_base * mult_mp) if max_mp_base is not None else None
 
     from Entidades.Inimigo import Inimigo
     return Inimigo(
@@ -251,7 +309,7 @@ def _executar_teste_evento_neutro(evento, lista_jogadores, inv, rolagem_forcada=
         sucesso = True
     placar = f"[1d20({dado}) + {atributo_chave}({valor_atributo}) = {total} vs Dif.{dificuldade}]"
 
-    quantidade_inimigos = 2
+    quantidade_inimigos = None
     multiplicador_forca = 1.0
     multiplicador_recompensa = 1.0
 
@@ -267,7 +325,7 @@ def _executar_teste_evento_neutro(evento, lista_jogadores, inv, rolagem_forcada=
         narrativa = info_resultado.get("narrativa", "")
         efeitos = list(info_resultado.get("efeitos", []))
         mensagem = info_resultado.get("mensagem", "")
-        quantidade_inimigos = info_resultado.get("quantidade_inimigos", 2)
+        quantidade_inimigos = info_resultado.get("quantidade_inimigos", None)
         multiplicador_forca = float(info_resultado.get("multiplicador_forca", 1.0))
         multiplicador_recompensa = float(info_resultado.get("multiplicador_recompensa", 1.0))
 
@@ -568,7 +626,7 @@ def executar_efeito_evento(acao_ou_nome, jogo_tela=None, jogadores=None, inventa
             "evento": obter_evento_por_nome("Um Estranho te convida para beber"),
             "sucesso": True,
             "mensagem": "⚑ 🍺 Conversa no bar: +15 MP e +40 XP adquiridos!",
-            "quantidade_inimigos": 2,
+            "quantidade_inimigos": None,
             "multiplicador_forca": 1.0,
             "multiplicador_recompensa": 1.0,
         }
@@ -583,7 +641,7 @@ def executar_efeito_evento(acao_ou_nome, jogo_tela=None, jogadores=None, inventa
             "evento": obter_evento_por_nome("A porta do achados e perdidos ficou aberta"),
             "sucesso": True,
             "mensagem": "⚑ 📦 Achados e perdidos: você coletou +1 Sucata e +1 Poção de Vida!",
-            "quantidade_inimigos": 2,
+            "quantidade_inimigos": None,
             "multiplicador_forca": 1.0,
             "multiplicador_recompensa": 1.0,
         }
@@ -601,7 +659,7 @@ def executar_efeito_evento(acao_ou_nome, jogo_tela=None, jogadores=None, inventa
             "evento": obter_evento_por_nome("Comprar com o perigo"),
             "sucesso": True,
             "mensagem": "⚑ 🕵️ Comprar com o perigo: +2 Sucatas e +1 Poção de Mana adquiridas!",
-            "quantidade_inimigos": 2,
+            "quantidade_inimigos": None,
             "multiplicador_forca": 1.0,
             "multiplicador_recompensa": 1.0,
         }
@@ -635,7 +693,7 @@ def executar_efeito_evento(acao_ou_nome, jogo_tela=None, jogadores=None, inventa
             "evento": obter_evento_por_nome("Uma Pausa para comprar mantimentos"),
             "sucesso": True,
             "mensagem": "⚑ ☕ Pausa para mantimentos: +1 Poção de Vida e +2 Poções de Mana no inventário!",
-            "quantidade_inimigos": 2,
+            "quantidade_inimigos": None,
             "multiplicador_forca": 1.0,
             "multiplicador_recompensa": 1.0,
         }
@@ -648,7 +706,7 @@ def executar_efeito_evento(acao_ou_nome, jogo_tela=None, jogadores=None, inventa
             "evento": obter_evento_por_nome("Uma Pausa para comprar mantimentos"),
             "sucesso": True,
             "mensagem": "⚑ ☕ Pausa para mantimentos: +2 Sucatas e +1 Bilhete do Dormitório!",
-            "quantidade_inimigos": 2,
+            "quantidade_inimigos": None,
             "multiplicador_forca": 1.0,
             "multiplicador_recompensa": 1.0,
         }
@@ -680,34 +738,84 @@ class GeradorFase:
             derrota=evento.derrota,
         )
 
-    def gerar_inimigos_aleatorios(self, fase_num=None, quantidade=None, verso=None, multiplicador_extra=1.0):
-        fase = self.fase_num if fase_num is None else fase_num
+    def _sortear_template_por_fase(self, templates, pesos_categorias):
+        """Sorteia primeiro a categoria com os pesos da fase e depois um template da categoria."""
+        por_categoria = {}
+        for tmpl in templates:
+            cat = normalizar_categoria_inimigo(tmpl)
+            if cat in pesos_categorias:
+                por_categoria.setdefault(cat, []).append(tmpl)
+
+        if not por_categoria:
+            globais = listar_inimigos_disponiveis(verso=None)
+            for tmpl in globais:
+                cat = normalizar_categoria_inimigo(tmpl)
+                if cat in pesos_categorias:
+                    por_categoria.setdefault(cat, []).append(tmpl)
+
+        if por_categoria:
+            categorias_disp = list(por_categoria.keys())
+            pesos_disp = [pesos_categorias[c] for c in categorias_disp]
+            cat_escolhida = random.choices(categorias_disp, weights=pesos_disp, k=1)[0]
+            return random.choice(por_categoria[cat_escolhida])
+
+        return random.choice(templates)
+
+    def gerar_inimigos_aleatorios(self, fase_num=None, quantidade=None, verso=None, multiplicador_extra=1.0, duas_pessoas=False):
+        fase = max(1, int((self.fase_num if fase_num is None else fase_num) or 1))
+        min_qtd, max_qtd, pesos_categorias = obter_regras_fase(fase, duas_pessoas=duas_pessoas)
         if quantidade is None:
-            quantidade = max(1, min(4, 1 + (fase // 2)))
+            quantidade = random.randint(min_qtd, max_qtd)
+        else:
+            quantidade = max(1, int(quantidade))
 
         templates = listar_inimigos_disponiveis(verso=verso)
         inimigos = []
 
         for _ in range(quantidade):
-            template = random.choice(templates)
+            template = self._sortear_template_por_fase(templates, pesos_categorias)
             multiplicador = (1 + (fase * 0.22)) * multiplicador_extra
-            inimigos.append(_criar_inimigo_a_partir_template(template, multiplicador=multiplicador))
+            if duas_pessoas:
+                inimigos.append(
+                    _criar_inimigo_a_partir_template(
+                        template,
+                        multiplicador=multiplicador,
+                        multiplicador_hp=multiplicador * 1.35,
+                        multiplicador_atributos=multiplicador * 1.15,
+                    )
+                )
+            else:
+                inimigos.append(_criar_inimigo_a_partir_template(template, multiplicador=multiplicador))
 
         return inimigos
 
-    def gerar_chefe_verso(self, verso):
+    def gerar_chefe_verso(self, verso, duas_pessoas=False):
         chefes = [i for i in BANCO_INIMIGOS if i.get("verso") == verso and i.get("tipo") == "chefe"]
         if not chefes:
             chefes = [i for i in BANCO_INIMIGOS if i.get("tipo") == "chefe"]
         template = random.choice(chefes)
+        if duas_pessoas:
+            return _criar_inimigo_a_partir_template(
+                template,
+                multiplicador=1.5,
+                multiplicador_hp=2.2,
+                multiplicador_atributos=1.25 * 1.5,
+                multiplicador_mp=1.8,
+            )
         return _criar_inimigo_a_partir_template(template, multiplicador=1.5)
 
-    def gerar_fase_aleatoria(self, fase_num=None, verso=None):
-        fase = self.fase_num if fase_num is None else fase_num
+    def gerar_fase_aleatoria(self, fase_num=None, verso=None, duas_pessoas=False):
+        fase = max(1, int((self.fase_num if fase_num is None else fase_num) or 1))
         evento = self.gerar_evento_neutro()
-        quantidade = 1 if evento.nome == "Duelar até cair" else max(1, min(4, 1 + (fase // 2)))
+        quantidade = 1 if evento.nome == "Duelar até cair" else None
         mult_extra = 1.3 if evento.nome == "Duelar até cair" else 1.0
-        inimigos = self.gerar_inimigos_aleatorios(fase, quantidade=quantidade, verso=verso, multiplicador_extra=mult_extra)
+        inimigos = self.gerar_inimigos_aleatorios(
+            fase,
+            quantidade=quantidade,
+            verso=verso,
+            multiplicador_extra=mult_extra,
+            duas_pessoas=duas_pessoas,
+        )
         return FaseAleatoria(
             f"fase_aleatoria_{fase}",
             f"Fase Aleatória {fase}",

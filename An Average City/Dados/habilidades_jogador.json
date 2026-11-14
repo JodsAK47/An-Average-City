@@ -8,7 +8,8 @@
       "custo_mp": 0,
       "precisao": 0.9,
       "descricao": "Golpeia um inimigo com um machado.",
-      "verso": "Sobrevivente"
+      "verso": "Sobrevivente",
+      "giro": false
     },
     "HamBat": {
       "nome": "HamBat",
@@ -21,7 +22,8 @@
       "efeito": "Atordoar",
       "chance_efeito": 0.2,
       "em_area": true,
-      "verso": "Sobrevivente"
+      "verso": "Sobrevivente",
+      "giro": false
     },
     "Tentaculo Das Sombras": {
       "nome": "Tentaculo Das Sombras",
@@ -34,7 +36,8 @@
       "precisao": 0.85,
       "descricao": "Invoca tentáculos que atingem todos os inimigos e podem congelá-los.",
       "em_area": true,
-      "verso": "Sobrevivente"
+      "verso": "Sobrevivente",
+      "giro": false
     },
     "Chamas Das Trevas": {
       "nome": "Chamas Das Trevas",
@@ -46,7 +49,8 @@
       "descricao": "Lança chamas sombrias contra um inimigo.",
       "efeito": "Queimar",
       "chance_efeito": 0.2,
-      "verso": "Sobrevivente"
+      "verso": "Sobrevivente",
+      "giro": false
     },
     "Boomerang": {
       "nome": "Boomerang",
@@ -56,7 +60,8 @@
       "custo_mp": 0,
       "precisao": 0.9,
       "descricao": "Arremessa um bumerangue contra um inimigo.",
-      "verso": "Sobrevivente"
+      "verso": "Sobrevivente",
+      "giro": true
     },
     "Estilingada de Vidro": {
       "nome": "Estilingada de Vidro",
@@ -67,7 +72,8 @@
       "precisao": 0.75,
       "descricao": "Dispara um fragmento de vidro contra um inimigo.",
       "em_area": true,
-      "verso": "Sobrevivente"
+      "verso": "Sobrevivente",
+      "giro": false
     },
     "Invocar Abelha": {
       "nome": "Invocar Abelha",
@@ -78,7 +84,8 @@
       "precisao": 1.0,
       "descricao": "Invoca uma Abelha Soldado que luta automaticamente por você.",
       "verso": "Sobrevivente",
-      "minion": "Abelha Soldado"
+      "minion": "Abelha Soldado",
+      "giro": false
     },
     "Invocar Pássaro Olhudo": {
       "nome": "Invocar Pássaro Olhudo",
@@ -89,7 +96,8 @@
       "precisao": 1.0,
       "descricao": "Invoca um Pássaro Olhudo feroz que ataca e pode congelar inimigos.",
       "verso": "Sobrevivente",
-      "minion": "Pássaro Olhudo"
+      "minion": "Pássaro Olhudo",
+      "giro": false
     },
     "Flash Negro": {
       "nome": "Flash Negro",
@@ -99,7 +107,8 @@
       "custo_mp": 1,
       "precisao": 0.85,
       "descricao": "Canaliza energia amaldiçoada em um golpe físico.",
-      "verso": "Feiticeiro"
+      "verso": "Feiticeiro",
+      "giro": false
     },
     "Colisão 24 Frames": {
       "nome": "Colisão 24 Frames",
@@ -112,7 +121,8 @@
       "efeito": "Atordoar",
       "chance_efeito": 0.25,
       "em_area": true,
-      "verso": "Feiticeiro"
+      "verso": "Feiticeiro",
+      "giro": false
     },
     "Azul": {
       "nome": "Azul",
@@ -124,7 +134,8 @@
       "descricao": "Dispara uma força azul que pode congelar um inimigo.",
       "efeito": "Congelar",
       "chance_efeito": 0.1,
-      "verso": "Feiticeiro"
+      "verso": "Feiticeiro",
+      "giro": true
     },
     "Vermelho": {
       "nome": "Vermelho",
@@ -135,7 +146,8 @@
       "precisao": 0.75,
       "descricao": "Libera uma explosão que atinge todos os inimigos e pode congelá-los.",
       "em_area": true,
-      "verso": "Feiticeiro"
+      "verso": "Feiticeiro",
+      "giro": true
     },
     "Disparo Lazer": {
       "nome": "Disparo Lazer",
@@ -147,7 +159,8 @@
       "descricao": "Dispara um orbe de energia contra um inimigo.",
       "efeito": "Queimar",
       "chance_efeito": 0.3,
-      "verso": "Feiticeiro"
+      "verso": "Feiticeiro",
+      "giro": false
     },
     "La Jullyet": {
       "nome": "La Jullyet",
@@ -159,7 +172,8 @@
       "descricao": "Projeta um raio concentrado contra um inimigo.",
       "efeito": "Queimar",
       "chance_efeito": 0.2,
-      "verso": "Feiticeiro"
+      "verso": "Feiticeiro",
+      "giro": false
     },
     "Cães Divinos": {
       "nome": "Cães Divinos",
@@ -170,7 +184,8 @@
       "precisao": 1.0,
       "descricao": "Invoca um Cão Divino das sombras para caçar seus inimigos.",
       "verso": "Feiticeiro",
-      "minion": "Cão Divino"
+      "minion": "Cão Divino",
+      "giro": false
     },
     "Invocar Nue": {
       "nome": "Invocar Nue",
@@ -181,7 +196,8 @@
       "precisao": 1.0,
       "descricao": "Invoca o Shikigami alado Nue que eletrocuta todos os inimigos.",
       "verso": "Feiticeiro",
-      "minion": "Nue"
+      "minion": "Nue",
+      "giro": false
     },
     "Facada": {
       "nome": "Facada",
@@ -191,7 +207,8 @@
       "custo_mp": 0,
       "precisao": 0.85,
       "descricao": "Avança e golpeia um inimigo.",
-      "verso": "Agente"
+      "verso": "Agente",
+      "giro": false
     },
     "Segura o Regue": {
       "nome": "Segura o Regue",
@@ -204,7 +221,8 @@
       "efeito": "Queimar",
       "chance_efeito": 0.15,
       "em_area": true,
-      "verso": "Agente"
+      "verso": "Agente",
+      "giro": false
     },
     "Head Hunter": {
       "nome": "Head Hunter",
@@ -217,7 +235,8 @@
       "efeito": "Congelar",
       "chance_efeito": 0.15,
       "em_area": true,
-      "verso": "Agente"
+      "verso": "Agente",
+      "giro": false
     },
     "Tour de Force": {
       "nome": "Tour de Force",
@@ -227,7 +246,8 @@
       "custo_mp": 4,
       "precisao": 0.75,
       "descricao": "Atinge um inimigo com um disparo concentrado.",
-      "verso": "Agente"
+      "verso": "Agente",
+      "giro": false
     },
     "Domo Compressado": {
       "nome": "Domo Compressado",
@@ -237,7 +257,8 @@
       "custo_mp": 0,
       "precisao": 0.6,
       "descricao": "Cria um domo de energia que explode em um inimigo.",
-      "verso": "Agente"
+      "verso": "Agente",
+      "giro": false
     },
     "Mare Dagua": {
       "nome": "Mare Dagua",
@@ -250,7 +271,8 @@
       "em_area": true,
       "verso": "Agente",
       "efeito": "Congelar",
-      "chance_efeito": 0.1
+      "chance_efeito": 0.1,
+      "giro": false
     },
     "Implantar Torreta": {
       "nome": "Implantar Torreta",
@@ -261,7 +283,8 @@
       "precisao": 1.0,
       "descricao": "Implanta uma Torreta Sentinela que dispara automaticamente a cada turno.",
       "verso": "Agente",
-      "minion": "Torreta Sentinela"
+      "minion": "Torreta Sentinela",
+      "giro": false
     },
     "Drone de Assalto": {
       "nome": "Drone de Assalto",
@@ -272,7 +295,8 @@
       "precisao": 1.0,
       "descricao": "Lança um Drone Caçador tático com feixes térmicos e pulso EMP.",
       "verso": "Agente",
-      "minion": "Drone Caçador"
+      "minion": "Drone Caçador",
+      "giro": false
     }
   },
   "ultimates": {
@@ -283,7 +307,8 @@
       "precisao": 0.95,
       "descricao": "Golpe devastador que consome toda a mana para esmagar todos os inimigos.",
       "em_area": true,
-      "verso": "Sobrevivente"
+      "verso": "Sobrevivente",
+      "giro": false
     },
     "Sobrevivente|Distância": {
       "nome": "Chuva de Flechas",
@@ -292,7 +317,8 @@
       "precisao": 0.9,
       "descricao": "Uma saraivada de projéteis que consome toda a mana do usuário.",
       "em_area": true,
-      "verso": "Sobrevivente"
+      "verso": "Sobrevivente",
+      "giro": false
     },
     "Sobrevivente|Magia": {
       "nome": "Labareda de Umbra",
@@ -303,7 +329,8 @@
       "em_area": true,
       "efeito": "Queimar",
       "chance_efeito": 0.75,
-      "verso": "Sobrevivente"
+      "verso": "Sobrevivente",
+      "giro": false
     },
     "Sobrevivente|Invocador": {
       "nome": "Enxame Real",
@@ -313,7 +340,8 @@
       "descricao": "Consome toda a mana para invocar criaturas da floresta e devastar todos os inimigos.",
       "em_area": false,
       "verso": "Sobrevivente",
-      "minion": "Pássaro Olhudo"
+      "minion": "Pássaro Olhudo",
+      "giro": false
     },
     "Agente|Físico": {
       "nome": "Golpe Final",
@@ -322,7 +350,8 @@
       "precisao": 0.9,
       "descricao": "Ataque de execução com custo total de mana e dano brutal em área.",
       "em_area": true,
-      "verso": "Agente"
+      "verso": "Agente",
+      "giro": false
     },
     "Agente|Distância": {
       "nome": "Apagão",
@@ -330,7 +359,8 @@
       "dano": 34,
       "precisao": 0.95,
       "descricao": "Disparo concentrado de alta precisão que consome toda a mana.",
-      "verso": "Agente"
+      "verso": "Agente",
+      "giro": false
     },
     "Agente|Magia": {
       "nome": "Campo de Silêncio",
@@ -341,7 +371,8 @@
       "em_area": true,
       "efeito": "Congelar",
       "chance_efeito": 0.8,
-      "verso": "Agente"
+      "verso": "Agente",
+      "giro": false
     },
     "Agente|Invocador": {
       "nome": "Protocolo Esquadrão Omega",
@@ -351,7 +382,8 @@
       "descricao": "Consome toda a mana para implantar o esquadrão autônomo e bombardear todos os inimigos.",
       "em_area": false,
       "verso": "Agente",
-      "minion": "Drone Caçador"
+      "minion": "Drone Caçador",
+      "giro": false
     },
     "Feiticeiro|Físico": {
       "nome": "Fúria Arcana",
@@ -360,7 +392,8 @@
       "precisao": 0.92,
       "descricao": "Um golpe carregado de energia que gasta toda a mana do usuário.",
       "em_area": true,
-      "verso": "Feiticeiro"
+      "verso": "Feiticeiro",
+      "giro": false
     },
     "Feiticeiro|Distância": {
       "nome": "Relâmpago Celeste",
@@ -368,7 +401,8 @@
       "dano": 39,
       "precisao": 0.95,
       "descricao": "Um raio celestial que dispara com toda a energia remanescente.",
-      "verso": "Feiticeiro"
+      "verso": "Feiticeiro",
+      "giro": false
     },
     "Feiticeiro|Magia": {
       "nome": "Eclipse Sombrio",
@@ -379,7 +413,8 @@
       "em_area": true,
       "efeito": "Queimar",
       "chance_efeito": 0.85,
-      "verso": "Feiticeiro"
+      "verso": "Feiticeiro",
+      "giro": false
     },
     "Feiticeiro|Invocador": {
       "nome": "Mahoraga",
@@ -389,7 +424,8 @@
       "descricao": "Consome toda a mana para invocar Mahoraga e esmagar todos os inimigos em área.",
       "em_area": false,
       "verso": "Feiticeiro",
-      "minion": "Mahoraga"
+      "minion": "Mahoraga",
+      "giro": false
     }
   }
 }

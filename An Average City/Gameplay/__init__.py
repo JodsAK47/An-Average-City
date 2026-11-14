@@ -7,6 +7,10 @@ from .Habilidades import (
     obter_ultimate,
 )
 from .GeracaoFases import (
+    TOTAL_FASES_NORMAIS,
+    TOTAL_PARTIDAS_JOGO,
+    normalizar_categoria_inimigo,
+    obter_regras_fase,
     EventoNeutro,
     FaseAleatoria,
     GeradorFase,
@@ -25,6 +29,10 @@ __all__ = [
     "banco_habilidades",
     "carregar_habilidades_jogador",
     "obter_ultimate",
+    "TOTAL_FASES_NORMAIS",
+    "TOTAL_PARTIDAS_JOGO",
+    "normalizar_categoria_inimigo",
+    "obter_regras_fase",
     "EventoNeutro",
     "FaseAleatoria",
     "GeradorFase",

@@ -27,7 +27,8 @@ def carregar_habilidades_inimigos():
                     em_area=v.get("em_area", False),
                     verso=v.get("verso", "Inimigo"),
                     is_ultimate=v.get("is_ultimate", False),
-                    minion=v.get("minion")
+                    minion=v.get("minion"),
+                    giro=bool(v.get("giro", False)),
                 )
             return banco
     except FileNotFoundError:

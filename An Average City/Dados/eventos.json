@@ -20,7 +20,7 @@
         "Sab": 1,
         "Con": 1
       },
-      "quantidade_inimigos": 2,
+      "quantidade_inimigos": null,
       "multiplicador_forca": 1.0,
       "multiplicador_recompensa": 1.0
     },
@@ -34,7 +34,7 @@
       "mensagem": "⚑ 🎲 FALHA! A bebida estava adulterada: -20 HP e -5 MP!",
       "hp": -20,
       "mp": -5,
-      "quantidade_inimigos": 2,
+      "quantidade_inimigos": null,
       "multiplicador_forca": 1.0,
       "multiplicador_recompensa": 1.0
     }
@@ -77,7 +77,7 @@
       ],
       "bilhetes_dormitorio": 1,
       "polidores_itens": 1,
-      "quantidade_inimigos": 2,
+      "quantidade_inimigos": null,
       "multiplicador_forca": 1.0,
       "multiplicador_recompensa": 1.0
     },
@@ -126,7 +126,7 @@
           "quantidade": 1
         }
       ],
-      "quantidade_inimigos": 2,
+      "quantidade_inimigos": null,
       "multiplicador_forca": 1.0,
       "multiplicador_recompensa": 1.0
     },
@@ -141,7 +141,7 @@
       "mensagem": "⚑ 🎲 FALHA! O Perigo te roubou seus pertences e armou emboscada: -20 HP!",
       "hp": -20,
       "perder_materiais": 1,
-      "quantidade_inimigos": 2,
+      "quantidade_inimigos": null,
       "multiplicador_forca": 1.15,
       "multiplicador_recompensa": 1.0,
       "roubar_equipamento": true
@@ -265,7 +265,7 @@
           "quantidade": 1
         }
       ],
-      "quantidade_inimigos": 2,
+      "quantidade_inimigos": null,
       "multiplicador_forca": 1.0,
       "multiplicador_recompensa": 1.0
     },
@@ -302,7 +302,7 @@
           "quantidade": 1
         }
       ],
-      "quantidade_inimigos": 2,
+      "quantidade_inimigos": null,
       "multiplicador_forca": 1.0,
       "multiplicador_recompensa": 1.0
     }
