@@ -148,6 +148,90 @@ class TestGeracaoFases(unittest.TestCase):
         seq2 = [random.randint(1, 10000) for _ in range(10)]
         self.assertNotEqual(seq1, seq2)
 
+    def test_aumento_atributos_progressivo_por_fase(self):
+        """Atributos dos jogadores devem crescer progressivamente ao avançar fases sem duplicar na mesma fase."""
+        from Entidades.Personagem import personagem, Personagem
+        combate = TelaCombate(self.tela)
+        combate.configurar_classe("Feiticeiro", "Magia")
+        personagem.atributos = {"For": 1, "Agi": 1, "Con": 1, "Sab": 1, "Int": 4, "Sor": 1}
+
+        combate.duas_pessoas = True
+        combate.classe_jogador2 = "Sobrevivente"
+        combate.classe_jogador2_tipo = "Físico"
+        combate.personagem2 = Personagem(150, 350, "pixil.png", nome="Jogador 2")
+        combate.personagem2.atributos = {"For": 4, "Agi": 1, "Con": 1, "Sab": 1, "Int": 1, "Sor": 1}
+
+        ganho_f2 = combate.calcular_ganhos_atributos_fase(2, "Magia")
+        ganho_f5 = combate.calcular_ganhos_atributos_fase(5, "Magia")
+        ganho_f8 = combate.calcular_ganhos_atributos_fase(8, "Magia")
+        self.assertLess(sum(ganho_f2.values()), sum(ganho_f5.values()))
+        self.assertLess(sum(ganho_f5.values()), sum(ganho_f8.values()))
+
+        combate.fase_numero = 2
+        combate.aplicar_progressao_atributos_fase()
+        self.assertEqual(personagem.atributos["Int"], 5)
+        self.assertEqual(personagem.atributos["Con"], 2)
+        self.assertEqual(combate.personagem2.atributos["For"], 5)
+
+        # Chamar novamente na mesma fase não deve aplicar bônus duplicado
+        combate.aplicar_progressao_atributos_fase()
+        self.assertEqual(personagem.atributos["Int"], 5)
+
+    def test_inimigos_recebem_bonus_progressivo_inverso_ao_porte(self):
+        from Gameplay.GeracaoFases import (
+            calcular_bonus_progressivo_inimigo,
+            _criar_inimigo_a_partir_template,
+        )
+
+        bonus_f1 = calcular_bonus_progressivo_inimigo(1, "pequeno")
+        self.assertEqual(bonus_f1["For"], 0)
+        self.assertEqual(bonus_f1["mult_hp_extra"], 0.0)
+
+        # Na fase 2, o bônus já é positivo e pequeno supera grande/chefe
+        b2_peq = calcular_bonus_progressivo_inimigo(2, "pequeno")
+        b2_grd = calcular_bonus_progressivo_inimigo(2, "grande")
+        self.assertGreater(b2_peq["For"], b2_grd["For"])
+        self.assertGreater(b2_peq["mult_hp_extra"], b2_grd["mult_hp_extra"])
+
+        # Quanto mais fraco o porte, maior o bônus nas fases médias/altas
+        for fase in (5, 9):
+            b_peq = calcular_bonus_progressivo_inimigo(fase, "pequeno")
+            b_med = calcular_bonus_progressivo_inimigo(fase, "medio")
+            b_grd = calcular_bonus_progressivo_inimigo(fase, "grande")
+            b_chf = calcular_bonus_progressivo_inimigo(fase, "chefe")
+
+            self.assertGreater(b_peq["For"], b_med["For"])
+            self.assertGreater(b_med["For"], b_grd["For"])
+            self.assertGreater(b_grd["For"], b_chf["For"])
+            self.assertGreater(b_peq["mult_hp_extra"], b_med["mult_hp_extra"])
+            self.assertGreater(b_med["mult_hp_extra"], b_grd["mult_hp_extra"])
+
+        # Crescimento progressivo ao longo das fases
+        self.assertLess(
+            calcular_bonus_progressivo_inimigo(2, "pequeno")["For"],
+            calcular_bonus_progressivo_inimigo(5, "pequeno")["For"],
+        )
+        self.assertLess(
+            calcular_bonus_progressivo_inimigo(5, "pequeno")["For"],
+            calcular_bonus_progressivo_inimigo(9, "pequeno")["For"],
+        )
+
+        # Aplicação concreta no template de inimigo
+        template_peq = {
+            "nome": "Rato Teste",
+            "categoria": "pequeno",
+            "max_hp": 100,
+            "max_mp": 20,
+            "atributos": {"For": 3, "Agi": 3, "Int": 2, "Sor": 2},
+            "habilidades": [],
+            "recompensa_moedas": 5,
+            "sprite": None,
+        }
+        inimigo_f1 = _criar_inimigo_a_partir_template(template_peq, fase_num=1)
+        inimigo_f9 = _criar_inimigo_a_partir_template(template_peq, fase_num=9)
+        self.assertGreater(inimigo_f9.atributos["For"], inimigo_f1.atributos["For"])
+        self.assertGreater(inimigo_f9.max_hp, inimigo_f1.max_hp)
+
 
 if __name__ == "__main__":
     unittest.main()

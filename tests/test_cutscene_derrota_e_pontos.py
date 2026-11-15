@@ -86,6 +86,11 @@ class TestCutsceneDerrotaEPontos(unittest.TestCase):
             self.fail(f"desenhar() da TelaGameOver lançou exceção: {e}")
 
         self.assertEqual(game_over.pontos, 1250)
+        self.assertFalse(hasattr(game_over, "botao_reiniciar"))
+        evento_r = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_r)
+        self.assertIsNone(game_over.atualizar_eventos(evento_r, (0, 0)))
+        evento_esc = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
+        self.assertEqual(game_over.atualizar_eventos(evento_esc, (0, 0)), "menu")
 
     def test_tela_vitoria_exibe_pontos(self):
         """TelaVitoria deve possuir atributo pontos e desenhar sem erro."""
@@ -99,6 +104,57 @@ class TestCutsceneDerrotaEPontos(unittest.TestCase):
             self.fail(f"desenhar() da TelaVitoria lançou exceção: {e}")
 
         self.assertEqual(vitoria.pontos, 2500)
+
+    def test_limite_pontos_igual_trilha_arvore_e_dividido_por_fase_passada(self):
+        """Limite total de pontos deve igualar o preço de uma trilha completa (180) dividido pelas fases, sem depender de inimigos mortos."""
+        from Gameplay.GeracaoFases import LIMITE_PONTOS_JOGO, TOTAL_PARTIDAS_JOGO
+
+        self.assertEqual(LIMITE_PONTOS_JOGO, 180)
+        self.assertEqual(TOTAL_PARTIDAS_JOGO, 10)
+
+        # Independência de inimigos mortos, XP ganho, dano e HP restante
+        self.combate.partida_atual = 1
+        pts_1_inimigo = self.combate.calcular_pontos_desempenho(xp_ganho=10, dano_causado=20, inimigos_eliminados=1)
+        pts_muitos_inimigos = self.combate.calcular_pontos_desempenho(xp_ganho=999, dano_causado=5000, inimigos_eliminados=10)
+        self.assertEqual(pts_1_inimigo, 18)
+        self.assertEqual(pts_muitos_inimigos, pts_1_inimigo)
+
+        # Simulando passagem completa das 10 fases (mesmo com multiplicador de evento 2.0)
+        self.combate.pontos_jogo = 0
+        self.combate.total_partidas = TOTAL_PARTIDAS_JOGO
+        self.combate.multiplicador_recompensa = 2.0
+        for fase in range(1, TOTAL_PARTIDAS_JOGO + 1):
+            self.combate.partida_atual = fase
+            self.combate.xp_calculado = False
+            self.combate.cooldown_feedback = 0
+            self.combate.acao_pos_feedback = None
+            self.personagem.hp = self.personagem.max_hp
+            inimigo_morto = Inimigo(700, 300, 50, "Inimigo Sobrevivente 1.png", nome="Alvo", tipo="fraco")
+            inimigo_morto.hp = 0
+            inimigo_morto.xp = 100 * fase
+            self.combate.ordem_turnos = [self.personagem, inimigo_morto]
+            self.combate.atualizar((0, 0), (False, False, False))
+            self.assertEqual(self.combate.pontos_jogo, fase * 18)
+
+        self.assertEqual(self.combate.pontos_jogo, LIMITE_PONTOS_JOGO)
+
+        # Mesmo que tente ganhar mais pontos depois do limite, nunca ultrapassa LIMITE_PONTOS_JOGO
+        self.combate.xp_calculado = False
+        self.combate.cooldown_feedback = 0
+        self.combate.acao_pos_feedback = None
+        self.combate.atualizar((0, 0), (False, False, False))
+        self.assertEqual(self.combate.pontos_jogo, LIMITE_PONTOS_JOGO)
+
+        # Fugir não zera pontos anteriores nem soma pontos da fase fugida
+        self.combate.pontos_jogo = 36
+        self.combate.partida_atual = 3
+        self.combate.ordem_turnos = [self.personagem, Inimigo(700, 300, 50, "Inimigo Sobrevivente 1.png", nome="Alvo", tipo="fraco")]
+        self.personagem.talentos = {"S1"}
+        pos_fugir = self.combate.btn_fugir.rect.center
+        with patch.object(self.combate, "recuperar_apos_batalha", return_value={"hp": 0, "mp": 0}):
+            res_fuga = self.combate._processar_menu_principal(self.personagem, pos_fugir, (True, False, False), True)
+        self.assertEqual(res_fuga, "fugiu")
+        self.assertEqual(self.combate.pontos_jogo, 36)
 
 
 if __name__ == "__main__":

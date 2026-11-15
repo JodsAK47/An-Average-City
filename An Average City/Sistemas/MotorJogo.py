@@ -46,7 +46,7 @@ from Sistemas import (
 def esta_em_cutscene() -> bool:
     return sistema_cutscene.esta_em_cutscene() or estado == "cutscene" 
 from Entidades import personagem
-from Gameplay import obter_dialogo_evento, TOTAL_PARTIDAS_JOGO
+from Gameplay import obter_dialogo_evento, TOTAL_PARTIDAS_JOGO, LIMITE_PONTOS_JOGO
 
 pygame.init()
 pygame.mixer.init()
@@ -106,6 +106,10 @@ def _resetar_progresso_fases():
     jogo_tela.partida_atual = 1
     jogo_tela.total_partidas = TOTAL_PARTIDAS_JOGO
     jogo_tela.fase_numero = 1
+    jogo_tela.ultima_fase_bonus_atributos = 1
+    jogo_tela.pontos_jogo = 0
+    jogo_tela.pontos_registrados_na_run = 0
+    jogo_tela.pontos_salvos_na_partida = False
     if hasattr(jogo_tela, 'gerador_fases'):
         jogo_tela.gerador_fases.fase_num = 1
     jogo_tela.evento_neutro = None
@@ -123,7 +127,6 @@ def reiniciar_para_menu():
     inventario_global.resetar()
     personagem.resetar()
     _resetar_progresso_fases()
-    jogo_tela.pontos_jogo = max(0, jogo_tela.pontos_jogo)
     jogo_tela.classe_atual = "Nenhuma"
     jogo_tela.duas_pessoas = False
     jogo_tela.personagem2 = None
@@ -164,9 +167,16 @@ def resetar_jogo():
     menu_tela.mostrar_feedback("⚠️ SAVE RESETADO COM SUCESSO!", (255, 100, 100))
 
 def registrar_pontos_partida():
-    pontos_partida = max(0, int(jogo_tela.pontos_jogo))
-    if not getattr(jogo_tela, 'pontos_salvos_na_partida', False):
-        save_global.registrar_partida(pontos_partida)
+    pontos_partida = max(0, min(LIMITE_PONTOS_JOGO, int(getattr(jogo_tela, 'pontos_jogo', 0))))
+    registrados = max(0, int(getattr(jogo_tela, 'pontos_registrados_na_run', 0)))
+    delta = max(0, pontos_partida - registrados)
+    if delta > 0:
+        save_global.adicionar_pontos(delta)
+        jogo_tela.pontos_registrados_na_run = registrados + delta
+    if pontos_partida > save_global.maior_pontuacao:
+        save_global.maior_pontuacao = pontos_partida
+    if delta > 0 or not getattr(jogo_tela, 'pontos_salvos_na_partida', False):
+        save_global.salvar()
         jogo_tela.pontos_salvos_na_partida = True
     return pontos_partida
 
@@ -656,27 +666,6 @@ def tratar_eventos_game_over(evento, posicao_mouse):
     resultado = game_over_tela.atualizar_eventos(evento, posicao_mouse)
     if resultado == "menu":
         return reiniciar_para_menu()
-    elif resultado == "reiniciar":
-        from Sistemas.Inventario import inventario_global
-        inventario_global.resetar()
-        personagem.resetar()
-        if getattr(jogo_tela, 'duas_pessoas', False) and getattr(jogo_tela, 'personagem2', None) is not None:
-            jogo_tela.personagem2.resetar()
-            jogo_tela.personagem2.classe_aplicada = None
-        verso_atual = getattr(game_over_tela, 'verso', getattr(jogo_tela, 'classe_atual', 'Sobrevivente'))
-        if verso_atual in ('Nenhuma', None):
-            verso_atual = 'Sobrevivente'
-        classe_tipo = getattr(jogo_tela, 'classe_dano_atual', 'Magia' if verso_atual == 'Feiticeiro' else 'Físico')
-        jogo_tela.configurar_classe(verso_atual, classe_tipo)
-        verso_tela.aplicar_talentos_ao_personagem(personagem, verso=verso_atual)
-        if getattr(jogo_tela, 'duas_pessoas', False) and getattr(jogo_tela, 'personagem2', None) is not None:
-            verso_tela.aplicar_talentos_ao_personagem(jogo_tela.personagem2, verso=getattr(jogo_tela, 'classe_jogador2', verso_atual))
-            jogo_tela._aplicar_classe_personagem2()
-        _resetar_progresso_fases()
-        jogo_tela.pontos_jogo = 0
-        jogo_tela.reiniciar(forcar_novos_inimigos=True)
-        tocar_musica(jogo_tela.musica_luta)
-        return "jogo"
     return None
 
 def tratar_eventos_cutscene(evento, posicao_mouse):

@@ -13,7 +13,7 @@ class GerenciadorGameOver(TelaBase):
     Tela de Game Over temática para cada verso (Feiticeiro, Sobrevivente, Agente).
     Apresenta uma camada preta de transparência (alpha) sobre o fundo temático
     para escurecer o cenário e maximizar a legibilidade dos textos e botões.
-    Inclui opções para 'TENTAR NOVAMENTE' e 'MENU PRINCIPAL'.
+    Inclui opção para retornar ao 'MENU PRINCIPAL'.
     """
 
     CORES_VERSO = {
@@ -61,15 +61,8 @@ class GerenciadorGameOver(TelaBase):
         altura_botao = 54
         x_botao = (self.largura - largura_botao) // 2
 
-        self.botao_reiniciar = self.criar_botao(
-            x_botao, 470, largura_botao, altura_botao, "TENTAR NOVAMENTE",
-            cor_base=(120, 25, 25), cor_hover=(175, 40, 40),
-            cor_texto=(255, 255, 255), fonte_tamanho=17, borda_raio=8,
-            acao=lambda: "reiniciar"
-        )
-
         self.botao_menu = self.criar_botao(
-            x_botao, 538, largura_botao, altura_botao, "MENU PRINCIPAL",
+            x_botao, 495, largura_botao, altura_botao, "MENU PRINCIPAL",
             cor_base=(38, 44, 56), cor_hover=(60, 70, 88),
             cor_texto=(240, 245, 250), fonte_tamanho=16, borda_raio=8,
             acao=lambda: "menu"
@@ -111,11 +104,10 @@ class GerenciadorGameOver(TelaBase):
             if chave == "agente":
                 self.eh_placeholder_agente = True
 
-        # Atualizar cores do botão de reiniciar de acordo com o verso
+        # Atualizar cores do botão de menu de acordo com o verso
         cor_prim = config["primaria"]
         cor_hover = tuple(min(255, int(c * 1.25 + 20)) for c in cor_prim)
-        self.botao_reiniciar.cor_base = (max(20, cor_prim[0] // 2), max(20, cor_prim[1] // 2), max(20, cor_prim[2] // 2))
-        self.botao_reiniciar.cor_hover = cor_hover
+        self.botao_menu.cor_hover = cor_hover
 
     def _gerar_fundo_procedural(self, chave_verso: str) -> pygame.Surface:
         """Gera uma atmosfera procedural temática caso a arte oficial não esteja presente no disco."""
@@ -161,14 +153,8 @@ class GerenciadorGameOver(TelaBase):
 
     def atualizar_eventos(self, evento: pygame.event.Event, posicao_mouse: Tuple[int, int]):
         if evento.type == pygame.KEYDOWN:
-            if evento.key == pygame.K_r:
-                return "reiniciar"
-            elif evento.key in (pygame.K_ESCAPE, pygame.K_m):
+            if evento.key in (pygame.K_ESCAPE, pygame.K_m, pygame.K_RETURN, pygame.K_SPACE):
                 return "menu"
-
-        res_reiniciar = self.botao_reiniciar.checar_clique(evento, posicao_mouse)
-        if res_reiniciar:
-            return res_reiniciar
 
         res_menu = self.botao_menu.checar_clique(evento, posicao_mouse)
         if res_menu:
@@ -189,8 +175,7 @@ class GerenciadorGameOver(TelaBase):
         # 3. Conteúdo da tela de Game Over
         self.desenhar_conteudo()
 
-        # 4. Botões com hover e textos destacados
-        self.botao_reiniciar.desenhar(self.tela)
+        # 4. Botão de retorno ao menu
         self.botao_menu.desenhar(self.tela)
 
     def desenhar_conteudo(self):
@@ -245,5 +230,5 @@ class GerenciadorGameOver(TelaBase):
         self.tela.blit(txt_frase, txt_frase.get_rect(center=(self.largura // 2, 385)))
 
         # Dica de atalhos no rodapé
-        txt_dica = self.fonte_dica.render("[R] Tentar Novamente   |   [ESC] Menu", True, (130, 140, 160))
+        txt_dica = self.fonte_dica.render("[ESC] ou [M] Voltar ao Menu", True, (130, 140, 160))
         self.tela.blit(txt_dica, txt_dica.get_rect(center=(self.largura // 2, 620)))

@@ -20,7 +20,15 @@ from Sistemas.Constantes import (
 )
 from Gameplay.Habilidades import banco_habilidades, obter_ultimate
 from Sistemas.Fontes import obter_fonte, quebrar_texto
-from Gameplay.GeracaoFases import GeradorFase, BANCO_INIMIGOS, TOTAL_PARTIDAS_JOGO, _criar_inimigo_a_partir_template, executar_efeito_evento
+from Gameplay.GeracaoFases import (
+    GeradorFase,
+    BANCO_INIMIGOS,
+    TOTAL_PARTIDAS_JOGO,
+    LIMITE_PONTOS_JOGO,
+    calcular_pontos_fase_passada,
+    _criar_inimigo_a_partir_template,
+    executar_efeito_evento,
+)
 from Sistemas.Recursos import caminho_imagem, caminho_sfx, caminho_vfx
 from Sistemas.GerenciadorAudio import tocar_sfx
 from Sistemas.SistemaEfeitos import (
@@ -180,10 +188,12 @@ class GerenciadorJogo(TelaBase):
         self.ultimo_chefe_combate = None
         self.perdeu_para_chefe = False
         self.fase_numero = 1
+        self.ultima_fase_bonus_atributos = 1
         self.gerador_fases = GeradorFase(self.fase_numero)
         self.partida_atual = 1
         self.total_partidas = TOTAL_PARTIDAS_JOGO
         self.pontos_jogo = 0
+        self.pontos_registrados_na_run = 0
         self.kills_total = 0
         self.dano_causado_total = 0
         self.dificuldade_total = 0
@@ -2017,21 +2027,12 @@ class GerenciadorJogo(TelaBase):
         self.gerar_botoes_ataque(personagem)
 
     def calcular_pontos_desempenho(self, xp_ganho=0, dano_causado=0, inimigos_eliminados=0, dificuldade_total=0):
-        hp_restante = max(0, int(personagem.hp))
-        hp_total = max(1, int(personagem.max_hp))
-        hp_bonus = int((hp_restante / hp_total) * 150)
-
-        dano_causado = max(0, int(dano_causado))
-        inimigos_eliminados = max(0, int(inimigos_eliminados))
-        dificuldade_total = max(0, int(dificuldade_total))
-
-        kill_bonus = inimigos_eliminados * 150
-        dano_bonus = int(dano_causado * 0.35)
-        dificuldade_bonus = int(dificuldade_total * 0.5)
-        xp_bonus = int(xp_ganho * 0.5)
-        partida_bonus = self.partida_atual * 50
-
-        return hp_bonus + kill_bonus + dano_bonus + dificuldade_bonus + xp_bonus + partida_bonus
+        """Retorna os pontos por fase passada com base no limite da árvore de habilidades (não por inimigo morto)."""
+        return calcular_pontos_fase_passada(
+            getattr(self, "partida_atual", 1),
+            total_fases=TOTAL_PARTIDAS_JOGO,
+            limite_pontos=LIMITE_PONTOS_JOGO,
+        )
 
     def obter_musica_combate(self, eh_chefe: bool = False, verso: str = None):
         v = verso or self.classe_atual
@@ -2047,6 +2048,59 @@ class GerenciadorJogo(TelaBase):
         self.cooldown_feedback = frames_ajustados
         self.tempo_cooldown_maximo = max(1, frames_ajustados)
         self.acao_pos_feedback = acao
+
+    def calcular_ganhos_atributos_fase(self, fase_num, classe_dano=None):
+        """Retorna os bônus progressivos de atributos concedidos ao alcançar `fase_num` (>= 2)."""
+        fase = max(1, int(fase_num or 1))
+        if fase < 2:
+            return {}
+
+        attr_principal = MAPA_ATRIBUTO_CLASSE.get(classe_dano or getattr(self, "classe_dano_atual", "Físico"), "For")
+        ganhos = {}
+
+        # Atributo principal escala progressivamente por faixa de fase
+        bonus_principal = 1 if fase <= 3 else (2 if fase <= 6 else 3)
+        ganhos[attr_principal] = ganhos.get(attr_principal, 0) + bonus_principal
+
+        # Constituição acompanha a sobrevivência ao longo das fases
+        ganhos["Con"] = ganhos.get("Con", 0) + (1 if fase <= 5 else 2)
+
+        if fase >= 4:
+            ganhos["Agi"] = ganhos.get("Agi", 0) + 1
+        if fase >= 5:
+            ganhos["Sor"] = ganhos.get("Sor", 0) + 1
+        if fase >= 7:
+            suporte = "Sab" if attr_principal != "Sab" else "Int"
+            ganhos[suporte] = ganhos.get(suporte, 0) + 1
+
+        return ganhos
+
+    def aplicar_progressao_atributos_fase(self, fase_alvo=None):
+        """Aplica aumento progressivo de atributos aos jogadores para cada nova fase alcançada."""
+        fase_destino = max(1, int((getattr(self, "fase_numero", 1) if fase_alvo is None else fase_alvo) or 1))
+        ultima = int(getattr(self, "ultima_fase_bonus_atributos", 1))
+        if fase_destino <= ultima:
+            return {}
+
+        ganhos_acumulados = {}
+        jogadores = self.obter_jogadores()
+        for fase_step in range(ultima + 1, fase_destino + 1):
+            for idx, jog in enumerate(jogadores):
+                classe_jog = (
+                    getattr(self, "classe_jogador2_tipo", None)
+                    if (idx > 0 or jog == getattr(self, "personagem2", None))
+                    else getattr(self, "classe_dano_atual", None)
+                ) or "Físico"
+                ganhos = self.calcular_ganhos_atributos_fase(fase_step, classe_dano=classe_jog)
+                if not hasattr(jog, "atributos") or not isinstance(jog.atributos, dict):
+                    jog.atributos = {"For": 1, "Agi": 1, "Con": 1, "Sab": 1, "Int": 1, "Sor": 1}
+                for attr, val in ganhos.items():
+                    jog.atributos[attr] = int(jog.atributos.get(attr, 1)) + int(val)
+                    if idx == 0:
+                        ganhos_acumulados[attr] = ganhos_acumulados.get(attr, 0) + int(val)
+
+        self.ultima_fase_bonus_atributos = fase_destino
+        return ganhos_acumulados
 
     def configurar_cenario(self, id_cenario, rolagem_forcada=None):
         dados_efeito = None
@@ -2117,6 +2171,7 @@ class GerenciadorJogo(TelaBase):
 
         self.perdeu_para_chefe = False
         self.ultimo_chefe_combate = None
+        self.aplicar_progressao_atributos_fase(self.fase_numero)
         self.ordem_turnos = [personagem]
         if getattr(self, 'duas_pessoas', False) and self.personagem2 is not None:
             self.ordem_turnos.append(self.personagem2)
@@ -2176,6 +2231,7 @@ class GerenciadorJogo(TelaBase):
 
         self.perdeu_para_chefe = False
         self.ultimo_chefe_combate = None
+        self.aplicar_progressao_atributos_fase(self.fase_numero)
         self.ordem_turnos = [personagem]
         if getattr(self, 'duas_pessoas', False) and self.personagem2 is not None:
             self.ordem_turnos.append(self.personagem2)
@@ -2910,7 +2966,10 @@ class GerenciadorJogo(TelaBase):
                         jogador.pontos_atributo += (3 * niveis_ganhos)
                         jogador.nivel = novo_nivel
 
-                self.pontos_jogo += int(self.calcular_pontos_desempenho(xp_ganho) * multiplicador_rec)
+                pontos_anteriores = max(0, int(getattr(self, "pontos_jogo", 0)))
+                pontos_fase = self.calcular_pontos_desempenho(xp_ganho)
+                self.pontos_jogo = min(LIMITE_PONTOS_JOGO, pontos_anteriores + pontos_fase)
+                pontos_ganhos_fase = max(0, self.pontos_jogo - pontos_anteriores)
                 self.xp_calculado = True
 
                 from Sistemas.Conquistas import sistema_conquistas
@@ -2974,12 +3033,12 @@ class GerenciadorJogo(TelaBase):
                     "cura": cura_info,
                     "itens": itens_obtidos,
                     "xp": xp_ganho,
-                    "mensagem": f"Vitória! +{xp_ganho} XP e {self.pontos_jogo} pontos ganhos."
+                    "mensagem": f"Vitória! +{xp_ganho} XP e +{pontos_ganhos_fase} pontos ({self.pontos_jogo}/{LIMITE_PONTOS_JOGO})."
                 }
 
                 if self.partida_atual >= self.total_partidas:
                     sistema_conquistas.desbloquear("chefe_derrotado")
-                    self.mensagem_log = f"🏆 CHEFE DERROTADO! Pontos ganhos: {self.pontos_jogo}"
+                    self.mensagem_log = f"🏆 CHEFE DERROTADO! Pontos ganhos: {self.pontos_jogo}/{LIMITE_PONTOS_JOGO}"
                     self.iniciar_cooldown_feedback(75, lambda: "fim_jogo")
                     self.clique_anterior = clique_agora
                     return None
@@ -4129,7 +4188,6 @@ class GerenciadorJogo(TelaBase):
             if random.random() < chance_fuga:
                 from Sistemas.Conquistas import sistema_conquistas
                 sistema_conquistas.desbloquear("fuga_estrategica")
-                self.pontos_jogo = 0
                 self.partida_atual = min(self.total_partidas, self.partida_atual + 1)
                 cura_info = self.recuperar_apos_batalha(dormir=False)
                 self.ultimo_resultado_batalha = {

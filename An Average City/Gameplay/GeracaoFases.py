@@ -8,6 +8,37 @@ CAMINHO_DADOS = caminho_dados()
 TOTAL_FASES_NORMAIS = 9
 TOTAL_PARTIDAS_JOGO = 10  # 9 fases normais + 1 combate contra o chefe (partida 10)
 
+
+def carregar_limite_pontos_arvore(arquivo=None):
+    """Retorna o custo total necessário para desbloquear uma trilha completa da árvore de habilidades."""
+    caminho = arquivo or caminho_dados("arvores.json")
+    try:
+        with open(caminho, "r", encoding="utf-8") as f:
+            arvores = json.load(f)
+        totais = [
+            sum(int(hab.get("preco", 0)) for hab in trilhas)
+            for trilhas in arvores.values()
+            if isinstance(trilhas, list) and trilhas
+        ]
+        if totais:
+            return max(1, max(totais))
+    except Exception:
+        pass
+    return 180
+
+
+LIMITE_PONTOS_JOGO = carregar_limite_pontos_arvore()
+
+
+def calcular_pontos_fase_passada(partida_atual, total_fases=TOTAL_PARTIDAS_JOGO, limite_pontos=None):
+    """Divide o limite total de pontos da árvore igualmente por fase passada (não por inimigo morto)."""
+    limite = LIMITE_PONTOS_JOGO if limite_pontos is None else max(0, int(limite_pontos))
+    total = max(1, int(total_fases or TOTAL_PARTIDAS_JOGO))
+    partida = max(1, min(total, int(partida_atual or 1)))
+    acumulado_atual = int(round((partida / total) * limite))
+    acumulado_anterior = int(round(((partida - 1) / total) * limite))
+    return max(0, acumulado_atual - acumulado_anterior)
+
 MAPA_CATEGORIAS_INIMIGO = {
     "fraco": "pequeno",
     "fraca": "pequeno",
@@ -105,6 +136,42 @@ def carregar_inimigos():
 
 BANCO_INIMIGOS = carregar_inimigos()
 
+FATOR_BONUS_PROGRESSIVO_CATEGORIA = {
+    "pequeno": 1.60,
+    "medio": 1.20,
+    "grande": 0.85,
+    "chefe": 0.65,
+}
+
+
+def calcular_bonus_progressivo_inimigo(fase_num, categoria):
+    """Calcula bônus progressivo de fase para inimigos; quanto mais fraco o porte, maior o bônus."""
+    fase = max(1, int(fase_num or 1))
+    cat = normalizar_categoria_inimigo(categoria)
+    fator = FATOR_BONUS_PROGRESSIVO_CATEGORIA.get(cat, 1.0)
+    if fase <= 1:
+        return {"For": 0, "Agi": 0, "Int": 0, "Sor": 0, "mult_hp_extra": 0.0}
+
+    soma_base = 0.0
+    for f in range(2, fase + 1):
+        passo = 1.0 if f <= 3 else (2.0 if f <= 6 else 3.0)
+        soma_base += passo
+
+    bonus_principal = max(1, int(round(soma_base * fator)))
+    bonus_sorte = max(1, int(round(soma_base * fator * 0.5)))
+
+    extra_por_fase = {"pequeno": 0.08, "medio": 0.05, "grande": 0.02, "chefe": 0.02}.get(cat, 0.04)
+    mult_hp_extra = (fase - 1) * extra_por_fase
+
+    return {
+        "For": bonus_principal,
+        "Agi": bonus_principal,
+        "Int": bonus_principal,
+        "Sor": bonus_sorte,
+        "mult_hp_extra": mult_hp_extra,
+    }
+
+
 def _criar_inimigo_a_partir_template(
     template,
     x=0,
@@ -113,8 +180,14 @@ def _criar_inimigo_a_partir_template(
     multiplicador_hp=None,
     multiplicador_atributos=None,
     multiplicador_mp=None,
+    fase_num=None,
 ):
+    categoria = normalizar_categoria_inimigo(template)
+    bonus_prog = calcular_bonus_progressivo_inimigo(fase_num, categoria) if fase_num is not None else None
+
     mult_hp = multiplicador if multiplicador_hp is None else multiplicador_hp
+    if bonus_prog:
+        mult_hp += bonus_prog["mult_hp_extra"]
     mult_attr = multiplicador if multiplicador_atributos is None else multiplicador_atributos
     mult_mp = multiplicador if multiplicador_mp is None else multiplicador_mp
 
@@ -125,10 +198,14 @@ def _criar_inimigo_a_partir_template(
     atributos = {}
     for attr_nome, attr_val in atributos_base.items():
         passo = 2 if attr_nome == "Sor" else 3
-        atributos[attr_nome] = max(1, int(attr_val + (mult_attr - 1) * passo))
+        val = int(attr_val + (mult_attr - 1) * passo)
+        if bonus_prog:
+            val += bonus_prog.get(attr_nome, 0)
+        atributos[attr_nome] = max(1, val)
     for padrao in ("For", "Agi", "Int", "Sor"):
         if padrao not in atributos:
-            atributos[padrao] = 1
+            extra_p = bonus_prog.get(padrao, 0) if bonus_prog else 0
+            atributos[padrao] = max(1, 1 + extra_p)
 
     max_mp_base = template.get("max_mp")
     max_mp_calc = int(max_mp_base * mult_mp) if max_mp_base is not None else None
@@ -782,10 +859,11 @@ class GeradorFase:
                         multiplicador=multiplicador,
                         multiplicador_hp=multiplicador * 1.35,
                         multiplicador_atributos=multiplicador * 1.15,
+                        fase_num=fase,
                     )
                 )
             else:
-                inimigos.append(_criar_inimigo_a_partir_template(template, multiplicador=multiplicador))
+                inimigos.append(_criar_inimigo_a_partir_template(template, multiplicador=multiplicador, fase_num=fase))
 
         return inimigos
 
@@ -801,8 +879,9 @@ class GeradorFase:
                 multiplicador_hp=2.2,
                 multiplicador_atributos=1.25 * 1.5,
                 multiplicador_mp=1.8,
+                fase_num=TOTAL_PARTIDAS_JOGO,
             )
-        return _criar_inimigo_a_partir_template(template, multiplicador=1.5)
+        return _criar_inimigo_a_partir_template(template, multiplicador=1.5, fase_num=TOTAL_PARTIDAS_JOGO)
 
     def gerar_fase_aleatoria(self, fase_num=None, verso=None, duas_pessoas=False):
         fase = max(1, int((self.fase_num if fase_num is None else fase_num) or 1))
