@@ -36,10 +36,8 @@ from Sistemas import (
     save_global,
     sistema_conquistas,
     inventario_global,
-    caminho_musica,
     sistema_config,
     gerenciador_musica,
-    obter_musica_combate,
     sistema_cutscene,
 )
 
@@ -47,6 +45,7 @@ def esta_em_cutscene() -> bool:
     return sistema_cutscene.esta_em_cutscene() or estado == "cutscene" 
 from Entidades import personagem
 from Gameplay import obter_dialogo_evento, TOTAL_PARTIDAS_JOGO, LIMITE_PONTOS_JOGO
+from Gameplay.DesafioEsgoto import GerenciadorDesafioEsgoto
 
 pygame.init()
 pygame.mixer.init()
@@ -58,7 +57,7 @@ tela_cheia = sistema_config.obter_tela_cheia()
 tela_real = sistema_config.aplicar_video()
 if tela_real is None:
     tela_real = pygame.display.set_mode((LARGURA, ALTURA), pygame.RESIZABLE)
-pygame.display.set_caption("Menu RPG")
+pygame.display.set_caption("An Average City")
 relogio = pygame.time.Clock()
 
 intro_tela = GerenciadorIntro(tela)
@@ -69,6 +68,7 @@ selecao_tela = GerenciadorSelecao(tela)
 conquistas_tela = GerenciadorConquistasTela(tela)
 cheats_tela = GerenciadorCheatsTela(tela)
 sewer_tela = GerenciadorSewerTela(tela)
+desafio_esgoto_tela = GerenciadorDesafioEsgoto(tela)
 classes_tela = GerenciadorClasses(tela)
 verso_tela = GerenciadorVerso(tela)
 pos_luta_tela = GerenciadorPosLuta(tela)
@@ -103,6 +103,7 @@ estado = "intro"
 rodando = True
 
 def _resetar_progresso_fases():
+    jogo_tela.modo_campanha = True
     jogo_tela.partida_atual = 1
     jogo_tela.total_partidas = TOTAL_PARTIDAS_JOGO
     jogo_tela.fase_numero = 1
@@ -181,13 +182,16 @@ def registrar_pontos_partida():
     return pontos_partida
 
 def tratar_eventos_menu(evento, posicao_mouse):
-    global estado, rodando, alvo_classes, verso_menu_selecionado, verso_jogador1, verso_jogador2
+    global estado, rodando, alvo_classes, verso_menu_selecionado, verso_jogador1, verso_jogador2, estado_anterior_config
     botoes_menu = menu_tela.botoes
 
     if botoes_menu["jogar"].checar_clique(evento, posicao_mouse):
+        verso_tela.sincronizar_habilidades_ativas()
         verso_escolhido_anteriormente = verso_menu_selecionado or (
             jogo_tela.classe_atual if getattr(jogo_tela, 'classe_atual', 'Nenhuma') != 'Nenhuma' else None
         )
+        if verso_escolhido_anteriormente not in verso_tela.versos:
+            verso_escolhido_anteriormente = None
         if getattr(menu_tela, 'duas_pessoas', False):
             alvo_classes = 1
             verso_jogador1 = None
@@ -523,7 +527,17 @@ def tratar_eventos_sewer(evento, posicao_mouse):
     resultado_sewer = sewer_tela.atualizar_eventos(evento, posicao_mouse)
     if resultado_sewer == "menu":
         return "menu"
+    if resultado_sewer == "desafio_david" and desafio_esgoto_tela.iniciar():
+        return "desafio_esgoto"
     return None
+
+
+def tratar_eventos_desafio_esgoto(evento, posicao_mouse):
+    global estado_anterior_config
+    resultado = desafio_esgoto_tela.atualizar_eventos(evento, posicao_mouse)
+    if resultado == "config":
+        estado_anterior_config = "desafio_esgoto"
+    return resultado
 
 def iniciar_batalha_customizada(nomes_inimigos):
     from Gameplay.GeracaoFases import BANCO_INIMIGOS, _criar_inimigo_a_partir_template
@@ -569,6 +583,7 @@ def iniciar_batalha_customizada(nomes_inimigos):
     if not instancias_inimigos:
         return None
 
+    jogo_tela.modo_campanha = False
     jogo_tela.fase_numero = max(1, len(instancias_inimigos))
     jogo_tela.partida_atual = 1
 
@@ -580,6 +595,8 @@ def iniciar_batalha_customizada(nomes_inimigos):
     if tem_chefe:
         jogo_tela.total_partidas = 1
         jogo_tela.partida_atual = 1
+    else:
+        jogo_tela.total_partidas = TOTAL_PARTIDAS_JOGO
     verso_batalha = getattr(jogo_tela, 'classe_atual', 'Feiticeiro')
     for ini in instancias_inimigos:
         nome_l = getattr(ini, 'nome', '').lower()
@@ -618,13 +635,6 @@ def tratar_eventos_cheats(evento, posicao_mouse):
         nomes_inimigos = resultado_cheats[1]
         if nomes_inimigos:
             return iniciar_batalha_customizada(nomes_inimigos)
-
-    if resultado_cheats == "batalhar_sukuna":
-        return iniciar_batalha_customizada(["Sukuna"])
-    if resultado_cheats == "batalhar_estraga_prazeres":
-        return iniciar_batalha_customizada(["Estraga Prazeres"])
-    if resultado_cheats == "batalhar_confinamento":
-        return iniciar_batalha_customizada(["Confinamento"])
 
     if resultado_cheats in ("menu", "sewer") or cheats_tela.voltar_clicado:
         cheats_tela.voltar_clicado = False
@@ -708,6 +718,7 @@ DISTRIBUIDOR_EVENTOS = {
     "conquistas": tratar_eventos_conquistas,
     "config": tratar_eventos_config,
     "sewer": tratar_eventos_sewer,
+    "desafio_esgoto": tratar_eventos_desafio_esgoto,
     "cheats": tratar_eventos_cheats,
 }
 
@@ -769,10 +780,7 @@ def atualizar_estado_atual(posicao_mouse, estado_clique_mouse):
 
                 # A cutscene de derrota so deve ser exibida caso morra para o respectivo boss
                 morreu_para_boss_respectivo = bool(
-                    boss_nome and (
-                        (boss_esperado and boss_nome.lower() == boss_esperado.lower()) or
-                        boss_nome in ("Sukuna", "Charlie", "Estraga Prazeres")
-                    )
+                    boss_nome and boss_esperado and boss_nome.lower() == boss_esperado.lower()
                 )
 
                 if morreu_para_boss_respectivo:
@@ -812,6 +820,8 @@ def atualizar_estado_atual(posicao_mouse, estado_clique_mouse):
                     boss_nome = 'Sukuna'
                 elif verso_batalha == 'Sobrevivente':
                     boss_nome = 'Charlie'
+                elif verso_batalha == 'Cyberpunk':
+                    boss_nome = 'Adam Smasher'
                 else:
                     boss_nome = 'Estraga Prazeres'
 
@@ -844,15 +854,16 @@ def atualizar_estado_atual(posicao_mouse, estado_clique_mouse):
         "conquistas": conquistas_tela,
         "config": config_tela,
         "sewer": sewer_tela,
+        "desafio_esgoto": desafio_esgoto_tela,
         "cheats": cheats_tela,
         "game_over": game_over_tela,
         "tela_vitoria": vitoria_tela,
         "pos_luta": pos_luta_tela,
         "selecao_cenario": selecao_tela,
+        "dialogo": dialogo_tela,
         "pos_dialogo": pos_dialogo_tela,
         "loja": loja_tela,
         "cutscene": cutscene_tela,
-        "concluido": game_over_tela,
         "pausa": pausa_tela,
     }
     if tela_alvo := telas_atualizacao.get(estado):
@@ -867,6 +878,7 @@ def desenhar_estado_atual(posicao_mouse):
         "conquistas": conquistas_tela.desenhar,
         "config": config_tela.desenhar,
         "sewer": sewer_tela.desenhar,
+        "desafio_esgoto": desafio_esgoto_tela.desenhar,
         "cheats": cheats_tela.desenhar,
         "jogo": lambda: jogo_tela.desenhar(posicao_mouse),
         "pos_luta": lambda: pos_luta_tela.desenhar(posicao_mouse),
@@ -877,7 +889,6 @@ def desenhar_estado_atual(posicao_mouse):
         "game_over": game_over_tela.desenhar,
         "cutscene": cutscene_tela.desenhar,
         "tela_vitoria": vitoria_tela.desenhar,
-        "concluido": lambda: (game_over_tela.desenhar() if getattr(personagem, "hp", 1) <= 0 else vitoria_tela.desenhar()),
         "pausa": pausa_tela.desenhar,
     }
     tela.fill((0, 0, 0))

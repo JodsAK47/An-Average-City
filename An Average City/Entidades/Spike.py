@@ -1,10 +1,9 @@
 import pygame
-import os
 import time
 import math
 from Sistemas.Recursos import caminho_imagem
 from Sistemas.Fontes import obter_fonte
-from Entidades.EntidadeCombate import EntidadeCombate
+from Entidades.EntidadeCombate import EntidadeCombate, aplicar_mascara_transparencia
 
 
 class Spike(EntidadeCombate):
@@ -16,22 +15,15 @@ class Spike(EntidadeCombate):
     - Pode ser desarmada através do minigame com a esfera centralizada e bullet hell.
     - Ao ser desarmada, exibe o novo frame (Spike Desarmada.png) no chão antes de ser deletada da tela.
     """
-    def __init__(self, x=640, y=410, dono=None, tempo_total=50.0):
+    def __init__(self, x=500, y=460, dono=None, tempo_total=50.0):
         super().__init__(nome="Spike", max_hp=100, max_mp=0, is_player=False)
-        self.nome = "Spike"
         self.dono = dono
         self.lado = "inimigo"
         self.is_spike = True
-        self.is_player = False
         self.is_minion = False
         self.tipo = "dispositivo"
         self.classe = "Distância"
         self.verso = "Agente"
-
-        self.max_hp = 100
-        self.hp = 100
-        self.max_mp = 0
-        self.mp = 0
 
         self.ativa = True
         self.desarmada = False
@@ -57,7 +49,6 @@ class Spike(EntidadeCombate):
         self.imagem = self.imagem_plantada
         self.rect = self.imagem.get_rect(center=(x, y))
         self.fonte_timer = obter_fonte(12)
-        self.fonte_status = obter_fonte(11)
 
     def _carregar_sprites(self):
         # 1. Carrega sprite da Spike armada/plantada (Spike.png)
@@ -75,7 +66,7 @@ class Spike(EntidadeCombate):
             largura_plantada = max(40, int(crop.get_width() * (altura_plantada / max(1, crop.get_height()))))
             img_escala = pygame.transform.smoothscale(crop, (largura_plantada, altura_plantada)).convert_alpha()
 
-            self._aplicar_mascara_transparencia(img_escala, corte_zero=18, fade_max=50)
+            aplicar_mascara_transparencia(img_escala, corte_zero=18, fade_max=50)
             self.imagem_plantada = img_escala
         except Exception as e:
             print(f"[Aviso] Falha ao carregar sprite Spike.png: {e}")
@@ -90,7 +81,7 @@ class Spike(EntidadeCombate):
             img_des_orig = pygame.image.load(caminho_desarmada)
             w_des, h_des = img_des_orig.get_size()
 
-            if w_des >= 688 and h_des >= 510:
+            if w_des >= 335 + 354 and h_des >= 302 + 209:
                 crop_des = img_des_orig.subsurface((335, 302, 354, 209))
             else:
                 crop_des = img_des_orig
@@ -98,7 +89,7 @@ class Spike(EntidadeCombate):
             largura_desarmada = max(50, int(crop_des.get_width() * (altura_desarmada / max(1, crop_des.get_height()))))
             img_des_escala = pygame.transform.smoothscale(crop_des, (largura_desarmada, altura_desarmada)).convert_alpha()
 
-            self._aplicar_mascara_transparencia(img_des_escala, corte_zero=16, fade_max=45)
+            aplicar_mascara_transparencia(img_des_escala, corte_zero=16, fade_max=45)
             self.imagem_desarmada = img_des_escala
         except Exception as e:
             print(f"[Aviso] Falha ao carregar sprite Spike Desarmada.png: {e}")
@@ -106,32 +97,11 @@ class Spike(EntidadeCombate):
             pygame.draw.rect(self.imagem_desarmada, (40, 45, 50), (5, 10, 80, 35), border_radius=6)
             pygame.draw.circle(self.imagem_desarmada, (60, 235, 160), (45, 27), 8)
 
-    def _aplicar_mascara_transparencia(self, surface, corte_zero=18, fade_max=50):
-        try:
-            px = pygame.PixelArray(surface)
-            w, h = surface.get_size()
-            divisor = max(1.0, float(fade_max - corte_zero))
-            for px_x in range(w):
-                for px_y in range(h):
-                    color = surface.unmap_rgb(px[px_x, px_y])
-                    bright = max(color.r, color.g, color.b)
-                    if bright < corte_zero:
-                        px[px_x, px_y] = (0, 0, 0, 0)
-                    elif bright < fade_max:
-                        alpha = int(((bright - corte_zero) / divisor) * 255)
-                        px[px_x, px_y] = (color.r, color.g, color.b, alpha)
-            del px
-        except Exception:
-            surface.set_colorkey((0, 0, 0))
-
     def tempo_restante(self):
         if not self.ativa or self.desarmada:
             return 0.0
         decorrido = time.time() - self.tempo_plantio
         return max(0.0, self.tempo_total - decorrido)
-
-    def porcentagem_tempo(self):
-        return max(0.0, min(1.0, self.tempo_restante() / max(1.0, self.tempo_total)))
 
     def desarmar(self):
         self.desarmada = True

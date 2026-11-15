@@ -4,14 +4,12 @@ from Sistemas.Recursos import caminho_imagem, caminho_dados
 from Entidades.EntidadeCombate import EntidadeCombate
 
 import json
-import os
 
-CAMINHO_DADOS = caminho_dados()
 
 def carregar_habilidades_inimigos():
     try:
         from Gameplay.Habilidades import Habilidade
-        with open(os.path.join(CAMINHO_DADOS, "habilidades_inimigos.json"), "r", encoding="utf-8") as f:
+        with open(caminho_dados("habilidades_inimigos.json"), "r", encoding="utf-8") as f:
             dados = json.load(f)
             banco = {}
             for k, v in dados.items():
@@ -45,17 +43,17 @@ def obter_banco_habilidades_inimigos():
 
 class Inimigo(EntidadeCombate):
     def __init__(self, x, y, vida_maxima, nome_imagem, nome="Inimigo", ataques=None, xp=0, atributos=None, max_mp=None, tipo="comum", classe=None):
-        super().__init__(nome=nome, max_hp=vida_maxima, max_mp=max_mp or 10, atributos=atributos, is_player=False)
-        self.nome = nome
+        atributos_completos = {"For": 1, "Agi": 1, "Con": 1, "Sab": 1, "Int": 1, "Sor": 1}
+        if atributos is not None:
+            atributos_completos.update(atributos)
+        super().__init__(nome=nome, max_hp=vida_maxima, max_mp=max_mp or 10, atributos=atributos_completos, is_player=False)
         self.tipo = tipo
         self.classe = classe
         self.arquivo_imagem = nome_imagem
-        self.max_hp = vida_maxima
-        self.hp = vida_maxima
         self.ataques = ataques if ataques is not None else ["Soco"]
         banco = obter_banco_habilidades_inimigos()
         if max_mp is not None:
-            self.max_mp = max_mp
+            self.max_mp = max(0, int(max_mp))
         else:
             custo_max_mp = max(
                 (
@@ -68,8 +66,6 @@ class Inimigo(EntidadeCombate):
             self.max_mp = max(10, custo_max_mp * 3)
         self.mp = 10 if "sukuna" in self.nome.lower() else 0
 
-        self.congelado = False
-        self.atordoado = False
         self.xp = xp
         self.carga_confinamento = 0
         self.max_carga_confinamento = 5
@@ -80,9 +76,6 @@ class Inimigo(EntidadeCombate):
         self.max_fade_derrota = 45
         self.particulas_derrota = []
         self.imagem_destruida_base = None
-
-        self.atributos = atributos if atributos is not None else {"For": 1, "Agi": 1, "Int": 1, "Sor": 1}
-        self.is_player = False
 
         try:
             self.imagem_original = pygame.image.load(caminho_imagem(nome_imagem))
@@ -100,9 +93,8 @@ class Inimigo(EntidadeCombate):
                 dest_path = caminho_imagem("Confinamento_destruido.png")
                 orig_dest = pygame.image.load(dest_path)
                 w_d, h_d = orig_dest.get_size()
-                proporcao = 125.0 / 449.0
-                alt_dest = max(20, int(h_d * proporcao))
-                larg_dest = max(20, int(w_d * proporcao))
+                alt_dest = 110
+                larg_dest = max(20, int(w_d * (alt_dest / max(1, h_d))))
                 self.imagem_destruida_base = pygame.transform.scale(orig_dest, (larg_dest, alt_dest))
             except Exception as e:
                 print(f"[Aviso] Não foi possível carregar Confinamento_destruido.png: {e}")
@@ -187,35 +179,6 @@ class Inimigo(EntidadeCombate):
                 part_vivas.append(p)
         self.particulas_derrota = part_vivas
 
-    def virar_para(self, direcao: str):
-        """
-        Altera para qual lado o inimigo está virado ('leste' ou 'oeste').
-        Preserva a posição central do rect para evitar deslocamento indesejado.
-        Utiliza o SistemaOrientacao para respeitar a orientação nativa do sprite.
-        """
-        return super().virar_para(direcao)
-
-    def obter_quadrante(self, largura_tela=None) -> str:
-        """
-        Retorna em qual quadrante ('oeste' ou 'leste') o inimigo está posicionado.
-        """
-        from Sistemas.SistemaQuadrantes import sistema_quadrantes
-        return sistema_quadrantes.identificar_quadrante(self, largura_tela=largura_tela)
-
-    def obter_ponto_tela(self):
-        """
-        Retorna as coordenadas (x, y) do ponto central do inimigo na tela.
-        """
-        from Sistemas.SistemaQuadrantes import sistema_quadrantes
-        return sistema_quadrantes.obter_ponto(self)
-
-    def obter_info_posicao(self, largura_tela=None):
-        """
-        Retorna informações detalhadas de posicionamento, quadrante e orientação.
-        """
-        from Sistemas.SistemaQuadrantes import sistema_quadrantes
-        return sistema_quadrantes.obter_detalhes_posicao(self, largura_tela=largura_tela)
-
     def atualizar_orientacao_por_quadrante(self, largura_tela=None, modo="para_centro", alvo=None):
         """
         Verifica o ponto na tela e gerencia para qual lado o inimigo fica virado.
@@ -226,39 +189,6 @@ class Inimigo(EntidadeCombate):
     def obter_habilidade(self, nome):
         banco = obter_banco_habilidades_inimigos()
         return banco.get(nome, banco.get("Soco"))
-
-    def clone(self):
-        novo_inimigo = Inimigo(
-            self.rect.x,
-            self.rect.y,
-            self.max_hp,
-            self.arquivo_imagem,
-            self.nome,
-            list(self.ataques),
-            self.xp,
-            dict(self.atributos),
-            max_mp=self.max_mp,
-            tipo=self.tipo,
-            classe=self.classe
-        )
-        novo_inimigo.hp = self.hp
-        novo_inimigo.mp = self.mp
-        novo_inimigo.congelado = self.congelado
-        novo_inimigo.atordoado = self.atordoado
-        novo_inimigo.queimando = getattr(self, "queimando", False)
-        novo_inimigo.envenenado = getattr(self, "envenenado", False)
-        novo_inimigo.cego = getattr(self, "cego", False)
-        novo_inimigo.turnos_cegueira = getattr(self, "turnos_cegueira", 0)
-        novo_inimigo.turnos_fogo = getattr(self, "turnos_fogo", 0)
-        novo_inimigo.turnos_veneno = getattr(self, "turnos_veneno", 0)
-        novo_inimigo.carga_confinamento = self.carga_confinamento
-        novo_inimigo.max_carga_confinamento = self.max_carga_confinamento
-        novo_inimigo.eh_confinamento = self.eh_confinamento
-        novo_inimigo.imagem_destruida_base = getattr(self, "imagem_destruida_base", None)
-        novo_inimigo.imagem_viva_base = getattr(self, "imagem_viva_base", None)
-        novo_inimigo.virar_para(self.direcao_olhar)
-        novo_inimigo.quadrante = self.quadrante
-        return novo_inimigo
 
     def desenhar(self, tela, desenhar_nome=True):
         if self.hp > 0:

@@ -1,8 +1,5 @@
 import json
-import os
 from Sistemas.Recursos import caminho_dados
-
-CAMINHO_DADOS = caminho_dados()
 
 class Habilidade:
     def __init__(
@@ -90,6 +87,7 @@ def carregar_habilidades_jogador():
                         verso=v.get("verso", "Nenhum"),
                         is_ultimate=True,
                         minion=v.get("minion"),
+                        estilo=v.get("estilo"),
                         giro=bool(v.get("giro", False)),
                     )
                     ULTIMATES_POR_VERSO_CLASSE[(verso, classe)] = ult
@@ -99,12 +97,6 @@ def carregar_habilidades_jogador():
         print("⚠️ Erro: arquivo habilidades_jogador.json não encontrado.")
 
 carregar_habilidades_jogador()
-
-def obter_habilidades_normais(verso, classe):
-    return [
-        nome for nome, hab in banco_habilidades.items()
-        if hab.verso == verso and hab.tipo == classe and not hab.is_ultimate
-    ]
 
 def obter_ultimate(verso, classe):
     return ULTIMATES_POR_VERSO_CLASSE.get((verso, classe))

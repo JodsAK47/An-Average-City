@@ -1,4 +1,3 @@
-import math
 import pygame
 from Sistemas.SistemaUI import Botao, TelaBase
 from Sistemas.Fontes import obter_fonte
@@ -40,23 +39,9 @@ class GerenciadorSewerTela(TelaBase):
         self.imagem_fundo = None
         self.posicao_fundo = (0, 0)
         self.escala_fundo = 1.0
-
-        try:
-            caminho_fundo = caminho_cenario("EsgotoTrancado.png")
-            if not os.path.exists(caminho_fundo):
-                caminho_fundo = caminho_imagem("EsgotoTrancado.png")
-            if not os.path.exists(caminho_fundo):
-                caminho_fundo = caminho_imagem("SewerAccess.png")
-            raw_fundo = pygame.image.load(caminho_fundo).convert()
-            w_raw, h_raw = raw_fundo.get_size()
-            escala = max(self.largura / w_raw, self.altura / h_raw)
-            w_novo = int(w_raw * escala)
-            h_novo = int(h_raw * escala)
-            self.imagem_fundo = pygame.transform.scale(raw_fundo, (w_novo, h_novo))
-            self.posicao_fundo = ((self.largura - w_novo) // 2, (self.altura - h_novo) // 2)
-            self.escala_fundo = escala
-        except Exception as e:
-            print(f"[Aviso] Erro ao carregar fundo do esgoto: {e}")
+        self._nome_fundo = None
+        self._fundos = {}
+        self._atualizar_fundo()
 
         self.rect_saida = pygame.Rect(
             self.posicao_fundo[0] + int(740 * self.escala_fundo),
@@ -107,6 +92,33 @@ class GerenciadorSewerTela(TelaBase):
             cor_texto=VERMELHO_ALERTA, fonte_tamanho=13
         )
 
+    def _atualizar_fundo(self):
+        nome_fundo = "EsgotoLivre.png" if save_global.derrotou_chefes_iniciais() else "EsgotoTrancado.png"
+        if nome_fundo == self._nome_fundo:
+            return
+
+        if nome_fundo not in self._fundos:
+            try:
+                caminho_fundo = caminho_cenario(nome_fundo)
+                if not os.path.exists(caminho_fundo):
+                    caminho_fundo = caminho_imagem(nome_fundo)
+                if not os.path.exists(caminho_fundo):
+                    caminho_fundo = caminho_imagem("SewerAccess.png")
+                raw_fundo = pygame.image.load(caminho_fundo).convert()
+                w_raw, h_raw = raw_fundo.get_size()
+                escala = max(self.largura / w_raw, self.altura / h_raw)
+                w_novo = int(w_raw * escala)
+                h_novo = int(h_raw * escala)
+                imagem = pygame.transform.scale(raw_fundo, (w_novo, h_novo))
+                posicao = ((self.largura - w_novo) // 2, (self.altura - h_novo) // 2)
+                self._fundos[nome_fundo] = (imagem, posicao, escala)
+            except Exception as e:
+                print(f"[Aviso] Erro ao carregar fundo do esgoto: {e}")
+                self._fundos[nome_fundo] = (None, (0, 0), 1.0)
+
+        self.imagem_fundo, self.posicao_fundo, self.escala_fundo = self._fundos[nome_fundo]
+        self._nome_fundo = nome_fundo
+
     def mostrar_aviso(self, texto, cor=VERDE_NEON, duracao=180):
         self.msg_aviso = texto
         self.cor_aviso = cor
@@ -144,6 +156,8 @@ class GerenciadorSewerTela(TelaBase):
                     return None
 
             if self.rect_porta_restrita.collidepoint(posicao_mouse):
+                if save_global.derrotou_chefes_iniciais():
+                    return "desafio_david"
                 self.mostrar_aviso("Túnel alagado do esgoto. Não há passagem por aqui.", TEXTO_CINZA, 160)
                 return None
 
@@ -151,6 +165,7 @@ class GerenciadorSewerTela(TelaBase):
 
     def atualizar(self, posicao_mouse, estado_clique_mouse):
         self.tempo_anim += 0.05
+        self._ultimo_mouse = posicao_mouse
 
         if self.timer_aviso > 0:
             self.timer_aviso -= 1
@@ -159,13 +174,15 @@ class GerenciadorSewerTela(TelaBase):
             self.btn_pegar_card.atualizar(posicao_mouse, estado_clique_mouse)
             self.btn_deixar_card.atualizar(posicao_mouse, estado_clique_mouse)
 
-    def desenhar(self):
+    def desenhar(self, posicao_mouse=None):
+        self._atualizar_fundo()
         if self.imagem_fundo is not None:
             self.tela.blit(self.imagem_fundo, self.posicao_fundo)
         else:
             self.tela.fill(COR_FUNDO)
 
-        posicao_mouse = pygame.mouse.get_pos()
+        if posicao_mouse is None:
+            posicao_mouse = getattr(self, "_ultimo_mouse", None) or pygame.mouse.get_pos()
         tem_card = save_global.tem_member_card()
 
         if not tem_card and self.sprite_card_chao is not None:
@@ -179,6 +196,14 @@ class GerenciadorSewerTela(TelaBase):
             pygame.draw.rect(self.tela, (14, 18, 24), caixa_saida, border_radius=5)
             pygame.draw.rect(self.tela, CIANO, caixa_saida, width=1, border_radius=5)
             self.tela.blit(surf_saida, (caixa_saida.x + 8, caixa_saida.y + 4))
+
+        if (not self.modal_aberto and save_global.derrotou_chefes_iniciais()
+                and self.rect_porta_restrita.collidepoint(posicao_mouse)):
+            texto = self.fonte_tooltip.render("ENTRAR NAS GALERIAS // Desafio de David Martins", True, CIANO)
+            caixa = texto.get_rect(midtop=(self.rect_porta_restrita.centerx, self.rect_porta_restrita.bottom + 12)).inflate(16, 10)
+            caixa.clamp_ip(self.tela.get_rect())
+            pygame.draw.rect(self.tela, COR_FUNDO, caixa, border_radius=5)
+            self.tela.blit(texto, texto.get_rect(center=caixa.center))
 
         hud_rect = pygame.Rect(25, 20, 480, 48)
         pygame.draw.rect(self.tela, (18, 24, 30), hud_rect, border_radius=6)

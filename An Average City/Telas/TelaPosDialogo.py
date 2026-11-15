@@ -1,5 +1,5 @@
 import pygame
-from Sistemas.Fontes import obter_fonte
+from Sistemas.Fontes import obter_fonte, quebrar_texto
 from Sistemas.SistemaUI import Botao, TelaBase
 
 class GerenciadorPosDialogo(TelaBase):
@@ -122,18 +122,7 @@ class GerenciadorPosDialogo(TelaBase):
         y_atual = y_caixa + 120
         largura_texto = largura_caixa - 60
 
-        palavras = self.narrativa.split()
-        linhas_narrativa = []
-        linha_atual = ""
-        for palavra in palavras:
-            candidata = f"{linha_atual} {palavra}".strip()
-            if linha_atual and self.fonte_texto.size(candidata)[0] > largura_texto:
-                linhas_narrativa.append(linha_atual)
-                linha_atual = palavra
-            else:
-                linha_atual = candidata
-        if linha_atual:
-            linhas_narrativa.append(linha_atual)
+        linhas_narrativa = quebrar_texto(self.narrativa, self.fonte_texto, largura_texto)
 
         for linha in linhas_narrativa:
             surf_linha = self.fonte_texto.render(linha, True, (220, 225, 235))
@@ -152,6 +141,17 @@ class GerenciadorPosDialogo(TelaBase):
             self.tela.blit(surf_ef, (x_caixa + 45, y_atual))
             y_atual += self.fonte_efeito.get_linesize() + 4
 
-        self.btn_continuar.rect.centerx = rect_caixa.centerx
-        self.btn_continuar.rect.bottom = rect_caixa.bottom - 24
+        y_bottom_btns = rect_caixa.bottom - 24
+        if self.tem_loja and self.btn_loja:
+            gap = 20
+            total_w = self.btn_loja.rect.width + self.btn_continuar.rect.width + gap
+            x_inicio = rect_caixa.centerx - total_w // 2
+            self.btn_loja.rect.x = x_inicio
+            self.btn_loja.rect.bottom = y_bottom_btns
+            self.btn_continuar.rect.x = x_inicio + self.btn_loja.rect.width + gap
+            self.btn_continuar.rect.bottom = y_bottom_btns
+            self.btn_loja.desenhar(self.tela)
+        else:
+            self.btn_continuar.rect.centerx = rect_caixa.centerx
+            self.btn_continuar.rect.bottom = y_bottom_btns
         self.btn_continuar.desenhar(self.tela)

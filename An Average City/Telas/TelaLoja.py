@@ -263,11 +263,12 @@ class GerenciadorLoja(TelaBase):
         # Equipamentos na mochila
         for eq in getattr(inventario_global, "equipamentos_inventario", []):
             valor = max(1, getattr(eq, "nivel", 1))
-            lista.append({"eq": eq, "equipado": False, "valor": valor})
-        # Equipamentos equipados pelo personagem
-        for eq in inventario_global.todos_equipamentos_equipados():
+            lista.append({"eq": eq, "equipado": False, "dono": None, "valor": valor})
+        # Equipamentos equipados por qualquer jogador (P1 ou P2)
+        for eq in inventario_global.todos_equipamentos_equipados(incluir_todos=True):
             valor = max(1, getattr(eq, "nivel", 1))
-            lista.append({"eq": eq, "equipado": True, "valor": valor})
+            dono = inventario_global.obter_dono_equipamento(eq)
+            lista.append({"eq": eq, "equipado": True, "dono": dono, "valor": valor})
         return lista
 
     def _gerar_botoes_venda(self):
@@ -333,6 +334,7 @@ class GerenciadorLoja(TelaBase):
             personagem.hp -= custo_hp
 
         item_id = item["id"]
+        mensagem_custom = None
         if item_id == "cafe":
             inventario_global.adicionar_consumivel("Café Expresso", "Restaura 35 HP e 10 MP.", 35, 10)
         elif item_id == "pocao_vida":
@@ -340,8 +342,11 @@ class GerenciadorLoja(TelaBase):
         elif item_id == "cha_mana":
             inventario_global.adicionar_consumivel("Chá de Mana", "Restaura 20 MP.", 0, 20)
         elif item_id == "marmita":
-            personagem.hp = min(personagem.max_hp, personagem.hp + 40)
-            personagem.atributos["Con"] = int(personagem.atributos.get("Con", 1)) + 1
+            alvos = getattr(self, "jogadores", None) or [personagem]
+            for jog in alvos:
+                if jog is not None:
+                    jog.hp = min(jog.max_hp, jog.hp + 40)
+                    jog.atributos["Con"] = int(jog.atributos.get("Con", 1)) + 1
         elif item_id == "bilhete":
             inventario_global.adicionar_bilhete_dormitorio(1)
         elif item_id == "equip_barista":
@@ -352,7 +357,7 @@ class GerenciadorLoja(TelaBase):
             for k in novo_eq.atributos_bonus:
                 novo_eq.atributos_bonus[k] += 1
             inventario_global.adicionar_equipamento(novo_eq, auto_equipar=True)
-            self.mensagem_feedback = f"✓ Comprou {novo_eq.nome} (+{novo_eq.nivel-1}) com sucesso!"
+            mensagem_custom = f"✓ Comprou {novo_eq.nome} (+{novo_eq.nivel-1}) com sucesso!"
         elif item_id == "armadura_clandestina":
             import random
             cat_armadura = random.choice(["capacete", "peitoral", "calca", "bota"])
@@ -360,13 +365,13 @@ class GerenciadorLoja(TelaBase):
             for k in novo_eq.atributos_bonus:
                 novo_eq.atributos_bonus[k] += 1
             inventario_global.adicionar_equipamento(novo_eq, auto_equipar=True)
-            self.mensagem_feedback = f"✓ Comprou {novo_eq.nome} ({cat_armadura.upper()}) com sucesso!"
+            mensagem_custom = f"✓ Comprou {novo_eq.nome} ({cat_armadura.upper()}) com sucesso!"
         elif item_id == "amuleto_sombras":
             novo_eq = inventario_global.gerar_equipamento_aleatorio(categoria="amuleto")
             for k in novo_eq.atributos_bonus:
                 novo_eq.atributos_bonus[k] += 1
             inventario_global.adicionar_equipamento(novo_eq, auto_equipar=True)
-            self.mensagem_feedback = f"✓ Comprou {novo_eq.nome} com sucesso!"
+            mensagem_custom = f"✓ Comprou {novo_eq.nome} com sucesso!"
         elif item_id == "polidor":
             inventario_global.adicionar_polidor_itens(1)
         elif item_id == "pacto_sangue":
@@ -374,11 +379,10 @@ class GerenciadorLoja(TelaBase):
         elif item_id == "equip_perigo":
             novo_eq = inventario_global.gerar_equipamento_aleatorio()
             inventario_global.adicionar_equipamento(novo_eq, auto_equipar=True)
-            self.mensagem_feedback = f"✓ Comprou {novo_eq.nome} ({getattr(novo_eq, 'categoria', 'Item').upper()}) com sucesso!"
-
+            mensagem_custom = f"✓ Comprou {novo_eq.nome} ({getattr(novo_eq, 'categoria', 'Item').upper()}) com sucesso!"
 
         item["comprados"] += 1
-        self.mensagem_feedback = f"✓ Comprou {item['nome']} com sucesso!"
+        self.mensagem_feedback = mensagem_custom or f"✓ Comprou {item['nome']} com sucesso!"
         self.cor_feedback = (100, 255, 140)
         self.tempo_feedback = 120
         self._gerar_botoes_venda()
@@ -389,7 +393,7 @@ class GerenciadorLoja(TelaBase):
         valor = item_venda["valor"]
 
         if item_venda["equipado"]:
-            inventario_global.desequipar(eq)
+            inventario_global.desequipar(eq, jogador=item_venda.get("dono"))
             if eq in inventario_global.equipamentos_inventario:
                 inventario_global.equipamentos_inventario.remove(eq)
         else:
@@ -455,25 +459,22 @@ class GerenciadorLoja(TelaBase):
                 btn = entrada["botao"]
                 esgotado = item["comprados"] >= item["limite"]
                 if esgotado:
-                    btn.texto = "ESGOTADO"
-                    btn.cor_normal = (55, 55, 65)
-                    btn.cor_hover = (55, 55, 65)
+                    btn.definir_texto("ESGOTADO")
+                    btn.definir_cores(cor_base=(55, 55, 65), cor_hover=(55, 55, 65))
                 else:
                     custo = item["custo"]
                     tipo_c = item["custo_tipo"]
                     if tipo_c == "materiais":
                         pode = inventario_global.materiais_totais() >= custo
-                        btn.texto = f"COMPRAR ({custo} SUCATA)" if custo == 1 else f"COMPRAR ({custo} SUCATAS)"
+                        btn.definir_texto(f"COMPRAR ({custo} SUCATA)" if custo == 1 else f"COMPRAR ({custo} SUCATAS)")
                     else:
                         pode = personagem.hp > custo
-                        btn.texto = f"COMPRAR (-{custo} HP)"
+                        btn.definir_texto(f"COMPRAR (-{custo} HP)")
 
                     if pode:
-                        btn.cor_normal = (45, 110, 75)
-                        btn.cor_hover = (65, 155, 105)
+                        btn.definir_cores(cor_base=(45, 110, 75), cor_hover=(65, 155, 105))
                     else:
-                        btn.cor_normal = (95, 50, 50)
-                        btn.cor_hover = (125, 65, 65)
+                        btn.definir_cores(cor_base=(95, 50, 50), cor_hover=(125, 65, 65))
                 btn.atualizar(posicao_mouse, estado_clique_mouse)
         else:
             for entrada in self.botoes_venda:

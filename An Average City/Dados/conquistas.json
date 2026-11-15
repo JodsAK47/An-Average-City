@@ -28,6 +28,13 @@
         "desbloqueada": false
     },
     {
+        "id": "vitoria_cyberpunk",
+        "nome": "Edgerunner Lendário",
+        "como_liberar": "Vença uma batalha usando o verso Cyberpunk.",
+        "icone": "Cyber Psicose.png",
+        "desbloqueada": false
+    },
+    {
         "id": "critico_devastador",
         "nome": "Golpe Preciso",
         "como_liberar": "Acerte um golpe crítico devastador em um oponente.",
@@ -93,8 +100,29 @@
     {
         "id": "chefe_derrotado",
         "nome": "Lenda dos Versos",
-        "como_liberar": "Derrote o Chefe Final na partida 9 e vença o jogo!",
+        "como_liberar": "Derrote o Chefe Final na partida 10 e vença o jogo!",
         "icone": "Lenda.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "chefe_sukuna",
+        "nome": "Sem boca para falar",
+        "como_liberar": "Derrote o Rei das Maldições, Sukuna, em combate.",
+        "icone": "Sukuna.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "chefe_charlie",
+        "nome": "Sem Vontade para quebrar",
+        "como_liberar": "Derrote o chefe Charlie em combate.",
+        "icone": "Charlie.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "chefe_estraga_prazeres",
+        "nome": "Sem Mente Para Pensar",
+        "como_liberar": "Derrote a chefe Estraga Prazeres em combate.",
+        "icone": "Killjoy.png",
         "desbloqueada": false
     },
     {
@@ -109,6 +137,21 @@
         "nome": "Moda Em Primeiro Lugar",
         "como_liberar": "Equipe qualquer item de equipamento no inventário ou vista uma nova skin.",
         "icone": "Moda Em Primeiro Lugar.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "easter_egg",
+        "nome": "Easter Egg",
+        "como_liberar": "Alguns segredos só se revelam a quem explora a cidade.",
+        "icone": "EasterEgg.png",
+        "oculta": true,
+        "desbloqueada": false
+    },
+    {
+        "id": "platina",
+        "nome": "Platina",
+        "como_liberar": "Obtenha todas as outras conquistas do jogo.",
+        "icone": "Platina.png",
         "desbloqueada": false
     }
 ]

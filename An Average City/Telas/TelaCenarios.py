@@ -1,6 +1,6 @@
 import random
 import pygame
-from Sistemas.Fontes import obter_fonte
+from Sistemas.Fontes import obter_fonte, quebrar_texto
 from Gameplay.GeracaoFases import BANCO_EVENTOS
 from Sistemas.SistemaUI import Botao, TelaBase
 from Sistemas.Inventario import inventario_global
@@ -89,7 +89,7 @@ class GerenciadorSelecao(TelaBase):
         self.clique_anterior = clique_agora
 
         bilhetes = inventario_global.obter_bilhetes_dormitorio()
-        self.btn_dormir.texto = f"DORMIR ({bilhetes})"
+        self.btn_dormir.definir_texto(f"DORMIR ({bilhetes})")
         self.btn_dormir.atualizar(posicao_mouse, estado_clique_mouse)
 
     def desenhar(self, posicao_mouse):
@@ -110,22 +110,7 @@ class GerenciadorSelecao(TelaBase):
             pygame.draw.rect(self.tela, cor_fundo, rect, border_radius=10)
             pygame.draw.rect(self.tela, cor_borda, rect, width=largura_borda, border_radius=10)
 
-            linhas = []
-            for linha in retangulo["rotulo"].split("\n"):
-                if fonte.size(linha)[0] <= rect.width - 24:
-                    linhas.append(linha)
-                else:
-                    palavras = linha.split()
-                    linha_atual = ""
-                    for palavra in palavras:
-                        candidata = f"{linha_atual} {palavra}".strip()
-                        if linha_atual and fonte.size(candidata)[0] > rect.width - 24:
-                            linhas.append(linha_atual)
-                            linha_atual = palavra
-                        else:
-                            linha_atual = candidata
-                    if linha_atual:
-                        linhas.append(linha_atual)
+            linhas = quebrar_texto(retangulo["rotulo"], fonte, rect.width - 24)
 
             altura_texto = len(linhas) * fonte.get_linesize()
             y_texto = rect.centery - altura_texto // 2
@@ -137,7 +122,7 @@ class GerenciadorSelecao(TelaBase):
                 self.tela.blit(texto_surf, (x_txt, y_txt))
 
         bilhetes = inventario_global.obter_bilhetes_dormitorio()
-        self.btn_dormir.texto = f"DORMIR ({bilhetes})"
+        self.btn_dormir.definir_texto(f"DORMIR ({bilhetes})")
         self.btn_dormir.desenhar(self.tela)
 
         if self.mensagem:

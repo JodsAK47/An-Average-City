@@ -6,6 +6,9 @@ Padroniza identificadores de Versos, Classes, Atributos e evita duplicação de 
 import unicodedata
 from enum import Enum
 
+LARGURA_TELA = 1000
+ALTURA_TELA = 800
+
 
 def normalizar_identificador(texto: str) -> str:
     """
@@ -25,9 +28,10 @@ class Verso(str, Enum):
     SOBREVIVENTE = "Sobrevivente"
     AGENTE = "Agente"
     FEITICEIRO = "Feiticeiro"
+    CYBERPUNK = "Cyberpunk"
 
     @classmethod
-    def normalizar(cls, valor: str):
+    def normalizar(cls, valor: str, estrito: bool = False):
         v = normalizar_identificador(valor)
         if v in ("sobrevivente", "survivor"):
             return cls.SOBREVIVENTE
@@ -35,7 +39,9 @@ class Verso(str, Enum):
             return cls.AGENTE
         if v in ("feiticeiro", "sorcerer"):
             return cls.FEITICEIRO
-        return cls.SOBREVIVENTE
+        if v in ("cyberpunk", "edgerunner", "edgerunners", "cyber"):
+            return cls.CYBERPUNK
+        return None if estrito else cls.SOBREVIVENTE
 
 
 class Classe(str, Enum):
@@ -45,7 +51,7 @@ class Classe(str, Enum):
     INVOCADOR = "Invocador"
 
     @classmethod
-    def normalizar(cls, valor: str):
+    def normalizar(cls, valor: str, estrito: bool = False):
         c = normalizar_identificador(valor)
         if c in ("fisico", "forca"):
             return cls.FISICO
@@ -55,7 +61,7 @@ class Classe(str, Enum):
             return cls.MAGIA
         if c in ("invocador", "invocacao", "sabedoria"):
             return cls.INVOCADOR
-        return cls.FISICO
+        return None if estrito else cls.FISICO
 
 
 MAPA_ATRIBUTO_CLASSE = {
@@ -89,6 +95,11 @@ TABELA_EQUIPAMENTOS_INICIAIS = {
     (Verso.FEITICEIRO, Classe.DISTANCIA): ("Amplificador de alcance", {"Agi": 2}),
     (Verso.FEITICEIRO, Classe.MAGIA): ("Ferramenta Amaldiçoada", {"Int": 2}),
     (Verso.FEITICEIRO, Classe.INVOCADOR): ("Amuleto das Dez Sombras", {"Sab": 2}),
+
+    (Verso.CYBERPUNK, Classe.FISICO): ("Lâminas Mantis", {"For": 2}),
+    (Verso.CYBERPUNK, Classe.DISTANCIA): ("Pistola Malorian", {"Agi": 2}),
+    (Verso.CYBERPUNK, Classe.MAGIA): ("Cyberdeck Sandevistan", {"Int": 2}),
+    (Verso.CYBERPUNK, Classe.INVOCADOR): ("Implante Monowire", {"Sab": 2}),
 }
 
 # Multiplicadores de dano canônicos (sem duplicatas)
@@ -99,6 +110,8 @@ MULTIPLICADORES_VERSO_TIPO = {
     (Verso.AGENTE, Classe.INVOCADOR): 1.8,
     (Verso.FEITICEIRO, Classe.MAGIA): 2.0,
     (Verso.FEITICEIRO, Classe.INVOCADOR): 2.0,
+    (Verso.CYBERPUNK, Classe.FISICO): 1.8,
+    (Verso.CYBERPUNK, Classe.DISTANCIA): 2.0,
 }
 
 # Suporte retrocompatível a buscas diretas com strings (com ou sem acento / maiúsculas)
@@ -136,6 +149,10 @@ MAPA_MUSICA_VERSO = {
     Verso.FEITICEIRO: {
         "combate": "Feiticeiro Combate.mp3",
         "boss": "Feiticeiro Boss.mp3",
+    },
+    Verso.CYBERPUNK: {
+        "combate": "Cyber Combate.mp3",
+        "boss": "Cyber Boss.mp3",
     },
 }
 

@@ -5,16 +5,10 @@ from Entidades.EntidadeCombate import EntidadeCombate
 class Personagem(EntidadeCombate):
     def __init__(self, x, y, nome_imagem="pixil.png", nome="Jogador 1"):
         super().__init__(nome=nome, max_hp=100, max_mp=10, is_player=True)
-        self.nome = nome
-        self.max_hp = 100
-        self.hp = 100
-        self.max_mp = 10
-        self.mp = 0
 
         self.nivel = 1
         self.xp = 0
         self.pontos_atributo = 0
-        self.atributos = {"For": 1, "Agi": 1, "Con": 1, "Sab": 1, "Int": 1, "Sor": 1}
         self.ataques = []
         self.ultimates_desbloqueadas = set()
         self.minions = []
@@ -24,19 +18,9 @@ class Personagem(EntidadeCombate):
             "abates_minions": 0,
         }
 
-        self.congelado = False
-        self.atordoado = False
-        self.bloqueando = False
-        self.recuperando = False
-        self.focado = False
-        self.cego = False
-        self.turnos_cegueira = 0
-        self.is_player = True
         self.talentos = set()
-        self.god_mode = False
         self.nome_imagem = nome_imagem
         self.arquivo_imagem = nome_imagem
-        self.direcao_olhar = "leste"
 
         try:
             self.imagem_original = pygame.image.load(caminho_imagem(nome_imagem))
@@ -60,11 +44,7 @@ class Personagem(EntidadeCombate):
 
     def obter_bonus_equipamento(self, atributo):
         from Sistemas.Inventario import inventario_global
-        return inventario_global.obter_bonus_atributo(atributo)
-
-    def obter_atributo_total(self, atributo):
-        base = int(self.atributos.get(atributo, 1))
-        return base + self.obter_bonus_equipamento(atributo)
+        return inventario_global.obter_bonus_atributo(atributo, jogador=self)
 
     def trocar_skin(self, nova_imagem):
         self.nome_imagem = nova_imagem
@@ -81,20 +61,6 @@ class Personagem(EntidadeCombate):
             self.convertida = False
         except (pygame.error, FileNotFoundError) as e:
             print(f"⚠️ Erro ao carregar nova skin '{nova_imagem}': {e}")
-
-    def tem_ultimate_desbloqueada(self, verso, classe=None):
-        nodo_req = {"Sobrevivente": "S4", "Agente": "A4", "Feiticeiro": "F4", "Invocador": "I4"}.get(verso)
-        talentos = getattr(self, "talentos", set())
-        if nodo_req and nodo_req in talentos:
-            return True
-        if classe == "Invocador" and "I4" in talentos:
-            return True
-        ultimates = getattr(self, "ultimates_desbloqueadas", set())
-        if verso in ultimates:
-            return True
-        if classe and (verso, classe) in ultimates:
-            return True
-        return False
 
     def resetar(self, resetar_cheats: bool = False):
         if resetar_cheats:

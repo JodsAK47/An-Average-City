@@ -49,7 +49,6 @@ class MinigameEsquiva:
         self.fonte_titulo = obter_fonte(17)
         self.fonte_subtitulo = obter_fonte(12)
         self.fonte_instrucao = obter_fonte(12)
-        self.fonte_status = obter_fonte(13)
         self.fonte_feedback = obter_fonte(15)
         self.fonte_badge = obter_fonte(11)
 
@@ -169,6 +168,14 @@ class MinigameEsquiva:
         elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             self.acao_pendente = True
 
+    def _alvo_tem_talento(self, id_talento: str) -> bool:
+        alvo = getattr(self, "alvo", None)
+        if not alvo or not getattr(alvo, "is_player", False):
+            return False
+        if hasattr(alvo, "tem_talento"):
+            return bool(alvo.tem_talento(id_talento))
+        return id_talento in getattr(alvo, "talentos", set())
+
     def _gerar_particulas(self, x: float, y: float, cor: Tuple[int, int, int], qtd: int = 5):
         for _ in range(qtd):
             self.particulas.append({
@@ -205,8 +212,7 @@ class MinigameEsquiva:
             if self.timer_encerramento >= 24:
                 self.ativo = False
                 total_acertos = self.acertos + self.acertos_centro
-                evitou_tudo = (total_acertos == self.total_rodadas or
-                               self.acertos_centro >= (self.total_rodadas - 1))
+                evitou_tudo = (total_acertos >= self.total_rodadas)
 
                 reducao_total = min(0.99, self.reducao)
                 dano_calculado = max(1, int(self.dano_pendente * (1 - reducao_total)))
@@ -243,10 +249,14 @@ class MinigameEsquiva:
                 bx_tela = self.bar_x + max(0, min(self.bar_w, barra_alvo["x"]))
                 by_tela = self.bar_y + self.bar_h // 2
 
+                valor_parry = 0.20 if self._alvo_tem_talento("C1") else 0.10
+                valor_esquiva = 0.10 if self._alvo_tem_talento("C1") else 0.05
+
                 if distancia <= 22:
                     self.acertos_centro += 1
-                    self.reducao += 0.10
-                    self.ultimo_feedback = "⚡ PARRY PERFEITO! (-10% DANO)"
+                    self.reducao += valor_parry
+                    pct = int(round(valor_parry * 100))
+                    self.ultimo_feedback = f"⚡ PARRY PERFEITO! (-{pct}% DANO)"
                     barra_alvo["resultado"] = "parry"
                     self._gerar_particulas(bx_tela, by_tela, (50, 240, 140), qtd=10)
                     self._gerar_particulas(bx_tela, by_tela, (255, 230, 90), qtd=6)
@@ -256,8 +266,9 @@ class MinigameEsquiva:
                         pass
                 elif distancia <= 80:
                     self.acertos += 1
-                    self.reducao += 0.05
-                    self.ultimo_feedback = "💨 ESQUIVA SINCRONIZADA! (-5% DANO)"
+                    self.reducao += valor_esquiva
+                    pct = int(round(valor_esquiva * 100))
+                    self.ultimo_feedback = f"💨 ESQUIVA SINCRONIZADA! (-{pct}% DANO)"
                     barra_alvo["resultado"] = "esquiva"
                     self._gerar_particulas(bx_tela, by_tela, (70, 210, 255), qtd=8)
                     try:

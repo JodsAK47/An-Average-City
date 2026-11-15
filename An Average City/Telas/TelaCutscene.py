@@ -9,7 +9,7 @@ try:
 except ImportError:
     cv2 = None
 
-from Sistemas.SistemaUI import TelaBase, Botao
+from Sistemas.SistemaUI import TelaBase
 from Sistemas.Fontes import obter_fonte
 from Sistemas.Recursos import caminho_cutscene
 from Sistemas.SistemaCutscene import sistema_cutscene
@@ -62,6 +62,18 @@ class GerenciadorCutscene(TelaBase):
             "nome_chefe": "Estraga Prazeres",
             "verso": "Agente",
             "titulo": "MISSÃO CONCLUÍDA - ESTRAGA PRAZERES NEUTRALIZADO",
+        },
+        "adam smasher": {
+            "placeholder": True,
+            "nome_chefe": "Adam Smasher",
+            "verso": "Cyberpunk",
+            "titulo": "LENDA DE NIGHT CITY - ADAM SMASHER DESTRUÍDO",
+        },
+        "cyberpunk": {
+            "placeholder": True,
+            "nome_chefe": "Adam Smasher",
+            "verso": "Cyberpunk",
+            "titulo": "LENDA DE NIGHT CITY - ADAM SMASHER DESTRUÍDO",
         },
     }
 

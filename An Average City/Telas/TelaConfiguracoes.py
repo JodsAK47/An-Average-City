@@ -2,7 +2,7 @@ import pygame
 from typing import Tuple, Optional
 from Sistemas.SistemaUI import Botao, TelaBase, desenhar_painel_container
 from Sistemas.Fontes import obter_fonte
-from Sistemas.Configuracoes import sistema_config, RESOLUCOES_DISPONIVEIS
+from Sistemas.Configuracoes import sistema_config
 
 FUNDO = (18, 22, 30)
 PAINEL = (28, 35, 48)
@@ -104,17 +104,17 @@ class GerenciadorConfiguracoesTela(TelaBase):
     def _sincronizar_textos(self):
         if sistema_config.esta_mutado():
             self.btn_mudo.definir_texto("🔇 ÁUDIO: MUTADO")
-            self.btn_mudo.cor_texto = TEXTO_VERMELHO
+            self.btn_mudo.definir_cores(cor_texto=TEXTO_VERMELHO)
         else:
             self.btn_mudo.definir_texto("🔊 ÁUDIO: ATIVO")
-            self.btn_mudo.cor_texto = TEXTO_VERDE
+            self.btn_mudo.definir_cores(cor_texto=TEXTO_VERDE)
 
         if sistema_config.obter_tela_cheia():
             self.btn_modo_tela.definir_texto("MODO: TELA CHEIA (FULLSCREEN)")
-            self.btn_modo_tela.cor_texto = TEXTO_AMARELO
+            self.btn_modo_tela.definir_cores(cor_texto=TEXTO_AMARELO)
         else:
             self.btn_modo_tela.definir_texto("MODO: JANELA")
-            self.btn_modo_tela.cor_texto = TEXTO_BRANCO
+            self.btn_modo_tela.definir_cores(cor_texto=TEXTO_BRANCO)
 
     def mostrar_feedback(self, texto: str, cor=TEXTO_VERDE):
         self.mensagem_feedback = texto

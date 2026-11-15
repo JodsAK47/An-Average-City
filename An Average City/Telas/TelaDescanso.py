@@ -2,7 +2,7 @@ import pygame
 from Sistemas.SistemaUI import Botao, TelaBase, desenhar_painel_container
 from Entidades.Personagem import personagem
 from Sistemas.Fontes import obter_fonte
-from Sistemas.Inventario import inventario_global, carregar_sprite_item, eh_arte_placeholder, obter_arquivo_imagem_item
+from Sistemas.Inventario import inventario_global, carregar_sprite_item, eh_arte_placeholder
 from Sistemas.Conquistas import sistema_conquistas
 
 class TelaDescanso(TelaBase):
@@ -84,6 +84,13 @@ class TelaDescanso(TelaBase):
         }
         self.notificacao_visivel = True
 
+    def _jogador_atual(self):
+        if not self.jogadores:
+            return personagem
+        if self.jogador_selecionado >= len(self.jogadores):
+            self.jogador_selecionado = 0
+        return self.jogadores[self.jogador_selecionado]
+
     def _retangulos_slots(self):
         inventario = [pygame.Rect(345 + coluna * 68, 220 + linha * 60, 60, 48)
                       for linha in range(4) for coluna in range(4)]
@@ -108,8 +115,9 @@ class TelaDescanso(TelaBase):
             return "continuar"
 
         if self.btn_melhorar_equip.checar_clique(evento, posicao_mouse):
-            alvo_eq = inventario_global.obter_equipamento_alvo()
-            custo = inventario_global.custo_melhoria(alvo_eq)
+            jogador = self._jogador_atual()
+            alvo_eq = inventario_global.obter_equipamento_alvo(jogador=jogador)
+            custo = inventario_global.custo_melhoria(alvo_eq, jogador=jogador)
             if alvo_eq and inventario_global.materiais_totais() >= custo:
                 inventario_global.consumir_materiais(custo)
                 alvo_eq.melhorar()
@@ -150,13 +158,13 @@ class TelaDescanso(TelaBase):
                             return None
 
                         item = itens_do_inventario[indice]
-                        jogador = self.jogadores[self.jogador_selecionado] if self.jogadores else personagem
+                        jogador = self._jogador_atual()
                         tipo_item = getattr(item, "tipo", None)
 
                         # 1 CLIQUE: Apenas seleciona e exibe a descrição
                         if not eh_duplo_clique:
                             if tipo_item == "equipamento":
-                                inventario_global.equipamento_selecionado = item
+                                inventario_global.definir_equipamento_selecionado(item, jogador=jogador)
                                 bonus_str = ", ".join(f"+{v} {k}" for k, v in item.atributos_bonus.items() if v > 0)
                                 polido_str = " [Polido]" if getattr(item, "polido", False) else ""
                                 cat = getattr(item, "categoria", "arma").capitalize()
@@ -184,13 +192,13 @@ class TelaDescanso(TelaBase):
 
                         # 2 CLIQUES: Equipa ou consome o item
                         if tipo_item == "equipamento":
-                            if inventario_global.equipar(item):
-                                self.mensagem = f"✓ Equipou {item.nome}!"
+                            if inventario_global.equipar(item, jogador=jogador):
+                                self.mensagem = f"✓ {getattr(jogador, 'nome', 'Jogador')} equipou {item.nome}!"
                             else:
                                 self.mensagem = f"Não é possível equipar {item.nome} (máx. 3 amuletos sem repetir)!"
                         elif tipo_item == "polidor" or getattr(item, "nome", "") == "Polidor de Itens":
-                            alvo_eq = inventario_global.obter_equipamento_alvo()
-                            if inventario_global.usar_polidor_itens(alvo_eq):
+                            alvo_eq = inventario_global.obter_equipamento_alvo(jogador=jogador)
+                            if inventario_global.usar_polidor_itens(alvo_eq, jogador=jogador):
                                 nome_alvo = alvo_eq.nome if alvo_eq else "equipamento"
                                 self.mensagem = f"✓ Usou {item.nome}! Efeito de {nome_alvo} dobrado!"
                             else:
@@ -208,8 +216,9 @@ class TelaDescanso(TelaBase):
 
                     # Slot de Equipamento Equipado
                     else:
+                        jogador = self._jogador_atual()
                         eq_idx = indice - len(inventario)
-                        slots_eq = inventario_global.obter_slots_equipamento()
+                        slots_eq = inventario_global.obter_slots_equipamento(jogador=jogador)
                         if 0 <= eq_idx < len(slots_eq):
                             rotulo_slot, eq = slots_eq[eq_idx]
                             if eq is None:
@@ -218,7 +227,7 @@ class TelaDescanso(TelaBase):
 
                             # 1 CLIQUE: Seleciona e exibe descrição
                             if not eh_duplo_clique:
-                                inventario_global.equipamento_selecionado = eq
+                                inventario_global.definir_equipamento_selecionado(eq, jogador=jogador)
                                 bonus_str = ", ".join(f"+{v} {k}" for k, v in eq.atributos_bonus.items() if v > 0)
                                 polido_str = " [Polido]" if getattr(eq, "polido", False) else ""
                                 cat = getattr(eq, "categoria", "arma").capitalize()
@@ -228,8 +237,8 @@ class TelaDescanso(TelaBase):
 
                             # 2 CLIQUES: Desequipa o item
                             nome_eq = eq.nome
-                            if inventario_global.desequipar(eq):
-                                self.mensagem = f"✓ Desequipou {nome_eq}!"
+                            if inventario_global.desequipar(eq, jogador=jogador):
+                                self.mensagem = f"✓ {getattr(jogador, 'nome', 'Jogador')} desequipou {nome_eq}!"
                                 self.slot_selecionado = None
                             else:
                                 self.mensagem = f"Não foi possível desequipar {nome_eq}."
@@ -284,15 +293,13 @@ class TelaDescanso(TelaBase):
 
         self.tela.blit(self.fonte_secao.render("CRIACAO", True, (235, 220, 170)), (68, 132))
         self.tela.blit(self.fonte_menor.render("Receitas e materiais", True, (170, 180, 195)), (68, 163))
-        if self.jogador_selecionado >= len(self.jogadores):
-            self.jogador_selecionado = 0
-        jogador = self.jogadores[self.jogador_selecionado] if self.jogadores else personagem
+        jogador = self._jogador_atual()
         self.tela.blit(self.fonte_secao.render("STATUS", True, (235, 220, 170)), (68, 188))
         self.tela.blit(self.fonte_menor.render(
             f"HP: {int(jogador.hp)}/{int(jogador.max_hp)}    PM: {int(jogador.mp)}/{int(jogador.max_mp)}",
             True, (170, 220, 255)), (68, 210))
-        eq_alvo = inventario_global.obter_equipamento_alvo()
-        custo = inventario_global.custo_melhoria(eq_alvo)
+        eq_alvo = inventario_global.obter_equipamento_alvo(jogador=jogador)
+        custo = inventario_global.custo_melhoria(eq_alvo, jogador=jogador)
         mats = inventario_global.materiais_totais()
 
         pos_mouse = posicao_mouse if posicao_mouse is not None else self.posicao_mouse
@@ -300,7 +307,7 @@ class TelaDescanso(TelaBase):
 
         y_attr = 320
         if eq_alvo:
-            self.btn_melhorar_equip.texto = f"MELHORAR ({custo} MAT)"
+            self.btn_melhorar_equip.definir_texto(f"MELHORAR ({custo} MAT)")
             self.btn_melhorar_equip.desenhar(self.tela)
             sufixo_polido = " [Polido]" if getattr(eq_alvo, "polido", False) else ""
 
@@ -394,7 +401,7 @@ class TelaDescanso(TelaBase):
             y = 195 + indice * 44
             pygame.draw.rect(self.tela, (59, 68, 88), (696, y, 185, 32))
             valor_base = jogador.atributos.get(chave, 1)
-            bonus_eq = inventario_global.obter_bonus_atributo(chave)
+            bonus_eq = inventario_global.obter_bonus_atributo(chave, jogador=jogador)
             texto_attr = f"{nome}: {valor_base + bonus_eq}" + (f" (+{bonus_eq})" if bonus_eq > 0 else "")
             self.tela.blit(self.fonte_menor.render(texto_attr, True, (235, 235, 235)), (708, y + 9))
             if getattr(jogador, 'pontos_atributo', 0) > 0:
@@ -402,7 +409,7 @@ class TelaDescanso(TelaBase):
         pontos = getattr(jogador, 'pontos_atributo', 0)
         self.tela.blit(self.fonte_menor.render(f"Pontos disponiveis: {pontos}", True, (130, 230, 155)), (696, 468))
         self.tela.blit(self.fonte_secao.render("EQUIPAMENTOS", True, (235, 220, 170)), (696, 512))
-        slots_eq = inventario_global.obter_slots_equipamento()
+        slots_eq = inventario_global.obter_slots_equipamento(jogador=jogador)
 
         for indice, slot in enumerate(equipamentos):
             slot_indice = len(inventario) + indice
@@ -508,7 +515,7 @@ class TelaDescanso(TelaBase):
 
         # Dica de duplo clique
         if getattr(item, "tipo", None) == "equipamento":
-            esta_equipado = any(item is eq for _, eq in inventario_global.obter_slots_equipamento())
+            esta_equipado = any(item is eq for _, eq in inventario_global.obter_slots_equipamento(jogador=self._jogador_atual()))
             dica_txt = "Dica: 2 cliques para desequipar" if esta_equipado else "Dica: 2 cliques para equipar"
             linhas.append(dica_txt)
         elif getattr(item, "tipo", None) == "consumivel" or hasattr(item, "rec_hp"):

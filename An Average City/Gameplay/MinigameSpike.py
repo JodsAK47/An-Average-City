@@ -34,7 +34,9 @@ class MinigameSpike:
         self.spike_raio_detonacao = 0.0
         self.spike_tempo_detonacao = 0.0
 
-        self.esfera_desarme_pos = [640.0, 360.0]
+        w_tela = self.tela.get_width()
+        h_tela = self.tela.get_height()
+        self.esfera_desarme_pos = [w_tela / 2.0, h_tela / 2.0]
         self.esfera_desarme_raio = 50
         self.esfera_desarme_tempo = 0.0
         self.bloqueio_desarme_timer = 0
@@ -49,8 +51,8 @@ class MinigameSpike:
 
         w_btn = 200
         h_btn = 36
-        x_btn = (self.tela.get_width() - w_btn) // 2
-        y_btn = self.tela.get_height() - 70
+        x_btn = (w_tela - w_btn) // 2
+        y_btn = h_tela - 70
         self.btn_cancelar = Botao(
             x_btn, y_btn, w_btn, h_btn, "CANCELAR DESARME (ESC)",
             (50, 60, 80), (80, 100, 130), w_btn, h_btn,
@@ -65,7 +67,9 @@ class MinigameSpike:
 
     def plantar(self, dono=None):
         self.parar_som()
-        self.spike = Spike(x=640, y=410, dono=dono, tempo_total=50.0)
+        cx = self.tela.get_width() // 2
+        cy = self.tela.get_height() // 2 + 10
+        self.spike = Spike(x=cx, y=cy, dono=dono, tempo_total=50.0)
         self.desarmando = False
         self.spike_detonando = False
         self.spike_raio_detonacao = 0.0
@@ -95,7 +99,7 @@ class MinigameSpike:
 
     def iniciar_desarme(self):
         self.desarmando = True
-        self.esfera_desarme_pos = [640.0, 360.0]
+        self.esfera_desarme_pos = [self.tela.get_width() / 2.0, self.tela.get_height() / 2.0]
         self.esfera_desarme_raio = 50
         self.esfera_desarme_tempo = 0.0
         self.bloqueio_desarme_timer = 0
@@ -152,8 +156,8 @@ class MinigameSpike:
                 self.callback_shake(duracao=5, intensidade=intensidade_shake)
 
             if len(self.particulas_detonacao) < 40:
-                cx = self.spike.rect.centerx if self.spike else 640
-                cy = self.spike.rect.centery if self.spike else 410
+                cx = self.spike.rect.centerx if self.spike else self.tela.get_width() // 2
+                cy = self.spike.rect.centery if self.spike else (self.tela.get_height() // 2 + 10)
                 r = max(10, self.spike_raio_detonacao)
                 ang = random.uniform(0, 2 * math.pi)
                 vel = random.uniform(4.0, 10.0)
@@ -199,7 +203,9 @@ class MinigameSpike:
             self.cancelar_desarme()
             return "cancelado"
 
-        cx, cy = 640.0, 360.0
+        w_tela = float(self.tela.get_width())
+        h_tela = float(self.tela.get_height())
+        cx, cy = w_tela / 2.0, h_tela / 2.0
         self.esfera_desarme_pos = [cx, cy]
 
         if self.bloqueio_desarme_timer > 0:
@@ -279,16 +285,16 @@ class MinigameSpike:
                 for _ in range(random.randint(2, 3)):
                     if borda == "esquerda":
                         px = -35.0
-                        py = random.uniform(120, 600)
+                        py = random.uniform(120, max(160.0, h_tela - 120.0))
                     elif borda == "direita":
-                        px = 1315.0
-                        py = random.uniform(120, 600)
+                        px = w_tela + 35.0
+                        py = random.uniform(120, max(160.0, h_tela - 120.0))
                     elif borda == "cima":
-                        px = random.uniform(180, 1100)
+                        px = random.uniform(180, max(220.0, w_tela - 180.0))
                         py = -35.0
                     else:
-                        px = random.uniform(180, 1100)
-                        py = 755.0
+                        px = random.uniform(180, max(220.0, w_tela - 180.0))
+                        py = h_tela + 35.0
 
                     target_x = cx + random.uniform(-40, 40)
                     target_y = cy + random.uniform(-40, 40)
@@ -302,7 +308,12 @@ class MinigameSpike:
                     })
 
             elif padrao == "fogo_cruzado":
-                canto = random.choice([(-35.0, -35.0), (1315.0, 755.0), (1315.0, -35.0), (-35.0, 755.0)])
+                canto = random.choice([
+                    (-35.0, -35.0),
+                    (w_tela + 35.0, h_tela + 35.0),
+                    (w_tela + 35.0, -35.0),
+                    (-35.0, h_tela + 35.0),
+                ])
                 ang_base_m = math.atan2(cy - canto[1], cx - canto[0])
                 for offset_ang in [-0.09, 0.09]:
                     vel = random.uniform(2.8, 3.6)
@@ -367,7 +378,7 @@ class MinigameSpike:
                     })
                 continue
 
-            if -70 <= b["x"] <= 1350 and -70 <= b["y"] <= 790:
+            if -70 <= b["x"] <= w_tela + 70 and -70 <= b["y"] <= h_tela + 70:
                 projeteis_vivos.append(b)
         self.projeteis_bullet_hell = projeteis_vivos
 

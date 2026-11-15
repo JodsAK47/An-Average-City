@@ -1,12 +1,8 @@
 import pygame
 from Sistemas.SistemaUI import Botao, TelaBase
 from Sistemas.Fontes import obter_fonte, quebrar_texto
-from Telas.TelaVerso import ARVORE_POR_VERSO
 
 FUNDO = (25, 30, 42)
-PAINEL = (38, 46, 62)
-PAINEL_CLARO = (48, 57, 75)
-BORDA = (91, 103, 126)
 TEXTO = (235, 235, 235)
 TEXTO_SECUNDARIO = (180, 190, 205)
 AZUL_DESTAQUE = (76, 98, 122)
@@ -38,12 +34,6 @@ class GerenciadorClasses(TelaBase):
 
         self.opcoes = ["Físico", "Distância", "Magia", "Invocador"]
         self.classe_atual = "Físico"
-        self.arvores_por_classe = {
-            "Sobrevivente": list(ARVORE_POR_VERSO.get("Sobrevivente", [])),
-            "Agente": list(ARVORE_POR_VERSO.get("Agente", [])),
-            "Feiticeiro": list(ARVORE_POR_VERSO.get("Feiticeiro", [])),
-            "Invocador": list(ARVORE_POR_VERSO.get("Invocador", [])),
-        }
 
         self.botao_voltar = Botao(60, 700, 180, 45, "VOLTAR", (55, 62, 78), (90, 100, 120), 185, 50, cor_texto=TEXTO, fonte_tamanho=16)
         self.botao_selecionar = Botao(760, 700, 180, 45, "CONFIRMAR", AZUL_DESTAQUE, (95, 120, 145), 185, 50, cor_texto=TEXTO, fonte_tamanho=16)
@@ -54,9 +44,6 @@ class GerenciadorClasses(TelaBase):
             "Magia": pygame.Rect(513, 180, 200, 430),
             "Invocador": pygame.Rect(739, 180, 200, 430),
         }
-
-    def obter_arvore_ativa(self):
-        return self.arvores_por_classe.get(self.classe_atual, self.arvores_por_classe["Sobrevivente"])
 
     def atualizar_eventos(self, evento, posicao_mouse):
         if self.botao_voltar.checar_clique(evento, posicao_mouse):

@@ -43,7 +43,6 @@ class EntidadeCombate(pygame.sprite.Sprite):
         self.recuperando = False
         self.focado = False
         self.god_mode = False
-        self.efeitos_ativos = {}
 
         self.rect = pygame.Rect(0, 0, 100, 100)
         self.imagem = None
@@ -120,6 +119,12 @@ class EntidadeCombate(pygame.sprite.Sprite):
     def limpar_status(self):
         self.congelado = False
         self.atordoado = False
+        self.queimando = False
+        self.turnos_fogo = 0
+        self.eletrocutado = False
+        self.turnos_eletrocutado = 0
+        self.envenenado = False
+        self.turnos_veneno = 0
         self.bloqueando = False
         self.recuperando = False
         self.focado = False
@@ -179,9 +184,22 @@ class EntidadeCombate(pygame.sprite.Sprite):
         nova_direcao = "oeste" if alvo_x < self.rect.centerx else "leste"
         return self.virar_para(nova_direcao)
 
-    def executar_turno(self, contexto: Any = None):
-        """
-        Método abstrato/polimórfico executado na vez da entidade.
-        Subclasses devem sobrescrever conforme sua IA ou regras.
-        """
-        pass
+
+def aplicar_mascara_transparencia(surface: pygame.Surface, corte_zero: int = 18, fade_max: int = 50):
+    """Converte fundo escuro em canal alfa progressivo na superfície informada."""
+    try:
+        px = pygame.PixelArray(surface)
+        w, h = surface.get_size()
+        divisor = max(1.0, float(fade_max - corte_zero))
+        for px_x in range(w):
+            for px_y in range(h):
+                color = surface.unmap_rgb(px[px_x, px_y])
+                bright = max(color.r, color.g, color.b)
+                if bright < corte_zero:
+                    px[px_x, px_y] = (0, 0, 0, 0)
+                elif bright < fade_max:
+                    alpha = int(((bright - corte_zero) / divisor) * 255)
+                    px[px_x, px_y] = (color.r, color.g, color.b, alpha)
+        del px
+    except Exception:
+        surface.set_colorkey((0, 0, 0))

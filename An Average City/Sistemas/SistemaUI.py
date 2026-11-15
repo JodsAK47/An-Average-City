@@ -1,4 +1,3 @@
-import math
 from typing import Callable, Optional, Any, Dict, List, Tuple
 import pygame
 from Sistemas.Fontes import obter_fonte
@@ -127,6 +126,23 @@ class Botao:
     def definir_texto(self, novo_texto: str):
         self.texto = str(novo_texto)
         self._atualizar_superficie_texto()
+
+    def definir_cores(
+        self,
+        cor_base: Optional[Tuple[int, int, int]] = None,
+        cor_hover: Optional[Tuple[int, int, int]] = None,
+        cor_texto: Optional[Tuple[int, int, int]] = None,
+    ):
+        if cor_base is not None:
+            self.cor_base = cor_base
+            self.cor_atual = cor_base
+            if cor_hover is None:
+                self.cor_hover = tuple(min(255, int(c * 1.3 + 25)) for c in cor_base)
+        if cor_hover is not None:
+            self.cor_hover = cor_hover
+        if cor_texto is not None and cor_texto != self.cor_texto:
+            self.cor_texto = cor_texto
+            self._atualizar_superficie_texto()
 
     def definir_ativo(self, ativo: bool):
         self.ativo = bool(ativo)

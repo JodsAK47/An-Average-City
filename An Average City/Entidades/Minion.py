@@ -8,15 +8,23 @@ from Gameplay.Habilidades import Habilidade
 from Entidades.EntidadeCombate import EntidadeCombate
 
 
+def carregar_habilidades_minions():
+    try:
+        with open(caminho_dados("habilidades_minions.json"), "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError) as e:
+        print(f"⚠️ Erro ao carregar habilidades_minions.json: {e}")
+    return {}
+
+
 def carregar_minions_personagem():
-    for nome_arq in ["minions_personagem.json", "minions_jogador.json"]:
-        try:
-            arquivo = caminho_dados(nome_arq)
-            if os.path.exists(arquivo):
-                with open(arquivo, "r", encoding="utf-8") as f:
-                    return json.load(f)
-        except Exception as e:
-            print(f"⚠️ Erro ao carregar {nome_arq}: {e}")
+    try:
+        arquivo = caminho_dados("minions_personagem.json")
+        if os.path.exists(arquivo):
+            with open(arquivo, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"⚠️ Erro ao carregar minions_personagem.json: {e}")
     return {}
 
 
@@ -41,9 +49,20 @@ def carregar_minions():
     return unificado
 
 
+BANCO_HABILIDADES_MINIONS = carregar_habilidades_minions()
 BANCO_MINIONS_PERSONAGEM = carregar_minions_personagem()
 BANCO_MINIONS_INIMIGOS = carregar_minions_inimigos()
 BANCO_MINIONS = carregar_minions()
+
+
+def criar_habilidade_minion(nome, verso):
+    if not isinstance(nome, str):
+        raise TypeError("Os ataques dos minions devem conter somente nomes de habilidades.")
+    if nome not in BANCO_HABILIDADES_MINIONS:
+        raise ValueError(f"Habilidade ausente em habilidades_minions.json: {nome}")
+    dados = dict(BANCO_HABILIDADES_MINIONS[nome])
+    dados["verso"] = verso
+    return Habilidade(**dados)
 
 
 class Minion(EntidadeCombate):
@@ -81,16 +100,11 @@ class Minion(EntidadeCombate):
         self.alvo_prioritario = None
 
         sab_dono = 1
-        tem_i1 = False
         if dono is not None:
             if hasattr(dono, "obter_atributo_total"):
                 sab_dono = int(dono.obter_atributo_total("Sab"))
             else:
                 sab_dono = int(getattr(dono, "atributos", {}).get("Sab", 1))
-            if hasattr(dono, "tem_talento"):
-                tem_i1 = bool(dono.tem_talento("I1"))
-            else:
-                tem_i1 = "I1" in getattr(dono, "talentos", set())
 
         bonus_sab = max(0, sab_dono - 1)
         atributos_base = dict(atributos) if atributos is not None else {
@@ -98,64 +112,31 @@ class Minion(EntidadeCombate):
         }
 
         inc_sec = bonus_sab // 2
-        inc_talento = 2 if tem_i1 else 0
         self.atributos = {
-            "For": int(atributos_base.get("For", 3)) + inc_sec + inc_talento,
-            "Agi": int(atributos_base.get("Agi", 4)) + inc_sec + inc_talento,
-            "Con": int(atributos_base.get("Con", 3)) + inc_sec + inc_talento,
-            "Sab": int(atributos_base.get("Sab", 4)) + bonus_sab + inc_talento,
-            "Int": int(atributos_base.get("Int", 3)) + inc_sec + inc_talento,
-            "Sor": int(atributos_base.get("Sor", 2)) + (bonus_sab // 3) + inc_talento,
+            "For": int(atributos_base.get("For", 3)) + inc_sec,
+            "Agi": int(atributos_base.get("Agi", 4)) + inc_sec,
+            "Con": int(atributos_base.get("Con", 3)) + inc_sec,
+            "Sab": int(atributos_base.get("Sab", 4)) + bonus_sab,
+            "Int": int(atributos_base.get("Int", 3)) + inc_sec,
+            "Sor": int(atributos_base.get("Sor", 2)) + (bonus_sab // 3),
         }
 
-        hp_calculado = int(vida_maxima) + (bonus_sab * 4) + (inc_talento * 5)
-        if tem_i1:
-            hp_calculado = int(hp_calculado * 1.25)
+        hp_calculado = int(vida_maxima) + (bonus_sab * 4)
 
         self.max_hp = max(10, hp_calculado)
         self.hp = self.max_hp
 
-        self.max_mp = max(5, int(max_mp) + bonus_sab)
+        mp_base = int(max_mp)
+        self.max_mp = max(5, mp_base + bonus_sab) if mp_base > 0 else 0
         self.mp = self.max_mp
 
         self.habilidades = {}
         self.ataques = []
 
-        if ataques_dados:
-            for item in ataques_dados:
-                if isinstance(item, dict):
-                    hab = Habilidade(
-                        nome=item["nome"],
-                        tipo=item.get("tipo", "Invocador"),
-                        dano=item.get("dano", 6),
-                        custo_mp=item.get("custo_mp", 0),
-                        precisao=item.get("precisao", 0.90),
-                        descricao=item.get("descricao", ""),
-                        efeito=item.get("efeito"),
-                        chance_efeito=item.get("chance_efeito", 0.0),
-                        em_area=item.get("em_area", False),
-                        verso=verso,
-                    )
-                    self.habilidades[hab.nome] = hab
-                    self.ataques.append(hab.nome)
-                elif isinstance(item, Habilidade):
-                    self.habilidades[item.nome] = item
-                    self.ataques.append(item.nome)
-                elif isinstance(item, str):
-                    self.ataques.append(item)
-
-        if not self.ataques:
-            hab_padrao = Habilidade(
-                nome="Investida Espiritual",
-                tipo="Invocador",
-                dano=7,
-                custo_mp=0,
-                precisao=0.90,
-                descricao="Ataque básico do minion.",
-                verso=verso,
-            )
-            self.habilidades[hab_padrao.nome] = hab_padrao
-            self.ataques.append(hab_padrao.nome)
+        for nome_ataque in ataques_dados or ["Investida Espiritual"]:
+            hab = criar_habilidade_minion(nome_ataque, verso)
+            self.habilidades[hab.nome] = hab
+            self.ataques.append(hab.nome)
 
         self.estatisticas = {
             "dano_causado": 0,
@@ -184,8 +165,9 @@ class Minion(EntidadeCombate):
                 self.imagem = sistema_orientacao.aplicar_orientacao(self.imagem_base, nome_imagem, "leste")
         except (pygame.error, FileNotFoundError) as e:
             print(f"⚠️ Erro ao carregar imagem do minion ({nome_imagem}): {e}")
-            self.imagem = pygame.Surface((70, 82))
-            self.imagem.fill((52, 168, 148))
+            self.imagem_base = pygame.Surface((70, 82))
+            self.imagem_base.fill((52, 168, 148))
+            self.imagem = self.imagem_base.copy()
 
         self.rect = self.imagem.get_rect(topleft=(x, y))
         self.convertida = False
@@ -204,7 +186,7 @@ class Minion(EntidadeCombate):
             return self.habilidades[nome]
         if self.habilidades:
             return next(iter(self.habilidades.values()))
-        return Habilidade("Investida Espiritual", "Invocador", 7, 0, 0.90, "Ataque básico.")
+        return criar_habilidade_minion("Investida Espiritual", self.verso)
 
     def escolher_ataque(self):
         disponiveis = [
@@ -225,14 +207,6 @@ class Minion(EntidadeCombate):
         sab_minion = int(self.atributos.get("Sab", 1))
         for_minion = int(self.atributos.get("For", 1))
         dano_base = int(hab.dano) + sab_minion + (for_minion // 2)
-        if self.dono is not None:
-            tem_i4 = (
-                self.dono.tem_talento("I4")
-                if hasattr(self.dono, "tem_talento")
-                else ("I4" in getattr(self.dono, "talentos", set()))
-            )
-            if tem_i4:
-                dano_base = int(dano_base * 1.20)
         return max(1, dano_base)
 
     def curar_e_fortalecer(self, bonus_sab=2, cura_percentual=0.50):
@@ -245,8 +219,7 @@ class Minion(EntidadeCombate):
         self.atributos["For"] = self.atributos.get("For", 1) + 1
 
     def receber_dano(self, quantidade):
-        dano = max(0, int(quantidade))
-        self.hp = max(0, self.hp - dano)
+        dano = super().receber_dano(quantidade)
         self.estatisticas["dano_recebido"] += dano
         return dano
 

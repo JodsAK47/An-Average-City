@@ -1,6 +1,6 @@
 import pygame
 from Sistemas.SistemaUI import Botao, TelaBase, desenhar_painel_container
-from Sistemas.Fontes import obter_fonte
+from Sistemas.Fontes import obter_fonte, quebrar_texto
 from Sistemas.SaveSystem import save_global
 from Sistemas.Conquistas import sistema_conquistas
 from Entidades.Personagem import personagem
@@ -8,8 +8,6 @@ from Sistemas.Recursos import caminho_botao, caminho_dados
 
 import json
 import os
-
-CAMINHO_DADOS = caminho_dados()
 
 def carregar_arvores():
     try:
@@ -22,7 +20,7 @@ def carregar_arvores():
             return dados
     except FileNotFoundError:
         print("⚠️ Erro: arquivo arvores.json não encontrado.")
-        return {"Sobrevivente": [], "Agente": [], "Feiticeiro": [], "Invocador": []}
+        return {"Sobrevivente": [], "Agente": [], "Feiticeiro": [], "Cyberpunk": []}
 
 ARVORE_POR_VERSO = carregar_arvores()
 
@@ -38,12 +36,14 @@ CORES_VERSO = {
     "Sobrevivente": (189, 118, 52),
     "Agente": (186, 52, 52),
     "Feiticeiro": (128, 78, 168),
+    "Cyberpunk": (245, 210, 40),
 }
 
 SPRITES_POR_VERSO = {
     "Sobrevivente": "SURVIVORC.png",
     "Agente": "AGENTC.png",
     "Feiticeiro": "SOCERERC.png",
+    "Cyberpunk": "CYBERC.png",
 }
 
 class GerenciadorVerso(TelaBase):
@@ -66,10 +66,8 @@ class GerenciadorVerso(TelaBase):
         self.habilidades_desbloqueadas = []
         self.habilidade_foco = None
         self.arvores_por_verso = {verso: arvore[:] for verso, arvore in ARVORE_POR_VERSO.items()}
-        self.versos = ["Sobrevivente", "Agente", "Feiticeiro"]
-        self.progresso_por_verso = {verso: list(save_global.obter_progresso_verso(verso)) for verso in self.versos}
-        self.habilidades_desabilitadas = {verso: set(save_global.obter_habilidades_desabilitadas(verso)) for verso in self.versos}
-        self.sincronizar_habilidades_ativas()
+        self.progresso_por_verso = {}
+        self.habilidades_desabilitadas = {}
 
         self.botao_voltar = Botao(
             720, 700, 240, 50, "VOLTAR", (55, 62, 78), AZUL_DESTAQUE, 250, 55,
@@ -83,18 +81,33 @@ class GerenciadorVerso(TelaBase):
             sprite_base_path="SELECT.png", sprite_hover_path="SELECT.png", sprite_clique_path="SELECT.png",
         )
 
-        self.botao_confirmar = self.botao_selecionar
         self.botao_comprar = Botao(720, 560, 240, 50, "DESBLOQUEAR", (65, 75, 92), (95, 110, 130), 250, 55, cor_texto=TEXTO, fonte_tamanho=14)
 
-        self.esferas_rects = {
-            "Sobrevivente": pygame.Rect(70, 410, 80, 80),
-            "Agente": pygame.Rect(190, 410, 80, 80),
-            "Feiticeiro": pygame.Rect(130, 545, 80, 80),
-        }
         self.imagens_por_verso = {
             nome: self._carregar_imagem_verso(nome)
-            for nome in self.versos
+            for nome in SPRITES_POR_VERSO
         }
+        self.sincronizar_habilidades_ativas()
+
+    def atualizar_versos_disponiveis(self):
+        self.versos = ["Sobrevivente", "Agente", "Feiticeiro"]
+        if save_global.derrotou_chefes_iniciais():
+            self.versos.append("Cyberpunk")
+
+        esferas = {
+            "Sobrevivente": pygame.Rect(70, 400, 80, 80),
+            "Agente": pygame.Rect(190, 400, 80, 80),
+            "Feiticeiro": pygame.Rect(70, 535, 80, 80),
+            "Cyberpunk": pygame.Rect(190, 535, 80, 80),
+        }
+        self.esferas_rects = {nome: esferas[nome] for nome in self.versos}
+
+        if self.verso_atual not in self.versos:
+            self.verso_atual = "Sobrevivente"
+            self.habilidade_foco = None
+            self.aviso = ""
+        if self.verso_ativo not in self.versos:
+            self.verso_ativo = None
 
     def _carregar_imagem_verso(self, nome_verso):
         nome_arquivo = SPRITES_POR_VERSO.get(nome_verso, "SURVIVORC.png")
@@ -105,20 +118,16 @@ class GerenciadorVerso(TelaBase):
             return None
 
     def sincronizar_habilidades_ativas(self):
+        self.atualizar_versos_disponiveis()
         self.pontos = save_global.obter_pontos()
         progresso_salvo = save_global.obter_progresso_versos()
-        for v in self.versos:
-            if v in progresso_salvo:
-                self.progresso_por_verso[v] = list(progresso_salvo[v])
-        self.progresso_por_verso.setdefault(self.verso_atual, [])
+        for v in self.arvores_por_verso:
+            self.progresso_por_verso[v] = list(progresso_salvo.get(v, []))
         self.habilidades_desbloqueadas = list(self.progresso_por_verso.get(self.verso_atual, []))
 
         desab_salvo = save_global.obter_habilidades_desabilitadas()
-        for v in self.versos:
-            if v in desab_salvo:
-                self.habilidades_desabilitadas[v] = set(desab_salvo[v])
-            else:
-                self.habilidades_desabilitadas.setdefault(v, set())
+        for v in self.arvores_por_verso:
+            self.habilidades_desabilitadas[v] = set(desab_salvo.get(v, []))
 
         self.aplicar_talentos_ao_personagem()
 
@@ -126,16 +135,12 @@ class GerenciadorVerso(TelaBase):
         alvo = personagem_alvo if personagem_alvo is not None else personagem
         verso_alvo = verso if verso is not None else self.verso_atual
         talentos_verso = list(self.progresso_por_verso.get(verso_alvo, []))
-        talentos_invocador = list(save_global.obter_progresso_verso("Invocador"))
+        desabilitadas = set(self.habilidades_desabilitadas.get(verso_alvo, set()))
 
-        desab_verso = self.habilidades_desabilitadas.get(verso_alvo, set())
-        desab_invocador = self.habilidades_desabilitadas.get("Invocador", set())
-        desabilitadas = set(desab_verso) | set(desab_invocador)
-
-        talentos_ativos = [t for t in (talentos_verso + talentos_invocador) if t not in desabilitadas]
+        talentos_ativos = [t for t in talentos_verso if t not in desabilitadas]
         alvo.talentos = set(talentos_ativos)
 
-        mapa_nodos = {"Sobrevivente": "S4", "Agente": "A4", "Feiticeiro": "F4"}
+        mapa_nodos = {"Sobrevivente": "S4", "Agente": "A4", "Feiticeiro": "F4", "Cyberpunk": "C4"}
         if not hasattr(alvo, "ultimates_desbloqueadas"):
             alvo.ultimates_desbloqueadas = set()
 
@@ -149,11 +154,6 @@ class GerenciadorVerso(TelaBase):
             alvo.ultimates_desbloqueadas.discard(verso_alvo)
             for c in classes_todas:
                 alvo.ultimates_desbloqueadas.discard((verso_alvo, c))
-
-        if "I4" in talentos_invocador and "I4" not in desabilitadas:
-            alvo.ultimates_desbloqueadas.add("Invocador")
-            for v in self.versos:
-                alvo.ultimates_desbloqueadas.add((v, "Invocador"))
 
     def alternar_habilidade_foco(self):
         if not self.habilidade_foco:
@@ -217,7 +217,7 @@ class GerenciadorVerso(TelaBase):
 
                         sistema_conquistas.desbloquear("primeiro_talento")
 
-                        if self.habilidade_foco["id"] in {"S4", "A4", "F4"}:
+                        if self.habilidade_foco["id"] in {"S4", "A4", "F4", "C4"}:
                             self.aviso = f"Ultimate desbloqueada para {self.verso_atual}!"
                             sistema_conquistas.desbloquear("ultimate_desbloqueada")
             return None
@@ -242,10 +242,8 @@ class GerenciadorVerso(TelaBase):
     def atualizar(self, posicao_mouse, estado_clique_mouse):
         self.botao_voltar.atualizar(posicao_mouse, estado_clique_mouse)
         if self.modo == "visualizacao":
-            self.botao_selecionar.texto = "CONFIRMAR VERSO"
-            self.botao_selecionar.cor_base = AZUL_DESTAQUE
-            self.botao_selecionar.cor_hover = (95, 120, 145)
-            self.botao_selecionar.cor_texto = TEXTO
+            self.botao_selecionar.definir_texto("CONFIRMAR VERSO")
+            self.botao_selecionar.definir_cores(AZUL_DESTAQUE, (95, 120, 145), TEXTO)
         else:
             # Modo menu: botão vira HABILITAR / DESABILITAR
             if self.habilidade_foco:
@@ -253,75 +251,41 @@ class GerenciadorVerso(TelaBase):
                 if hab_id in self.habilidades_desbloqueadas:
                     desab_verso = self.habilidades_desabilitadas.get(self.verso_atual, set())
                     if hab_id in desab_verso:
-                        self.botao_selecionar.texto = "HABILITAR HABILIDADE"
-                        self.botao_selecionar.cor_base = (35, 105, 55)
-                        self.botao_selecionar.cor_hover = (48, 140, 75)
-                        self.botao_selecionar.cor_texto = (210, 255, 220)
+                        self.botao_selecionar.definir_texto("HABILITAR HABILIDADE")
+                        self.botao_selecionar.definir_cores((35, 105, 55), (48, 140, 75), (210, 255, 220))
                     else:
-                        self.botao_selecionar.texto = "DESABILITAR HABILIDADE"
-                        self.botao_selecionar.cor_base = (130, 42, 45)
-                        self.botao_selecionar.cor_hover = (170, 52, 58)
-                        self.botao_selecionar.cor_texto = (255, 225, 225)
+                        self.botao_selecionar.definir_texto("DESABILITAR HABILIDADE")
+                        self.botao_selecionar.definir_cores((130, 42, 45), (170, 52, 58), (255, 225, 225))
                 else:
-                    self.botao_selecionar.texto = "HABILITAR / DESABILITAR"
-                    self.botao_selecionar.cor_base = (50, 58, 72)
-                    self.botao_selecionar.cor_hover = (50, 58, 72)
-                    self.botao_selecionar.cor_texto = (140, 150, 165)
+                    self.botao_selecionar.definir_texto("HABILITAR / DESABILITAR")
+                    self.botao_selecionar.definir_cores((50, 58, 72), (50, 58, 72), (140, 150, 165))
             else:
-                self.botao_selecionar.texto = "SELECIONE UMA HABILIDADE"
-                self.botao_selecionar.cor_base = (50, 58, 72)
-                self.botao_selecionar.cor_hover = (50, 58, 72)
-                self.botao_selecionar.cor_texto = (140, 150, 165)
+                self.botao_selecionar.definir_texto("SELECIONE UMA HABILIDADE")
+                self.botao_selecionar.definir_cores((50, 58, 72), (50, 58, 72), (140, 150, 165))
 
         self.botao_selecionar.atualizar(posicao_mouse, estado_clique_mouse)
         if self.modo == "menu":
             if self.habilidade_foco:
                 hab_id = self.habilidade_foco["id"]
                 if hab_id in self.habilidades_desbloqueadas:
-                    self.botao_comprar.texto = "DESBLOQUEADA"
-                    self.botao_comprar.cor_base = (45, 55, 70)
-                    self.botao_comprar.cor_hover = (45, 55, 70)
-                    self.botao_comprar.cor_texto = (130, 140, 155)
+                    self.botao_comprar.definir_texto("DESBLOQUEADA")
+                    self.botao_comprar.definir_cores((45, 55, 70), (45, 55, 70), (130, 140, 155))
                 else:
                     pode = all(req in self.habilidades_desbloqueadas for req in self.habilidade_foco.get("req", []))
                     if not pode:
-                        self.botao_comprar.texto = "REQUER ANTERIOR"
-                        self.botao_comprar.cor_base = (45, 55, 70)
-                        self.botao_comprar.cor_hover = (45, 55, 70)
-                        self.botao_comprar.cor_texto = (130, 140, 155)
+                        self.botao_comprar.definir_texto("REQUER ANTERIOR")
+                        self.botao_comprar.definir_cores((45, 55, 70), (45, 55, 70), (130, 140, 155))
                     elif self.pontos < self.habilidade_foco.get("preco", 0):
-                        self.botao_comprar.texto = f"DESBLOQUEAR ({self.habilidade_foco.get('preco', 0)} PTS)"
-                        self.botao_comprar.cor_base = (90, 75, 30)
-                        self.botao_comprar.cor_hover = (110, 95, 40)
-                        self.botao_comprar.cor_texto = (240, 215, 110)
+                        self.botao_comprar.definir_texto(f"DESBLOQUEAR ({self.habilidade_foco.get('preco', 0)} PTS)")
+                        self.botao_comprar.definir_cores((90, 75, 30), (110, 95, 40), (240, 215, 110))
                     else:
-                        self.botao_comprar.texto = f"DESBLOQUEAR ({self.habilidade_foco.get('preco', 0)} PTS)"
-                        self.botao_comprar.cor_base = (40, 105, 60)
-                        self.botao_comprar.cor_hover = (55, 145, 80)
-                        self.botao_comprar.cor_texto = (235, 255, 235)
+                        self.botao_comprar.definir_texto(f"DESBLOQUEAR ({self.habilidade_foco.get('preco', 0)} PTS)")
+                        self.botao_comprar.definir_cores((40, 105, 60), (55, 145, 80), (235, 255, 235))
             else:
-                self.botao_comprar.texto = "DESBLOQUEAR"
-                self.botao_comprar.cor_base = (45, 55, 70)
-                self.botao_comprar.cor_hover = (45, 55, 70)
-                self.botao_comprar.cor_texto = (130, 140, 155)
+                self.botao_comprar.definir_texto("DESBLOQUEAR")
+                self.botao_comprar.definir_cores((45, 55, 70), (45, 55, 70), (130, 140, 155))
 
             self.botao_comprar.atualizar(posicao_mouse, estado_clique_mouse)
-
-    def _quebrar_texto(self, texto, fonte, largura_maxima):
-        linhas = []
-        for paragrafo in texto.split("\n"):
-            palavras = paragrafo.split()
-            linha = ""
-            for palavra in palavras:
-                tentativa = f"{linha} {palavra}".strip()
-                if fonte.size(tentativa)[0] <= largura_maxima:
-                    linha = tentativa
-                else:
-                    if linha:
-                        linhas.append(linha)
-                    linha = palavra
-            linhas.append(linha)
-        return linhas
 
     def _desenhar_container_retorno(self):
         """
@@ -415,7 +379,7 @@ class GerenciadorVerso(TelaBase):
         self.tela.blit(txt_tag, (rect_tag.centerx - txt_tag.get_width() // 2, rect_tag.centery - txt_tag.get_height() // 2))
 
         # Texto do retorno com quebra de linha
-        linhas = self._quebrar_texto(texto_principal, self.fonte_desc, rect_container.width - 24)
+        linhas = quebrar_texto(texto_principal, self.fonte_desc, rect_container.width - 24)
         total_h = len(linhas) * 20
         y_ini = rect_tag.bottom + max(8, (rect_container.bottom - rect_tag.bottom - total_h) // 2)
 
@@ -440,7 +404,7 @@ class GerenciadorVerso(TelaBase):
             hab_id = hab.get("id", "??")
 
             # 1. Nome da Habilidade
-            linhas_nome = self._quebrar_texto(nome_hab, self.fonte_titulo, 250)
+            linhas_nome = quebrar_texto(nome_hab, self.fonte_titulo, 250)
             y_nome = 56
             for l in linhas_nome[:2]:
                 txt_l = self.fonte_titulo.render(l, True, TEXTO)
@@ -499,7 +463,7 @@ class GerenciadorVerso(TelaBase):
             pygame.draw.line(self.tela, (60, 72, 92), (735 + txt_label_desc.get_width() + 8, y_desc + 7), (945, y_desc + 7), 1)
 
             deslocamento_y = y_desc + 18
-            for linha in self._quebrar_texto(desc_hab, self.fonte_desc, 230):
+            for linha in quebrar_texto(desc_hab, self.fonte_desc, 230):
                 txt_desc = self.fonte_desc.render(linha, True, TEXTO_SECUNDARIO)
                 self.tela.blit(txt_desc, (735, deslocamento_y))
                 deslocamento_y += 20
@@ -531,10 +495,11 @@ class GerenciadorVerso(TelaBase):
                 "Sobrevivente": "Resiliente e adaptável. Especialista em sobrevivência, defesa e resistência.",
                 "Agente": "Ágil, preciso e letal. Focado em velocidade, ataques críticos e táticas avançadas.",
                 "Feiticeiro": "Místico e destruidor. Canaliza energia arcana e conjura magias de alto impacto.",
+                "Cyberpunk": "Edgerunner de Night City. Movido a cromo, velocidade Sandevistan e poder de fogo implacável.",
             }
             desc = descricoes.get(self.verso_atual, "Selecione uma habilidade na árvore para ver seu perfil.")
             deslocamento_y = y_desc + 18
-            for linha in self._quebrar_texto(desc, self.fonte_desc, 230):
+            for linha in quebrar_texto(desc, self.fonte_desc, 230):
                 txt_desc = self.fonte_desc.render(linha, True, TEXTO_SECUNDARIO)
                 self.tela.blit(txt_desc, (735, deslocamento_y))
                 deslocamento_y += 20
@@ -572,6 +537,7 @@ class GerenciadorVerso(TelaBase):
             "Sobrevivente": (255, 191, 122),
             "Agente": (255, 120, 120),
             "Feiticeiro": (196, 147, 255),
+            "Cyberpunk": (0, 240, 255),
         }
 
         for nome, rect in self.esferas_rects.items():

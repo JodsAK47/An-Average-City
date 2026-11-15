@@ -4,7 +4,6 @@ import pygame
 from Sistemas.Fontes import obter_fonte
 from Sistemas.Recursos import caminho_imagem, caminho_botao, caminho_dados, caminho_conquista
 
-CAMINHO_DADOS = caminho_dados()
 ARQUIVO_CONQUISTAS = caminho_dados("conquistas.json")
 
 def converter_para_cinza(surface):
@@ -22,12 +21,13 @@ def converter_para_cinza(surface):
         return copia
 
 class Conquista:
-    def __init__(self, id_conquista, nome, como_liberar, icone_arquivo, desbloqueada=False):
+    def __init__(self, id_conquista, nome, como_liberar, icone_arquivo, desbloqueada=False, oculta=False):
         self.id = id_conquista
         self.nome = nome
         self.como_liberar = como_liberar
         self.icone_arquivo = icone_arquivo
         self.desbloqueada = desbloqueada
+        self.oculta = bool(oculta)
         self._superficie_colorida = None
         self._superficie_cinza = None
 
@@ -74,6 +74,7 @@ class SistemaConquistas:
     def carregar(self):
         self.conquistas.clear()
         self.mapa_conquistas.clear()
+        self.notificacoes.clear()
         if not os.path.exists(ARQUIVO_CONQUISTAS):
             return
 
@@ -89,29 +90,23 @@ class SistemaConquistas:
                         nome=item["nome"],
                         como_liberar=item["como_liberar"],
                         icone_arquivo=item.get("icone", "SELECT.png"),
-                        desbloqueada=ja_desbloqueada
+                        desbloqueada=ja_desbloqueada,
+                        oculta=item.get("oculta", False),
                     )
                     self.conquistas.append(c)
                     self.mapa_conquistas[c.id] = c
+            self.verificar_conquistas_especiais()
         except Exception as e:
             print(f"[Aviso] Erro ao carregar conquistas: {e}")
 
     def salvar(self):
         try:
             from Sistemas.SaveSystem import save_global
-            dados = []
             for c in self.conquistas:
                 if c.desbloqueada:
                     save_global.desbloquear_conquista(c.id)
-                dados.append({
-                    "id": c.id,
-                    "nome": c.nome,
-                    "como_liberar": c.como_liberar,
-                    "icone": c.icone_arquivo,
-                    "desbloqueada": c.desbloqueada
-                })
-            with open(ARQUIVO_CONQUISTAS, "w", encoding="utf-8") as f:
-                json.dump(dados, f, ensure_ascii=False, indent=4)
+            self.verificar_conquistas_especiais(salvar=False)
+            save_global.salvar()
         except Exception as e:
             print(f"[Aviso] Erro ao salvar conquistas: {e}")
 
@@ -120,6 +115,18 @@ class SistemaConquistas:
         return bool(c and c.desbloqueada)
 
     def desbloquear(self, id_conquista):
+        if id_conquista == "easter_egg" and not self._requisitos_easter_egg():
+            return False
+        if id_conquista == "platina" and not self._requisitos_platina():
+            return False
+        desbloqueada = self._desbloquear(id_conquista)
+        especiais = self.verificar_conquistas_especiais(salvar=False)
+        if desbloqueada or especiais:
+            from Sistemas.SaveSystem import save_global
+            save_global.salvar()
+        return desbloqueada
+
+    def _desbloquear(self, id_conquista):
         c = self.mapa_conquistas.get(id_conquista)
         if c and not c.desbloqueada:
             c.desbloqueada = True
@@ -129,10 +136,95 @@ class SistemaConquistas:
                 "nome": c.nome,
                 "icone": c.obter_icone(desbloqueada=True, tamanho=(40, 40)),
                 "tempo": 220,
-                "y_anim": -70
+                "y_anim": -70,
+                **({"progresso": 100} if id_conquista == "easter_egg" else {}),
             })
             return True
         return False
+
+    def _etapas_easter_egg(self):
+        from Sistemas.SaveSystem import save_global
+        versos = set(save_global.versos_concluidos)
+        return (
+            {"Sobrevivente", "Agente", "Feiticeiro"}.issubset(versos),
+            bool(save_global.david_martins_derrotado),
+            "Cyberpunk" in versos,
+        )
+
+    def _requisitos_easter_egg(self):
+        return all(self._etapas_easter_egg())
+
+    def obter_progresso_easter_egg(self):
+        if self.esta_desbloqueada("easter_egg"):
+            return 100
+        return round(sum(self._etapas_easter_egg()) * 100 / 3)
+
+    def _notificar_progresso_easter_egg(self, progresso_anterior):
+        progresso = self.obter_progresso_easter_egg()
+        conquista = self.mapa_conquistas.get("easter_egg")
+        if conquista and progresso_anterior < progresso < 100:
+            self.notificacoes.append({
+                "nome": conquista.nome,
+                "titulo": "PROGRESSO DE CONQUISTA",
+                "progresso": progresso,
+                "icone": conquista.obter_icone(desbloqueada=True, tamanho=(40, 40)),
+                "tempo": 220,
+                "y_anim": -70,
+            })
+
+    def _requisitos_platina(self):
+        outras = [c for c in self.conquistas if c.id != "platina"]
+        return bool(outras) and all(c.desbloqueada for c in outras)
+
+    def verificar_conquistas_especiais(self, salvar=True):
+        alterada = False
+        if self._requisitos_easter_egg():
+            alterada = self._desbloquear("easter_egg") or alterada
+        if self._requisitos_platina():
+            alterada = self._desbloquear("platina") or alterada
+        if alterada and salvar:
+            from Sistemas.SaveSystem import save_global
+            save_global.salvar()
+        return alterada
+
+    def registrar_vitoria_campanha(self, verso):
+        from Sistemas.Constantes import Verso
+        from Sistemas.SaveSystem import save_global
+        verso_normalizado = Verso.normalizar(verso, estrito=True)
+        if verso_normalizado is None:
+            return False
+        verso = verso_normalizado.value
+        progresso_anterior = self.obter_progresso_easter_egg()
+        alterada = verso not in save_global.versos_concluidos
+        if alterada:
+            save_global.versos_concluidos.append(verso)
+            self._notificar_progresso_easter_egg(progresso_anterior)
+        especiais = self.verificar_conquistas_especiais(salvar=False)
+        if alterada or especiais:
+            save_global.salvar()
+        return alterada
+
+    def registrar_vitoria_david(self):
+        from Sistemas.SaveSystem import save_global
+        progresso_anterior = self.obter_progresso_easter_egg()
+        alterada = not save_global.david_martins_derrotado
+        save_global.david_martins_derrotado = True
+        if alterada:
+            self._notificar_progresso_easter_egg(progresso_anterior)
+        especiais = self.verificar_conquistas_especiais(salvar=False)
+        if alterada or especiais:
+            save_global.salvar()
+        return alterada
+
+    def esta_platinado(self):
+        return self.esta_desbloqueada("platina") and self._requisitos_platina()
+
+    def obter_conquistas_visiveis(self):
+        return [
+            c for c in self.conquistas
+            if not c.oculta or c.desbloqueada
+            or (c.id == "easter_egg" and self.obter_progresso_easter_egg() > 0)
+        ]
 
     def total_desbloqueadas(self):
         return sum(1 for c in self.conquistas if c.desbloqueada)
@@ -143,10 +235,18 @@ class SistemaConquistas:
     def resetar_todas(self):
         for c in self.conquistas:
             c.desbloqueada = False
+        try:
+            from Sistemas.SaveSystem import save_global
+            save_global.conquistas.clear()
+            save_global.versos_concluidos.clear()
+            save_global.david_martins_derrotado = False
+        except Exception:
+            pass
+        self.notificacoes.clear()
         self.salvar()
 
     def atualizar_notificacoes(self):
-        for notif in list(self.notificacoes):
+        for notif in self.notificacoes[:3]:
             notif["tempo"] -= 1
             if notif["y_anim"] < 20:
                 notif["y_anim"] += 5
@@ -161,8 +261,8 @@ class SistemaConquistas:
             self.fonte_notificacao = obter_fonte(14)
             self.fonte_sub = obter_fonte(11)
 
-        for notif in self.notificacoes:
-            y = notif["y_anim"]
+        for indice, notif in enumerate(self.notificacoes[:3]):
+            y = notif["y_anim"] + indice * 64
             x = (tela.get_width() - 360) // 2
             rect_banner = pygame.Rect(x, y, 360, 56)
 
@@ -174,8 +274,12 @@ class SistemaConquistas:
             if icone:
                 tela.blit(icone, (rect_banner.x + 10, rect_banner.y + 8))
 
-            txt_topo = self.fonte_sub.render("🏆 CONQUISTA DESBLOQUEADA!", True, (255, 215, 0))
-            txt_nome = self.fonte_notificacao.render(notif["nome"], True, (255, 255, 255))
+            titulo = notif.get("titulo", "🏆 CONQUISTA DESBLOQUEADA!")
+            nome = notif["nome"]
+            if "progresso" in notif:
+                nome = f"{nome}: {notif['progresso']}%"
+            txt_topo = self.fonte_sub.render(titulo, True, (255, 215, 0))
+            txt_nome = self.fonte_notificacao.render(nome, True, (255, 255, 255))
             tela.blit(txt_topo, (rect_banner.x + 60, rect_banner.y + 8))
             tela.blit(txt_nome, (rect_banner.x + 60, rect_banner.y + 28))
 

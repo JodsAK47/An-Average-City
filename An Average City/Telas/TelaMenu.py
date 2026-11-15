@@ -1,8 +1,8 @@
 import math
 import pygame
 from Sistemas.Fontes import obter_fonte
-from Sistemas.Recursos import caminho_botao, caminho_imagem
-from Sistemas.SistemaUI import Botao, TelaBase, GerenciadorTelas
+from Sistemas.Recursos import caminho_imagem
+from Sistemas.SistemaUI import Botao, TelaBase
 from Sistemas.SaveSystem import save_global
 
 class GerenciadorMenu(TelaBase):

@@ -16,28 +16,8 @@
       "Sor": 3
     },
     "ataques": [
-      {
-        "nome": "Ferrão Veloz",
-        "tipo": "Invocador",
-        "dano": 6,
-        "custo_mp": 0,
-        "precisao": 0.92,
-        "efeito": "Queimar",
-        "chance_efeito": 0.2,
-        "em_area": false,
-        "descricao": "Estocada rápida com ferrão ardente."
-      },
-      {
-        "nome": "Rasante do Enxame",
-        "tipo": "Invocador",
-        "dano": 9,
-        "custo_mp": 3,
-        "precisao": 0.85,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": true,
-        "descricao": "Investida coordenada contra todos os inimigos."
-      }
+      "Ferrão Veloz",
+      "Rasante do Enxame"
     ]
   },
   "Pássaro Olhudo": {
@@ -57,28 +37,8 @@
       "Sor": 2
     },
     "ataques": [
-      {
-        "nome": "Bicada Perfurante",
-        "tipo": "Invocador",
-        "dano": 10,
-        "custo_mp": 0,
-        "precisao": 0.88,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": false,
-        "descricao": "Bicada pesada que atravessa a guarda do oponente."
-      },
-      {
-        "nome": "Olhar Hipnótico",
-        "tipo": "Invocador",
-        "dano": 12,
-        "custo_mp": 4,
-        "precisao": 0.82,
-        "efeito": "Congelar",
-        "chance_efeito": 0.35,
-        "em_area": false,
-        "descricao": "Paralisa o alvo com um olhar intimidador."
-      }
+      "Bicada Perfurante",
+      "Olhar Hipnótico"
     ]
   },
   "Torreta Sentinela": {
@@ -98,39 +58,9 @@
       "Sor": 3
     },
     "ataques": [
-      {
-        "nome": "Rajada Sentinela",
-        "tipo": "Invocador",
-        "dano": 8,
-        "custo_mp": 0,
-        "precisao": 0.92,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": false,
-        "descricao": "Disparo automático de alta precisão."
-      },
-      {
-        "nome": "Disparo Supressor",
-        "tipo": "Invocador",
-        "dano": 11,
-        "custo_mp": 3,
-        "precisao": 0.88,
-        "efeito": "Congelar",
-        "chance_efeito": 0.25,
-        "em_area": false,
-        "descricao": "Tiro pesado que trava os movimentos do inimigo."
-      },
-      {
-        "nome": "Descarga Elétrica",
-        "tipo": "Invocador",
-        "dano": 9,
-        "custo_mp": 2,
-        "precisao": 0.9,
-        "efeito": "Eletrocutar",
-        "chance_efeito": 0.6,
-        "em_area": false,
-        "descricao": "Disparo eletrificado de alta voltagem que eletrocuta o alvo."
-      }
+      "Rajada Sentinela",
+      "Disparo Supressor",
+      "Descarga Elétrica"
     ]
   },
   "Drone Caçador": {
@@ -150,28 +80,8 @@
       "Sor": 4
     },
     "ataques": [
-      {
-        "nome": "Laser Tático",
-        "tipo": "Invocador",
-        "dano": 9,
-        "custo_mp": 0,
-        "precisao": 0.9,
-        "efeito": "Queimar",
-        "chance_efeito": 0.25,
-        "em_area": false,
-        "descricao": "Feixe concentrado que queima o alvo."
-      },
-      {
-        "nome": "Pulso EMP",
-        "tipo": "Invocador",
-        "dano": 11,
-        "custo_mp": 4,
-        "precisao": 0.85,
-        "efeito": "Congelar",
-        "chance_efeito": 0.3,
-        "em_area": true,
-        "descricao": "Onda eletromagnética que atinge todos os inimigos."
-      }
+      "Laser Tático",
+      "Pulso EMP"
     ]
   },
   "Cão Divino": {
@@ -191,28 +101,8 @@
       "Sor": 5
     },
     "ataques": [
-      {
-        "nome": "Presas das Sombras",
-        "tipo": "Invocador",
-        "dano": 9,
-        "custo_mp": 0,
-        "precisao": 0.9,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": false,
-        "descricao": "Mordida feroz imbuída em energia amaldiçoada."
-      },
-      {
-        "nome": "Investida Lupina",
-        "tipo": "Invocador",
-        "dano": 13,
-        "custo_mp": 3,
-        "precisao": 0.86,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": false,
-        "descricao": "Avanço letal contra o ponto vital do inimigo."
-      }
+      "Presas das Sombras",
+      "Investida Lupina"
     ]
   },
   "Nue": {
@@ -232,28 +122,8 @@
       "Sor": 3
     },
     "ataques": [
-      {
-        "nome": "Asas de Relâmpago",
-        "tipo": "Invocador",
-        "dano": 8,
-        "custo_mp": 0,
-        "precisao": 0.88,
-        "efeito": "Eletrocutar",
-        "chance_efeito": 0.5,
-        "em_area": true,
-        "descricao": "Rasante elétrico que atinge todos os inimigos."
-      },
-      {
-        "nome": "Trovão Amaldiçoado",
-        "tipo": "Invocador",
-        "dano": 13,
-        "custo_mp": 4,
-        "precisao": 0.84,
-        "efeito": "Eletrocutar",
-        "chance_efeito": 0.7,
-        "em_area": false,
-        "descricao": "Descarga paralisante de alta voltagem."
-      }
+      "Asas de Relâmpago",
+      "Trovão Amaldiçoado"
     ]
   },
   "Mahoraga": {
@@ -273,28 +143,50 @@
       "Sor": 5
     },
     "ataques": [
-      {
-        "nome": "Espada do Extermínio",
-        "tipo": "Invocador",
-        "dano": 16,
-        "custo_mp": 0,
-        "precisao": 0.95,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": false,
-        "descricao": "Golpe colossal de energia positiva."
-      },
-      {
-        "nome": "Adaptação Absoluta",
-        "tipo": "Invocador",
-        "dano": 18,
-        "custo_mp": 5,
-        "precisao": 0.92,
-        "efeito": "Congelar",
-        "chance_efeito": 0.4,
-        "em_area": true,
-        "descricao": "Onda de choque devastadora contra todos os inimigos."
-      }
+      "Espada do Extermínio",
+      "Adaptação Absoluta"
+    ]
+  },
+  "Drone Netrunner": {
+    "nome": "Drone Netrunner",
+    "verso": "Cyberpunk",
+    "arquivo_imagem": "Torreta.png",
+    "inverter_horizontal": false,
+    "max_hp": 32,
+    "max_mp": 14,
+    "descricao": "Drone leve equipado com cyberdeck para ataques elétricos e invasão.",
+    "atributos": {
+      "For": 3,
+      "Agi": 6,
+      "Con": 3,
+      "Sab": 6,
+      "Int": 5,
+      "Sor": 3
+    },
+    "ataques": [
+      "Pulso Netrunner",
+      "Varredura de Rede"
+    ]
+  },
+  "Unidade Militech": {
+    "nome": "Unidade Militech",
+    "verso": "Cyberpunk",
+    "arquivo_imagem": "Hound.png",
+    "inverter_horizontal": false,
+    "max_hp": 52,
+    "max_mp": 16,
+    "descricao": "Autômato tático corporativo de alta blindagem e fogo pesado.",
+    "atributos": {
+      "For": 7,
+      "Agi": 5,
+      "Con": 6,
+      "Sab": 6,
+      "Int": 4,
+      "Sor": 3
+    },
+    "ataques": [
+      "Rajada Pesada",
+      "Míssil Termobárico"
     ]
   }
 }

@@ -237,5 +237,108 @@
     "verso": "Agente",
     "tipo": "chefe",
     "classe": "Distância"
+  },
+  {
+    "max_hp": 28,
+    "max_mp": 6,
+    "arquivo_imagem": "Hound.png",
+    "nome": "Scav Cibernético",
+    "ataques": [
+      "Tiro de Pistola",
+      "Soco"
+    ],
+    "xp": 30,
+    "atributos": {
+      "For": 3,
+      "Agi": 4,
+      "Int": 1,
+      "Sor": 1
+    },
+    "verso": "Cyberpunk",
+    "tipo": "fraco"
+  },
+  {
+    "max_hp": 44,
+    "max_mp": 10,
+    "arquivo_imagem": "Torreta.png",
+    "nome": "Mercenário Maelstrom",
+    "ataques": [
+      "Choque de Cromo",
+      "Tiro de Pistola"
+    ],
+    "xp": 52,
+    "atributos": {
+      "For": 4,
+      "Agi": 5,
+      "Int": 3,
+      "Sor": 2
+    },
+    "verso": "Cyberpunk",
+    "tipo": "medio"
+  },
+  {
+    "max_hp": 65,
+    "max_mp": 16,
+    "arquivo_imagem": "pixil_cyber.png",
+    "nome": "Cyberpsicopata",
+    "ataques": [
+      "Corte Mantis Inimigo",
+      "Sobrecarga Neural"
+    ],
+    "xp": 85,
+    "atributos": {
+      "For": 7,
+      "Agi": 6,
+      "Int": 5,
+      "Sor": 2
+    },
+    "verso": "Cyberpunk",
+    "tipo": "grande"
+  },
+  {
+    "max_hp": 155,
+    "max_mp": 40,
+    "arquivo_imagem": "Confinamento.png",
+    "nome": "Adam Smasher",
+    "ataques": [
+      "Canhão de Ombro",
+      "Salva de Mísseis",
+      "Esmagamento Cibernético"
+    ],
+    "xp": 320,
+    "atributos": {
+      "For": 12,
+      "Agi": 9,
+      "Int": 8,
+      "Sor": 2
+    },
+    "verso": "Cyberpunk",
+    "tipo": "chefe",
+    "classe": "Físico"
+  },
+  {
+    "max_hp": 620,
+    "max_mp": 42,
+    "arquivo_imagem": "pixil_cyber.png",
+    "nome": "David Martins",
+    "ataques": [
+      "Soco de David",
+      "Rajada de Sandevistan",
+      "Pulso de Sobrecarga",
+      "Impacto do Cromado"
+    ],
+    "xp": 320,
+    "atributos": {
+      "For": 16,
+      "Agi": 18,
+      "Con": 8,
+      "Sab": 12,
+      "Int": 16,
+      "Sor": 5
+    },
+    "verso": "Esgoto",
+    "tipo": "chefe",
+    "classe": "Físico",
+    "especial": true
   }
 ]

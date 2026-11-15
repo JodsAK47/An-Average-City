@@ -28,7 +28,8 @@ LINHAS_INTRO_FALLBACK = [
     "Sobreviventes buscam recursos em becos esquecidos.",
     "Agentes operam nas sombras da conspiração.",
     "Feiticeiros manipulam energias além da compreensão humana.",
-    "Três caminhos distintos. Um único destino.",
+    "Edgerunners desafiam o sistema nas ruas neon de Night City.",
+    "Quatro caminhos distintos. Um único destino.",
     "Bem-vindo a An Average City."
 ]
 

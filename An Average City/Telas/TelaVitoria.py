@@ -1,6 +1,5 @@
 import pygame
-from typing import Tuple
-from Sistemas.SistemaUI import TelaBase, Botao
+from Sistemas.SistemaUI import TelaBase
 from Sistemas.Fontes import obter_fonte
 
 class GerenciadorVitoria(TelaBase):

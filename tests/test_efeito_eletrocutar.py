@@ -103,15 +103,19 @@ class TestEfeitoEletrocutar(unittest.TestCase):
         self.assertFalse(inimigo.eletrocutado)
 
     def test_ataques_nue_possuem_efeito_eletrocutar(self):
-        """Todos os ataques do Nue em minions_personagem.json devem possuir efeito Eletrocutar."""
+        """As habilidades referenciadas pelo Nue devem possuir efeito Eletrocutar."""
         p_minions = os.path.join(BASE_DIR, "Dados", "minions_personagem.json")
         with open(p_minions, "r", encoding="utf-8") as f:
             minions = json.load(f)
+        p_habilidades = os.path.join(BASE_DIR, "Dados", "habilidades_minions.json")
+        with open(p_habilidades, "r", encoding="utf-8") as f:
+            habilidades = json.load(f)
 
         self.assertIn("Nue", minions)
         ataques_nue = minions["Nue"]["ataques"]
         self.assertTrue(len(ataques_nue) >= 2)
-        for atk in ataques_nue:
+        for nome_ataque in ataques_nue:
+            atk = habilidades[nome_ataque]
             self.assertEqual(atk["efeito"], "Eletrocutar", f"Ataque {atk['nome']} do Nue deveria ter efeito Eletrocutar")
             self.assertGreater(atk["chance_efeito"], 0.0)
 
@@ -138,9 +142,11 @@ class TestEfeitoEletrocutar(unittest.TestCase):
             minions = json.load(f)
         self.assertIn("Torreta Sentinela", minions)
         atks_sentinela = minions["Torreta Sentinela"]["ataques"]
-        nomes_atks = [a["nome"] for a in atks_sentinela]
-        self.assertIn("Descarga Elétrica", nomes_atks)
-        descarga_sentinela = next(a for a in atks_sentinela if a["nome"] == "Descarga Elétrica")
+        self.assertIn("Descarga Elétrica", atks_sentinela)
+        p_habs_minions = os.path.join(BASE_DIR, "Dados", "habilidades_minions.json")
+        with open(p_habs_minions, "r", encoding="utf-8") as f:
+            habs_minions = json.load(f)
+        descarga_sentinela = habs_minions["Descarga Elétrica"]
         self.assertEqual(descarga_sentinela["efeito"], "Eletrocutar")
 
 

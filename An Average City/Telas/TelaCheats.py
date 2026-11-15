@@ -24,6 +24,7 @@ CORES_VERSO = {
     "Feiticeiro": (180, 80, 255),
     "Sobrevivente": (0, 255, 140),
     "Agente": (50, 220, 255),
+    "Cyberpunk": (245, 210, 40),
 }
 
 class GerenciadorCheatsTela(TelaBase):
@@ -121,10 +122,11 @@ class GerenciadorCheatsTela(TelaBase):
         )
 
         self.botoes_filtros = {
-            "TODOS": Botao(50, 196, 175, 28, "TODOS (12)", (30, 38, 48), (45, 60, 75), 178, 30, cor_texto=TEXTO_CLARO, fonte_tamanho=11),
-            "Feiticeiro": Botao(235, 196, 140, 28, "FEITICEIRO (4)", (45, 25, 55), (75, 35, 95), 143, 30, cor_texto=ROXO_NEON, fonte_tamanho=11),
-            "Sobrevivente": Botao(385, 196, 150, 28, "SOBREVIVENTE (4)", (20, 50, 35), (35, 85, 55), 153, 30, cor_texto=VERDE_NEON, fonte_tamanho=11),
-            "Agente": Botao(545, 196, 130, 28, "AGENTE (4)", (20, 45, 60), (30, 80, 105), 133, 30, cor_texto=CIANO, fonte_tamanho=11),
+            "TODOS": Botao(50, 196, 130, 28, "TODOS (16)", (30, 38, 48), (45, 60, 75), 133, 30, cor_texto=TEXTO_CLARO, fonte_tamanho=10),
+            "Feiticeiro": Botao(188, 196, 125, 28, "FEITICEIRO (4)", (45, 25, 55), (75, 35, 95), 128, 30, cor_texto=ROXO_NEON, fonte_tamanho=10),
+            "Sobrevivente": Botao(321, 196, 135, 28, "SOBREVIVENTE (4)", (20, 50, 35), (35, 85, 55), 138, 30, cor_texto=VERDE_NEON, fonte_tamanho=10),
+            "Agente": Botao(464, 196, 110, 28, "AGENTE (4)", (20, 45, 60), (30, 80, 105), 113, 30, cor_texto=CIANO, fonte_tamanho=10),
+            "Cyberpunk": Botao(582, 196, 130, 28, "CYBERPUNK (4)", (55, 48, 15), (90, 75, 20), 133, 30, cor_texto=(245, 210, 40), fonte_tamanho=10),
         }
 
         self.presets_batalha = [
@@ -164,13 +166,13 @@ class GerenciadorCheatsTela(TelaBase):
         self.filtro_verso = "TODOS"
         self.equipe_selecionada.clear()
 
-        self.btn_godmode.texto = "GOD MODE: DESATIVADO"
-        self.btn_godmode.cor_texto = ROXO_NEON
+        self.btn_godmode.definir_texto("GOD MODE: DESATIVADO")
+        self.btn_godmode.definir_cores(cor_texto=ROXO_NEON)
 
-        self.btn_iniciar_batalha_custom.texto = "⚔️ INICIAR (0/4)"
-        self.btn_iniciar_batalha_custom.cor_texto = TEXTO_CINZA
-        self.btn_iniciar_batalha_custom.cor_fundo = (35, 45, 55)
-        self.btn_iniciar_batalha_custom.cor_hover = (45, 55, 65)
+        self.btn_iniciar_batalha_custom.definir_texto("⚔️ INICIAR (0/4)")
+        self.btn_iniciar_batalha_custom.definir_cores(
+            cor_texto=TEXTO_CINZA, cor_base=(35, 45, 55), cor_hover=(45, 55, 65)
+        )
 
         # Desativa cheats no personagem e restaura skin original
         personagem.resetar(resetar_cheats=True)
@@ -233,12 +235,12 @@ class GerenciadorCheatsTela(TelaBase):
                 self.mensagem_feedback = "⚡ MODO DEUS ATIVADO! (Invencível + 999 HP + Mana Infinita)"
                 self.cor_feedback = VERDE_NEON
             else:
-                personagem.max_hp = 100
-                personagem.hp = 100
-                personagem.max_mp = 10
-                personagem.mp = 0
-                self.btn_godmode.texto = "GOD MODE: DESATIVADO"
-                self.btn_godmode.cor_texto = ROXO_NEON
+                personagem.god_mode = False
+                personagem.atualizar_atributos()
+                personagem.hp = min(personagem.hp, personagem.max_hp)
+                personagem.mp = min(personagem.mp, personagem.max_mp)
+                self.btn_godmode.definir_texto("GOD MODE: DESATIVADO")
+                self.btn_godmode.definir_cores(cor_texto=ROXO_NEON)
                 self.mensagem_feedback = "Modo Deus desativado. Vida e mana normalizadas."
                 self.cor_feedback = TEXTO_CINZA
 
@@ -247,7 +249,8 @@ class GerenciadorCheatsTela(TelaBase):
                 c.desbloqueada = True
                 save_global.desbloquear_conquista(c.id)
             sistema_conquistas.salvar()
-            self.mensagem_feedback = "🏆 Todas as 14 conquistas foram desbloqueadas e salvas!"
+            total_conq = sistema_conquistas.total_conquistas()
+            self.mensagem_feedback = f"🏆 Todas as {total_conq} conquistas foram desbloqueadas e salvas!"
             self.cor_feedback = AMARELO_OURO
 
         if self.btn_sukuna_boss.checar_clique(evento, posicao_mouse):
@@ -270,13 +273,13 @@ class GerenciadorCheatsTela(TelaBase):
             for idx, s in enumerate(self.catalogo_skins):
                 col = idx % 2
                 lin = idx // 2
-                rect_skin = pygame.Rect(x_ini + col * 220, y_ini + lin * 110, 205, 95)
+                rect_skin = pygame.Rect(x_ini + col * 225, y_ini + lin * 115, 215, 102)
                 if rect_skin.collidepoint(posicao_mouse):
                     personagem.trocar_skin(s["arquivo"])
-                    from Sistemas.Conquistas import sistema_conquistas
                     sistema_conquistas.desbloquear("moda_em_primeiro_lugar")
                     self.mensagem_feedback = f"🎭 Skin '{s['nome']}' equipada com sucesso!"
                     self.cor_feedback = CIANO
+                    break
 
         return None
 
@@ -377,6 +380,7 @@ class GerenciadorCheatsTela(TelaBase):
         return None
 
     def atualizar(self, posicao_mouse, estado_clique_mouse):
+        self._ultimo_mouse = posicao_mouse
         if self.modo == "cheats":
             self.btn_pontos.atualizar(posicao_mouse, estado_clique_mouse)
             self.btn_godmode.atualizar(posicao_mouse, estado_clique_mouse)
@@ -389,26 +393,26 @@ class GerenciadorCheatsTela(TelaBase):
             self.btn_voltar.atualizar(posicao_mouse, estado_clique_mouse)
 
             if getattr(personagem, 'god_mode', False):
-                self.btn_godmode.texto = "GOD MODE: ATIVADO (ON)"
-                self.btn_godmode.cor_texto = VERDE_NEON
+                self.btn_godmode.definir_texto("GOD MODE: ATIVADO (ON)")
+                self.btn_godmode.definir_cores(cor_texto=VERDE_NEON)
             else:
-                self.btn_godmode.texto = "GOD MODE: DESATIVADO"
-                self.btn_godmode.cor_texto = ROXO_NEON
+                self.btn_godmode.definir_texto("GOD MODE: DESATIVADO")
+                self.btn_godmode.definir_cores(cor_texto=ROXO_NEON)
 
         elif self.modo == "seletor_batalha":
             self.btn_voltar_seletor.atualizar(posicao_mouse, estado_clique_mouse)
             self.btn_limpar_equipe.atualizar(posicao_mouse, estado_clique_mouse)
 
             qtd = len(self.equipe_selecionada)
-            self.btn_iniciar_batalha_custom.texto = f"⚔️ INICIAR ({qtd}/4)"
+            self.btn_iniciar_batalha_custom.definir_texto(f"⚔️ INICIAR ({qtd}/4)")
             if qtd > 0:
-                self.btn_iniciar_batalha_custom.cor_texto = VERDE_NEON
-                self.btn_iniciar_batalha_custom.cor_fundo = (25, 75, 50)
-                self.btn_iniciar_batalha_custom.cor_hover = (40, 130, 80)
+                self.btn_iniciar_batalha_custom.definir_cores(
+                    cor_texto=VERDE_NEON, cor_base=(25, 75, 50), cor_hover=(40, 130, 80)
+                )
             else:
-                self.btn_iniciar_batalha_custom.cor_texto = TEXTO_CINZA
-                self.btn_iniciar_batalha_custom.cor_fundo = (35, 45, 55)
-                self.btn_iniciar_batalha_custom.cor_hover = (45, 55, 65)
+                self.btn_iniciar_batalha_custom.definir_cores(
+                    cor_texto=TEXTO_CINZA, cor_base=(35, 45, 55), cor_hover=(45, 55, 65)
+                )
 
             self.btn_iniciar_batalha_custom.atualizar(posicao_mouse, estado_clique_mouse)
 
@@ -635,10 +639,10 @@ class GerenciadorCheatsTela(TelaBase):
 
         for chave_f, btn_f in self.botoes_filtros.items():
             if self.filtro_verso == chave_f:
-                btn_f.cor_texto = AMARELO_OURO
+                btn_f.definir_cores(cor_texto=AMARELO_OURO)
                 btn_f.cor_borda = AMARELO_OURO
             else:
-                btn_f.cor_texto = TEXTO_CLARO
+                btn_f.definir_cores(cor_texto=TEXTO_CLARO)
                 btn_f.cor_borda = None
             btn_f.desenhar(self.tela)
 
@@ -657,7 +661,7 @@ class GerenciadorCheatsTela(TelaBase):
         x_ini = 50
         y_ini = 236
 
-        pos_mouse = pygame.mouse.get_pos()
+        pos_mouse = getattr(self, "_ultimo_mouse", None) or pygame.mouse.get_pos()
 
         for idx, tmpl in enumerate(lista_visivel):
             col = idx % 4

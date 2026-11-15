@@ -1,9 +1,6 @@
 import json
-import os
 import random
 from Sistemas.Recursos import caminho_dados
-
-CAMINHO_DADOS = caminho_dados()
 
 TOTAL_FASES_NORMAIS = 9
 TOTAL_PARTIDAS_JOGO = 10  # 9 fases normais + 1 combate contra o chefe (partida 10)
@@ -108,23 +105,6 @@ class EventoNeutro:
             dados["derrota"] = self.derrota
         return dados
 
-class FaseAleatoria:
-    def __init__(self, id_fase, nome, descricao, evento, inimigos):
-        self.id_fase = id_fase
-        self.nome = nome
-        self.descricao = descricao
-        self.evento = evento
-        self.inimigos = inimigos
-
-    def para_dict(self):
-        return {
-            "id": self.id_fase,
-            "nome": self.nome,
-            "descricao": self.descricao,
-            "evento": self.evento.para_dict(),
-            "inimigos": self.inimigos,
-        }
-
 def carregar_inimigos():
     try:
         arquivo = caminho_dados("inimigos.json")
@@ -226,14 +206,14 @@ def _criar_inimigo_a_partir_template(
     )
 
 def listar_inimigos_disponiveis(verso=None, incluir_chefes=False):
-    inimigos = BANCO_INIMIGOS
+    inimigos = [i for i in BANCO_INIMIGOS if not i.get("especial", False)]
     if verso:
         inimigos = [i for i in inimigos if i.get("verso") == verso]
     if not incluir_chefes:
         inimigos = [i for i in inimigos if i.get("tipo") != "chefe"]
 
     if not inimigos:
-        inimigos = [i for i in BANCO_INIMIGOS if i.get("tipo") != "chefe"]
+        inimigos = [i for i in BANCO_INIMIGOS if i.get("tipo") != "chefe" and not i.get("especial", False)]
 
     return inimigos
 
@@ -318,48 +298,7 @@ def obter_dialogo_evento(identificador_evento):
             f"• Falha: {resumo_derrota}"
         )
     else:
-        resumos_eventos = {
-            "Um Estranho te convida para beber": (
-                f"{descricao}\n"
-                f"Teste de {atributo} (Dificuldade {dificuldade}):\n"
-                "• Sucesso: +35 HP, +15 MP, +1 Sab e +1 Con.\n"
-                "• Falha: Bebida adulterada (-20 HP e -5 MP)."
-            ),
-            "A porta do achados e perdidos ficou aberta": (
-                f"{descricao}\n"
-                f"Teste de {atributo} (Dificuldade {dificuldade}):\n"
-                "• Sucesso: +1 For, +2 Sucatas, +Poção de Vida, +Bilhete e +Polidor de Itens.\n"
-                "• Falha: Alarme dispara (-15 HP e 3 inimigos fortalecidos)."
-            ),
-            "Comprar com o perigo": (
-                f"{descricao}\n"
-                f"Teste de {atributo} (Dificuldade {dificuldade}):\n"
-                "• Sucesso: Negócio seguro! Acesso à Loja do Perigo para comprar e vender equipamentos.\n"
-                "• Falha: Você é ROUBADO! Perde equipamentos/materiais e sofre emboscada (-20 HP)."
-            ),
-            "Alguem na entrada do bar te chama": (
-                f"{descricao}\n"
-                f"Teste de {atributo} (Dificuldade {dificuldade}):\n"
-                "• Sucesso: +1 Ponto de Atributo, +1 For, +20 HP, +40 XP e atalho (1 inimigo).\n"
-                "• Falha: Emboscada nas sombras (-15 HP, -5 MP e 3 inimigos)."
-            ),
-            "Duelar até cair": (
-                f"{descricao}\n"
-                f"Teste de {atributo} (Dificuldade {dificuldade}):\n"
-                "• Sucesso: +1 For, +20 HP e Duelo 1x1 valendo o DOBRO de XP e Pontos!\n"
-                "• Falha: Golpe baixo (-20 HP e duelo 1x1 mais difícil sem bônus)."
-            ),
-            "Uma Pausa para comprar mantimentos": (
-                f"{descricao}\n"
-                "Pausa segura no balcão do Barista (Sem chance de falha):\n"
-                "• Mantimentos garantidos (+35 HP, +15 MP, +Equipamento, +Poção, +Sucata e +1 For) e acesso livre à Loja!"
-            ),
-        }
-
-        texto_dialogo = resumos_eventos.get(
-            nome,
-            f"{descricao}\nTeste de {atributo} (Dificuldade {dificuldade}).",
-        )
+        texto_dialogo = f"{descricao}\nTeste de {atributo} (Dificuldade {dificuldade})."
 
     return [
         {
@@ -479,13 +418,13 @@ def _executar_teste_evento_neutro(evento, lista_jogadores, inv, rolagem_forcada=
         if perder_mat > 0 and inv.materiais_totais() > 0:
             inv.consumir_materiais(perder_mat)
 
-        if not sucesso and nome == "Comprar com o perigo":
+        if not sucesso and info_resultado.get("roubar_equipamento", False):
             item_roubado_nome = None
             if hasattr(inv, "equipamentos_inventario") and inv.equipamentos_inventario:
                 roubado = inv.equipamentos_inventario.pop(0)
                 item_roubado_nome = getattr(roubado, "nome", "Equipamento")
-            elif hasattr(inv, "todos_equipamentos_equipados") and inv.todos_equipamentos_equipados():
-                equips = inv.todos_equipamentos_equipados()
+            elif hasattr(inv, "todos_equipamentos_equipados") and inv.todos_equipamentos_equipados(incluir_todos=True):
+                equips = inv.todos_equipamentos_equipados(incluir_todos=True)
                 alvo_roubo = next((e for e in equips if getattr(e, "categoria", "") != "arma"), equips[0])
                 inv.desequipar(alvo_roubo)
                 if alvo_roubo in inv.equipamentos_inventario:
@@ -509,7 +448,6 @@ def _executar_teste_evento_neutro(evento, lista_jogadores, inv, rolagem_forcada=
                 ]
                 mensagem = "⚑ 🎲 FALHA! O Perigo te roubou suas sucatas e -20 HP!"
 
-
         consumiveis_lista = info_resultado.get("consumiveis", [])
         for con in consumiveis_lista:
             if isinstance(con, dict):
@@ -521,133 +459,16 @@ def _executar_teste_evento_neutro(evento, lista_jogadores, inv, rolagem_forcada=
                         con.get("mp", 0),
                     )
     else:
-        if nome == "Um Estranho te convida para beber":
-            if sucesso:
-                for jog in lista_jogadores:
-                    jog.hp = min(jog.max_hp, jog.hp + 35)
-                    jog.mp = min(jog.max_mp, jog.mp + 15)
-                    if hasattr(jog, "atributos"):
-                        jog.atributos["Sab"] = jog.atributos.get("Sab", 1) + 1
-                        jog.atributos["Con"] = jog.atributos.get("Con", 1) + 1
-                narrativa = "Você aceitou a bebida com cautela e soube conduzir a conversa. O estranho ficou impressionado, compartilhou conselhos valiosos e uma bebida revigorante."
-                efeitos = ["Recuperou 35 de Vida e 15 de Mana", "Ganhou +1 de Sabedoria", "Ganhou +1 de Constituição"]
-                mensagem = "⚑ 🎲 SUCESSO! Bebida revigorante: +35 HP, +15 MP, +1 Sab e +1 Con!"
-            else:
-                for jog in lista_jogadores:
-                    jog.hp = max(1, jog.hp - 20)
-                    jog.mp = max(0, jog.mp - 5)
-                narrativa = "A bebida era forte demais e estava adulterada. Sua cabeça começou a rodar e seu corpo fraquejou antes do confronto."
-                efeitos = ["Sofreu efeito tóxico (-20 HP)", "Perdeu energia mágica (-5 MP)"]
-                mensagem = "⚑ 🎲 FALHA! A bebida estava adulterada: -20 HP e -5 MP!"
-
-        elif nome == "A porta do achados e perdidos ficou aberta":
-            if sucesso:
-                for jog in lista_jogadores:
-                    if hasattr(jog, "atributos"):
-                        jog.atributos["For"] = jog.atributos.get("For", 1) + 1
-                inv.adicionar_material("Sucata", "Melhora equips.")
-                inv.adicionar_material("Sucata", "Melhora equips.")
-                inv.adicionar_consumivel("Poção de Vida", "Restaura 30 HP", 30, 0)
-                inv.adicionar_bilhete_dormitorio(1)
-                inv.adicionar_polidor_itens(1)
-                narrativa = "Com passos silenciosos e precisos, você entrou na sala e vasculhou as gavetas sem fazer alarde, encontrando suprimentos valiosos deixados para trás."
-                efeitos = ["Ganhou +1 de Força", "Encontrou 2 Sucatas de metal", "Encontrou uma Poção de Vida", "Encontrou um Bilhete do Dormitório", "Encontrou um Polidor de Itens"]
-                mensagem = "⚑ 🎲 SUCESSO! Cofre aberto: +1 For, +2 Sucatas, +Poção, +Bilhete e +Polidor de Itens!"
-            else:
-                for jog in lista_jogadores:
-                    jog.hp = max(1, jog.hp - 15)
-                quantidade_inimigos = 3
-                multiplicador_forca = 1.15
-                narrativa = "Ao tentar alcançar os pertences no fundo, uma prateleira de ferro desabou com estrondo. O alarme disparou e guardas extras vieram correndo!"
-                efeitos = ["Sofreu ferimentos na confusão (-15 HP)", "Três guardas em alerta surgiram para a batalha"]
-                mensagem = "⚑ 🎲 FALHA! O alarme disparou: -15 HP e 3 guardas alertados!"
-
-        elif nome == "Comprar com o perigo":
-            if sucesso:
-                for jog in lista_jogadores:
-                    if hasattr(jog, "atributos"):
-                        jog.atributos["For"] = jog.atributos.get("For", 1) + 1
-                        jog.atributos["Sor"] = jog.atributos.get("Sor", 1) + 1
-                if inv.equipamento_slot is not None:
-                    inv.equipamento_slot.melhorar()
-                if hasattr(inv, "gerar_equipamento_aleatorio") and hasattr(inv, "adicionar_equipamento"):
-                    inv.adicionar_equipamento(inv.gerar_equipamento_aleatorio(), auto_equipar=True)
-                inv.adicionar_consumivel("Poção de Vida", "Restaura 30 HP", 30, 0)
-                narrativa = "Você manteve a guarda alta e não caiu nas conversas do negociante. Impressionado com sua firmeza, ele te vendeu peças raras e um tônico restaurador."
-                efeitos = ["Ganhou +1 de Força e +1 de Sorte", "Equipamento aprimorado em 1 nível", "Adquiriu um novo Equipamento na loja clandestina", "Recebeu uma Poção de Vida"]
-                mensagem = "⚑ 🎲 SUCESSO! Negócio fechado: Equipamento melhorado, +Equipamento, +Poção, +1 For e +1 Sor!"
-            else:
-                for jog in lista_jogadores:
-                    jog.hp = max(1, jog.hp - 20)
-                if inv.materiais_totais() > 0:
-                    inv.consumir_materiais(1)
-                multiplicador_forca = 1.15
-                narrativa = "O vendedor era um trapaceiro. Enquanto mostrava mercadorias falsas, seus comparsas surrupiaram seus pertences e armaram uma emboscada violenta."
-                efeitos = ["Sofreu ferimentos no golpe (-20 HP)", "Perdeu materiais da mochila", "Inimigos chegam fortalecidos e em emboscada"]
-                mensagem = "⚑ 🎲 FALHA! O vendedor te enganou: -20 HP e emboscada!"
-
-        elif nome == "Alguem na entrada do bar te chama":
-            if sucesso:
-                for jog in lista_jogadores:
-                    jog.pontos_atributo = getattr(jog, "pontos_atributo", 0) + 1
-                    jog.hp = min(jog.max_hp, jog.hp + 20)
-                    if hasattr(jog, "atributos"):
-                        jog.atributos["For"] = jog.atributos.get("For", 1) + 1
-                    _conceder_xp_jogador(jog, 40)
-                quantidade_inimigos = 1
-                narrativa = "A figura oculta nas sombras era um antigo veterano de guerra. Ele reconheceu seu potencial, ensinou técnicas secretas e indicou um atalho limpo."
-                efeitos = ["Ganhou 1 Ponto de Atributo", "Ganhou +1 de Força", "Recuperou 20 de Vida", "Recebeu 40 de Experiência", "Enfrentará apenas 1 adversário"]
-                mensagem = "⚑ 🎲 SUCESSO! Treino secreto: +1 Ponto Atributo, +1 For, +20 HP, +40 XP e atalho!"
-            else:
-                for jog in lista_jogadores:
-                    jog.hp = max(1, jog.hp - 15)
-                    jog.mp = max(0, jog.mp - 5)
-                quantidade_inimigos = 3
-                narrativa = "Era uma cilada covarde. Assim que você se aproximou da porta escura, agressores saltaram dos cantos do beco te espancando de surpresa!"
-                efeitos = ["Sofreu agressão de surpresa (-15 HP e -5 MP)", "Cercado por 3 adversários hostis"]
-                mensagem = "⚑ 🎲 FALHA! Era uma armadilha no beco: -15 HP, -5 MP e 3 inimigos!"
-
-        elif nome == "Duelar até cair":
-            quantidade_inimigos = 1
-            if sucesso:
-                for jog in lista_jogadores:
-                    jog.hp = min(jog.max_hp, jog.hp + 20)
-                    if hasattr(jog, "atributos"):
-                        jog.atributos["For"] = jog.atributos.get("For", 1) + 1
-                multiplicador_forca = 1.2
-                multiplicador_recompensa = 2.0
-                narrativa = "Você aceitou o duelo individual com bravura. Com um golpe magistral, você derrubou a guarda do rival, garantindo o dobro de recompensas pelo combate!"
-                efeitos = ["Ganhou +1 de Força", "Recuperou 20 de Vida com o ímpeto da vitória", "Recompensas da batalha multiplicadas em dobro"]
-                mensagem = "⚑ 🎲 SUCESSO! Duelo 1x1 com vantagem: +1 For, +20 HP e Recompensa em DOBRO!"
-            else:
-                for jog in lista_jogadores:
-                    jog.hp = max(1, jog.hp - 20)
-                multiplicador_forca = 1.35
-                multiplicador_recompensa = 1.0
-                narrativa = "O adversário não possuía qualquer honra. Antes que as regras fossem ditas, ele desferiu um golpe traiçoeiro na sua costela e avançou furioso!"
-                efeitos = ["Sofreu um ataque covarde (-20 HP)", "Adversário parte para cima com ferocidade ampliada"]
-                mensagem = "⚑ 🎲 FALHA! Golpe baixo antes do duelo: -20 HP e oponente feroz sem bônus!"
-
+        if sucesso:
+            narrativa = getattr(evento, "descricao", "Você superou o desafio com habilidade.")
+            efeitos = ["Avançou pelo caminho sem contratempos"]
+            mensagem = f"⚑ 🎲 SUCESSO! Desafio '{nome}' superado!"
         else:
-            if sucesso:
-                for jog in lista_jogadores:
-                    jog.hp = min(jog.max_hp, jog.hp + 35)
-                    jog.mp = min(jog.max_mp, jog.mp + 15)
-                    if hasattr(jog, "atributos"):
-                        jog.atributos[atributo_chave] = jog.atributos.get(atributo_chave, 1) + 1
-                inv.adicionar_consumivel("Poção de Vida", "Restaura 30 HP", 30, 0)
-                inv.adicionar_material("Sucata", "Melhora equips.")
-                if hasattr(inv, "gerar_equipamento_aleatorio") and hasattr(inv, "adicionar_equipamento"):
-                    inv.adicionar_equipamento(inv.gerar_equipamento_aleatorio(), auto_equipar=True)
-                narrativa = "O comerciante ofereceu provisões frescas e energéticas. Você se alimentou bem, recuperou o fôlego e reforçou sua preparação física para o próximo embate."
-                efeitos = ["Recuperou 35 de Vida e 15 de Mana", f"Ganhou +1 de {atributo_chave}", "Adquiriu um Equipamento com o comerciante", "Recebeu uma Poção de Vida", "Recebeu Sucata para melhorias"]
-                mensagem = f"⚑ 🎲 SUCESSO! Mantimentos obtidos: +35 HP, +15 MP, +Equipamento, +Poção, +Sucata e +1 {atributo_chave}!"
-            else:
-                for jog in lista_jogadores:
-                    jog.hp = max(1, jog.hp - 15)
-                narrativa = "Os suprimentos estavam estragados e a comida exalava cheiro azedo. Uma pontada forte no estômago te deixou debilitado antes da batalha."
-                efeitos = ["Intoxicação alimentar (-15 HP)", "Sem bônus adicionais de mantimentos"]
-                mensagem = "⚑ 🎲 FALHA! Mantimentos estragados: -15 HP antes da batalha!"
+            for jog in lista_jogadores:
+                jog.hp = max(1, jog.hp - 15)
+            narrativa = "O contratempo no trajeto deixou sua equipe em alerta antes do combate."
+            efeitos = ["Sofreu ferimentos leves (-15 HP)"]
+            mensagem = f"⚑ 🎲 FALHA! Contratempo em '{nome}': -15 HP."
 
     return {
         "evento": evento,
@@ -795,9 +616,9 @@ class GeradorFase:
     EVENTOS_NEUTROS = []
 
     def _carregar_eventos(self):
-        if self.EVENTOS_NEUTROS:
+        if GeradorFase.EVENTOS_NEUTROS:
             return
-        self.EVENTOS_NEUTROS = [_criar_evento_de_dict(d) for d in carregar_eventos()]
+        GeradorFase.EVENTOS_NEUTROS = [_criar_evento_de_dict(d) for d in carregar_eventos()]
 
     def __init__(self, fase_num=1):
         self.fase_num = fase_num
@@ -868,9 +689,9 @@ class GeradorFase:
         return inimigos
 
     def gerar_chefe_verso(self, verso, duas_pessoas=False):
-        chefes = [i for i in BANCO_INIMIGOS if i.get("verso") == verso and i.get("tipo") == "chefe"]
+        chefes = [i for i in BANCO_INIMIGOS if i.get("verso") == verso and i.get("tipo") == "chefe" and not i.get("especial", False)]
         if not chefes:
-            chefes = [i for i in BANCO_INIMIGOS if i.get("tipo") == "chefe"]
+            chefes = [i for i in BANCO_INIMIGOS if i.get("tipo") == "chefe" and not i.get("especial", False)]
         template = random.choice(chefes)
         if duas_pessoas:
             return _criar_inimigo_a_partir_template(
@@ -882,23 +703,3 @@ class GeradorFase:
                 fase_num=TOTAL_PARTIDAS_JOGO,
             )
         return _criar_inimigo_a_partir_template(template, multiplicador=1.5, fase_num=TOTAL_PARTIDAS_JOGO)
-
-    def gerar_fase_aleatoria(self, fase_num=None, verso=None, duas_pessoas=False):
-        fase = max(1, int((self.fase_num if fase_num is None else fase_num) or 1))
-        evento = self.gerar_evento_neutro()
-        quantidade = 1 if evento.nome == "Duelar até cair" else None
-        mult_extra = 1.3 if evento.nome == "Duelar até cair" else 1.0
-        inimigos = self.gerar_inimigos_aleatorios(
-            fase,
-            quantidade=quantidade,
-            verso=verso,
-            multiplicador_extra=mult_extra,
-            duas_pessoas=duas_pessoas,
-        )
-        return FaseAleatoria(
-            f"fase_aleatoria_{fase}",
-            f"Fase Aleatória {fase}",
-            "Uma rota improvisada com inimigos e eventos inesperados.",
-            evento,
-            inimigos,
-        )

@@ -10,6 +10,7 @@ from .Recursos import (
     caminho_fonte,
     caminho_sfx,
     caminho_vfx,
+    caminho_debuff,
 )
 from .Fontes import obter_fonte, obter_fonte_manga, quebrar_texto
 from .SaveSystem import GerenciadorSave, save_global
@@ -76,6 +77,7 @@ __all__ = [
     "caminho_fonte",
     "caminho_sfx",
     "caminho_vfx",
+    "caminho_debuff",
     "obter_fonte",
     "obter_fonte_manga",
     "quebrar_texto",

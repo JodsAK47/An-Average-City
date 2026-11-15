@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional
 import pygame
 
 try:
@@ -36,14 +36,6 @@ class SistemaCutscene:
         self.em_cutscene = False
         self.chefe_atual = ""
         self.verso_atual = ""
-
-    def ativar_filtro_pixel_art(self, ativo: bool = True):
-        """Ativa ou desativa o efeito de pixel art para as cutscenes."""
-        self.filtro_pixel_art_ativo = bool(ativo)
-
-    def definir_tamanho_pixel(self, tamanho: int):
-        """Define o tamanho do bloco de pixel (ex: 3, 4 ou 5 pixels)."""
-        self.tamanho_pixel = max(1, min(16, int(tamanho)))
 
     def criar_camada_pixel_art(
         self,

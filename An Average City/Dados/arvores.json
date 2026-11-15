@@ -17,10 +17,10 @@
         {"id": "F3", "nome": "Energia Reversa", "desc": "Cura 10% do HP máximo ao Usar Foco\nCusto 50", "preco": 50, "pos": [500, 480], "req": ["F2"]},
         {"id": "F4", "nome": "Técnica Maxima", "desc": "Desbloqueia a ultimate do verso\nCusto 100", "preco": 100, "pos": [500, 600], "req": ["F3"]}
     ],
-    "Invocador": [
-        {"id": "I1", "nome": "Vínculo Espiritual", "desc": "Seus minions recebem +25% de HP máximo e +2 em todos os atributos\nCusto 10", "preco": 10, "pos": [500, 240], "req": []},
-        {"id": "I2", "nome": "Comando Tático", "desc": "Aumenta a precisão dos minions em 10% e recupera 1 PM ao crítico ou abate deles\nCusto 20", "preco": 20, "pos": [500, 360], "req": ["I1"]},
-        {"id": "I3", "nome": "Exército de Sombras", "desc": "Aumenta o limite de minions em campo de 2 para 3 e minions absorvem 25% do seu dano\nCusto 50", "preco": 50, "pos": [500, 480], "req": ["I2"]},
-        {"id": "I4", "nome": "Mestre Invocador", "desc": "Desbloqueia a ultimate de Invocador e aumenta o dano dos minions em 20%\nCusto 100", "preco": 100, "pos": [500, 600], "req": ["I3"]}
+    "Cyberpunk": [
+        {"id": "C1", "nome": "Implante Sandevistan", "desc": "Reduz em 20% a velocidade da barra de esquiva e aumenta o valor da esquiva\nCusto 10", "preco": 10, "pos": [500, 240], "req": []},
+        {"id": "C2", "nome": "Sobrecarga Cibernética", "desc": "Seus ataques causam +20% de dano e têm chance de Eletrocutar\nCusto 20", "preco": 20, "pos": [500, 360], "req": ["C1"]},
+        {"id": "C3", "nome": "Coração de Cromo", "desc": "Voce tem 2 ações por turno, com 10% de chance de ficar atordoado no começo dele\nCusto 50", "preco": 50, "pos": [500, 480], "req": ["C2"]},
+        {"id": "C4", "nome": "Cyberpsicose Controlada", "desc": "Desbloqueia a ultimate do verso\nCusto 100", "preco": 100, "pos": [500, 600], "req": ["C3"]}
     ]
 }

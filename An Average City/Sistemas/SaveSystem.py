@@ -1,9 +1,15 @@
 import json
 import os
-from Sistemas.Recursos import caminho_dados, caminho_saves
+from Sistemas.Recursos import caminho_saves
 
 CAMINHO_SAVES = caminho_saves()
 ARQUIVO_SAVE = caminho_saves("save.json")
+
+CONQUISTAS_CHEFES_INICIAIS = (
+    "chefe_sukuna",
+    "chefe_charlie",
+    "chefe_estraga_prazeres",
+)
 
 
 class GerenciadorSave:
@@ -12,6 +18,8 @@ class GerenciadorSave:
         self.total_pontos_acumulados = 0
         self.maior_pontuacao = 0
         self.conquistas = []
+        self.versos_concluidos = []
+        self.david_martins_derrotado = False
         self.member_card_coletado = False
         self.progresso_versos = {}
         self.habilidades_desabilitadas = {}
@@ -34,6 +42,8 @@ class GerenciadorSave:
                 self.total_pontos_acumulados = max(0, int(dados.get("total_pontos_acumulados", self.pontos)))
                 self.maior_pontuacao = max(0, int(dados.get("maior_pontuacao", 0)))
                 self.conquistas = list(dados.get("conquistas", []))
+                self.versos_concluidos = list(dict.fromkeys(dados.get("versos_concluidos", [])))
+                self.david_martins_derrotado = bool(dados.get("david_martins_derrotado", False))
                 self.member_card_coletado = bool(dados.get("member_card_coletado", False))
                 self.progresso_versos = dict(dados.get("progresso_versos", {}))
                 self.habilidades_desabilitadas = {k: list(v) for k, v in dict(dados.get("habilidades_desabilitadas", {})).items()}
@@ -50,6 +60,8 @@ class GerenciadorSave:
                 "total_pontos_acumulados": int(self.total_pontos_acumulados),
                 "maior_pontuacao": int(self.maior_pontuacao),
                 "conquistas": list(self.conquistas),
+                "versos_concluidos": list(self.versos_concluidos),
+                "david_martins_derrotado": bool(self.david_martins_derrotado),
                 "member_card_coletado": bool(self.member_card_coletado),
                 "progresso_versos": dict(self.progresso_versos),
                 "habilidades_desabilitadas": {k: list(v) for k, v in self.habilidades_desabilitadas.items()},
@@ -113,6 +125,9 @@ class GerenciadorSave:
     def esta_desbloqueada(self, id_conquista):
         return id_conquista in self.conquistas
 
+    def derrotou_chefes_iniciais(self):
+        return all(self.esta_desbloqueada(conquista) for conquista in CONQUISTAS_CHEFES_INICIAIS)
+
     def tem_member_card(self):
         return bool(getattr(self, 'member_card_coletado', False))
 
@@ -128,6 +143,8 @@ class GerenciadorSave:
         self.total_pontos_acumulados = 0
         self.maior_pontuacao = 0
         self.conquistas.clear()
+        self.versos_concluidos.clear()
+        self.david_martins_derrotado = False
         self.member_card_coletado = False
         self.progresso_versos.clear()
         self.habilidades_desabilitadas.clear()

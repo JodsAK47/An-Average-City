@@ -1,6 +1,6 @@
 import pygame
-from Sistemas.Fontes import obter_fonte
-from Sistemas.SistemaUI import Botao, TelaBase
+from Sistemas.Fontes import obter_fonte, quebrar_texto
+from Sistemas.SistemaUI import TelaBase
 
 class GerenciadorDialogo(TelaBase):
     def __init__(self, tela):
@@ -163,7 +163,7 @@ class GerenciadorDialogo(TelaBase):
         self.tela.blit(txt_nome, (texto_x, texto_y))
 
         deslocamento_y = texto_y + 42
-        linhas = self._quebrar_texto(texto, self.fonte_texto, texto_w)
+        linhas = quebrar_texto(texto, self.fonte_texto, texto_w)
         for linha in linhas:
             txt_surf = self.fonte_texto.render(linha, True, self.cor_texto)
             self.tela.blit(txt_surf, (texto_x, deslocamento_y))
@@ -188,20 +188,3 @@ class GerenciadorDialogo(TelaBase):
             cor_txt = (255, 255, 255) if selecionado else (200, 200, 200)
             txt_surf = self.fonte_opcoes.render(texto_opcao, True, cor_txt)
             self.tela.blit(txt_surf, txt_surf.get_rect(center=rect.center))
-
-    def _quebrar_texto(self, texto, fonte, largura_maxima):
-        linhas = []
-        for paragrafo in texto.split("\n"):
-            palavras = paragrafo.split()
-            linha_atual = ""
-            for palavra in palavras:
-                teste = f"{linha_atual} {palavra}".strip()
-                if fonte.size(teste)[0] <= largura_maxima:
-                    linha_atual = teste
-                else:
-                    if linha_atual:
-                        linhas.append(linha_atual)
-                    linha_atual = palavra
-            if linha_atual:
-                linhas.append(linha_atual)
-        return linhas

@@ -3,6 +3,8 @@
     "total_pontos_acumulados": 0,
     "maior_pontuacao": 0,
     "conquistas": [],
+    "versos_concluidos": [],
+    "david_martins_derrotado": false,
     "member_card_coletado": false,
     "progresso_versos": {},
     "habilidades_desabilitadas": {}

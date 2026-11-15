@@ -1,10 +1,7 @@
 import pygame
-import os
-import math
 from Sistemas.Recursos import caminho_imagem
 from Sistemas.Fontes import obter_fonte
-from Gameplay.Habilidades import Habilidade
-from Entidades.EntidadeCombate import EntidadeCombate
+from Entidades.EntidadeCombate import EntidadeCombate, aplicar_mascara_transparencia
 
 
 class Santuario(EntidadeCombate):
@@ -63,23 +60,7 @@ class Santuario(EntidadeCombate):
             w_orig, h_orig = img_original.get_size()
             largura_desejada = max(55, int(w_orig * (altura_desejada / max(1, h_orig))))
             img_escala = pygame.transform.scale(img_original, (largura_desejada, altura_desejada)).convert_alpha()
-
-            try:
-                px = pygame.PixelArray(img_escala)
-                w, h = img_escala.get_size()
-                for px_x in range(w):
-                    for px_y in range(h):
-                        color = img_escala.unmap_rgb(px[px_x, px_y])
-                        bright = max(color.r, color.g, color.b)
-                        if bright < 18:
-                            px[px_x, px_y] = (0, 0, 0, 0)
-                        elif bright < 50:
-                            alpha = int(((bright - 18) / 32.0) * 255)
-                            px[px_x, px_y] = (color.r, color.g, color.b, alpha)
-                del px
-            except Exception:
-                img_escala.set_colorkey((0, 0, 0))
-
+            aplicar_mascara_transparencia(img_escala, corte_zero=18, fade_max=50)
             self.imagem = img_escala
         except Exception as e:
             print(f"[Aviso] Falha ao carregar sprite Santuario.png: {e}")
@@ -132,21 +113,16 @@ class Santuario(EntidadeCombate):
         return self.duracao
 
     def receber_dano(self, quantidade):
-        # Trata dano direto como um ataque
+        dano_solicitado = int(quantidade)
+        if dano_solicitado <= 0 or getattr(self, "_hp", 0) <= 0 or getattr(self, "duracao", 0) <= 0:
+            return 0
+        # Cada ataque recebido válido reduz a duração do santuário em 1 golpe.
         self.hp = self._hp - 1
         return int(getattr(self, "max_hp", 100) * 0.25)
 
     def obter_habilidade(self, nome=None):
-        return Habilidade(
-            nome="Cortes Malevolentes",
-            tipo="Magia",
-            dano=15,
-            custo_mp=0,
-            precisao=1.0,
-            descricao="Cortes incessantes que atingem todos os alvos em área.",
-            em_area=True,
-            verso="Feiticeiro",
-        )
+        from Entidades.Minion import criar_habilidade_minion
+        return criar_habilidade_minion("Cortes Malevolentes", self.verso)
 
     def desenhar(self, tela, desenhar_nome=False):
         if getattr(self, "_hp", 0) > 0:

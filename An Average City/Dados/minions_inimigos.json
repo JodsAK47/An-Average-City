@@ -16,17 +16,7 @@
       "Sor": 1
     },
     "ataques": [
-      {
-        "nome": "Cortes Malevolentes",
-        "tipo": "Magia",
-        "dano": 15,
-        "custo_mp": 0,
-        "precisao": 1.0,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": true,
-        "descricao": "Tempestade de cortes contínuos que atinge todos os oponentes em área."
-      }
+      "Cortes Malevolentes"
     ]
   },
   "Fera do Breu": {
@@ -46,28 +36,8 @@
       "Sor": 3
     },
     "ataques": [
-      {
-        "nome": "Mordida Dilacerante",
-        "tipo": "Físico",
-        "dano": 10,
-        "custo_mp": 0,
-        "precisao": 0.9,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": false,
-        "descricao": "Mordida feroz e veloz da fera sombria."
-      },
-      {
-        "nome": "Investida Feroz",
-        "tipo": "Físico",
-        "dano": 14,
-        "custo_mp": 3,
-        "precisao": 0.85,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": false,
-        "descricao": "Bote violento que despedaça a guarda."
-      }
+      "Mordida Dilacerante",
+      "Investida Feroz"
     ]
   },
   "Mãos das Sombras": {
@@ -87,28 +57,8 @@
       "Sor": 2
     },
     "ataques": [
-      {
-        "nome": "Garras Espectrais",
-        "tipo": "Físico",
-        "dano": 8,
-        "custo_mp": 0,
-        "precisao": 0.9,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": false,
-        "descricao": "Garras do breu rasgando a carne do alvo."
-      },
-      {
-        "nome": "Toque da Cegueira",
-        "tipo": "Magia",
-        "dano": 10,
-        "custo_mp": 2,
-        "precisao": 0.88,
-        "efeito": "Cegueira",
-        "chance_efeito": 0.4,
-        "em_area": false,
-        "descricao": "Névoa de trevas que cega o oponente (+20% chance de errar ataques)."
-      }
+      "Garras Espectrais",
+      "Toque da Cegueira"
     ]
   },
   "Tentáculos das Trevas": {
@@ -128,28 +78,8 @@
       "Sor": 2
     },
     "ataques": [
-      {
-        "nome": "Açoite das Trevas",
-        "tipo": "Físico",
-        "dano": 9,
-        "custo_mp": 0,
-        "precisao": 0.88,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": false,
-        "descricao": "Golpe pesado com tentáculos sombrios."
-      },
-      {
-        "nome": "Constrição Gélida",
-        "tipo": "Magia",
-        "dano": 12,
-        "custo_mp": 4,
-        "precisao": 0.82,
-        "efeito": "Congelar",
-        "chance_efeito": 0.35,
-        "em_area": false,
-        "descricao": "Aperto congelante que paralisa a presa."
-      }
+      "Açoite das Trevas",
+      "Constrição Gélida"
     ]
   },
   "Enxame Noturno": {
@@ -169,28 +99,8 @@
       "Sor": 3
     },
     "ataques": [
-      {
-        "nome": "Ferrão Venenoso",
-        "tipo": "Físico",
-        "dano": 7,
-        "custo_mp": 0,
-        "precisao": 0.9,
-        "efeito": "Veneno",
-        "chance_efeito": 0.3,
-        "em_area": false,
-        "descricao": "Picada tóxica que envenena o alvo."
-      },
-      {
-        "nome": "Investida em Nuvem",
-        "tipo": "Físico",
-        "dano": 10,
-        "custo_mp": 3,
-        "precisao": 0.85,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": true,
-        "descricao": "Investida ampla que atinge todos os oponentes."
-      }
+      "Ferrão Venenoso",
+      "Investida em Nuvem"
     ]
   },
   "Torreta Inimiga": {
@@ -210,28 +120,8 @@
       "Sor": 2
     },
     "ataques": [
-      {
-        "nome": "Disparo Sentinela",
-        "tipo": "Distância",
-        "dano": 8,
-        "custo_mp": 0,
-        "precisao": 0.9,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": false,
-        "descricao": "Disparo rápido em rajada."
-      },
-      {
-        "nome": "Granada Fumígena",
-        "tipo": "Distância",
-        "dano": 9,
-        "custo_mp": 2,
-        "precisao": 0.86,
-        "efeito": "Cegueira",
-        "chance_efeito": 0.4,
-        "em_area": false,
-        "descricao": "Dispara projétil fumígeno que cega o inimigo (+20% chance de falha)."
-      }
+      "Disparo Sentinela",
+      "Granada Fumígena"
     ]
   },
   "Pássaro Sombrio": {
@@ -251,28 +141,8 @@
       "Sor": 2
     },
     "ataques": [
-      {
-        "nome": "Bicada Brutal",
-        "tipo": "Físico",
-        "dano": 10,
-        "custo_mp": 0,
-        "precisao": 0.88,
-        "efeito": null,
-        "chance_efeito": 0.0,
-        "em_area": false,
-        "descricao": "Ataque veloz com bico afiado."
-      },
-      {
-        "nome": "Grito Desorientador",
-        "tipo": "Magia",
-        "dano": 11,
-        "custo_mp": 3,
-        "precisao": 0.85,
-        "efeito": "Atordoar",
-        "chance_efeito": 0.3,
-        "em_area": false,
-        "descricao": "Onda sonora estridente que atordoa o oponente."
-      }
+      "Bicada Brutal",
+      "Grito Desorientador"
     ]
   }
 }

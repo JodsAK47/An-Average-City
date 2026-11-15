@@ -796,7 +796,11 @@ class GerenciadorMinigameAtaque:
                     self._finalizar_lutador_combo(errou=True)
             else:
                 # Sincronização automática contínua de carga e liberação
-                espaco_down = bool(teclas_pressionadas[pygame.K_SPACE]) if teclas_pressionadas is not None else False
+                espaco_down = (
+                    bool(teclas_pressionadas[pygame.K_SPACE] or teclas_pressionadas[pygame.K_RETURN])
+                    if teclas_pressionadas is not None
+                    else False
+                )
                 mouse_down = bool(estado_clique_mouse[0]) if estado_clique_mouse else False
 
                 if espaco_down or (mouse_down and self.rect_painel.collidepoint(posicao_mouse)):
@@ -819,29 +823,6 @@ class GerenciadorMinigameAtaque:
                                 self._finalizar_lutador_forca()
 
                 if self.tempo_restante <= 0 and not self.concluido:
-                    self._finalizar_lutador_forca()
-
-        # Garantia absoluta de finalização quando tempo zera
-        if self.tempo_restante <= 0 and not self.concluido:
-            if self.classe_normalizada == "Invocador":
-                if self.estilo == 1:
-                    self._finalizar_invocador_spam()
-                else:
-                    self._finalizar_invocador_sequencia()
-            elif self.classe_normalizada == "Distância":
-                if self.estilo == 1:
-                    self._finalizar_distancia_alvo()
-                else:
-                    self._finalizar_distancia_alinhamento()
-            elif self.classe_normalizada == "Magia":
-                if self.estilo == 1:
-                    self._finalizar_feiticeiro_esfera()
-                else:
-                    self._finalizar_feiticeiro_arrastar(999.0)
-            else:
-                if self.estilo == 1:
-                    self._finalizar_lutador_combo(errou=True)
-                else:
                     self._finalizar_lutador_forca()
 
         return None
@@ -917,10 +898,6 @@ class GerenciadorMinigameAtaque:
     def _finalizar_distancia_alinhamento(self):
         if self.tempo_restante <= 0 and not self.alin_barra1_travada:
             self._definir_resultado(0.70, "❌ TEMPO ESGOTADO! (MIRA PERDIDA)", sucesso=False, desempenho=0.0, chance_erro=1.0)
-            try:
-                tocar_sfx("Dano.wav", volume_relativo=0.5)
-            except Exception:
-                pass
             return
 
         diff = abs(self.alin_barra1_x - self.alin_barra2_x)
@@ -932,29 +909,13 @@ class GerenciadorMinigameAtaque:
         if erro_total <= 30.0:
             self._definir_resultado(1.45, "🎯 MIRA PERFEITAMENTE ALINHADA! (+45%)", sucesso=True, screen_shake=True, desempenho=1.0, chance_erro=0.0)
             self._gerar_particulas(self.alin_barra2_x, self.y_painel + 155, (255, 220, 80), 12)
-            try:
-                tocar_sfx("Acerto.wav", volume_relativo=1.0)
-            except Exception:
-                pass
         elif erro_total <= 75.0:
             self._definir_resultado(1.25, "🏹 MIRA SINCRONIZADA (+25%)", sucesso=True, desempenho=0.85, chance_erro=0.0)
             self._gerar_particulas(self.alin_barra2_x, self.y_painel + 155, (50, 210, 255), 8)
-            try:
-                tocar_sfx("Acerto.wav", volume_relativo=0.8)
-            except Exception:
-                pass
         elif erro_total <= 125.0:
             self._definir_resultado(1.05, "MIRA PARCIAL (+5%)", sucesso=True, desempenho=0.55, chance_erro=0.20)
-            try:
-                tocar_sfx("Interface.wav", volume_relativo=0.7)
-            except Exception:
-                pass
         else:
             self._definir_resultado(0.75, "❌ MIRA DESALINHADA (-25%)", sucesso=False, desempenho=0.0, chance_erro=1.0)
-            try:
-                tocar_sfx("Dano.wav", volume_relativo=0.5)
-            except Exception:
-                pass
 
     def _finalizar_feiticeiro_esfera(self):
         taxa = self.esfera_tempo_dentro / max(1, self.tempo_total)
@@ -972,29 +933,13 @@ class GerenciadorMinigameAtaque:
             self._definir_resultado(1.40, "⚡ RITUAL PERFEITO NO NÚCLEO (+40%)", sucesso=True, screen_shake=True, desempenho=1.0, chance_erro=0.0)
             self._gerar_particulas(self.drag_destino[0], self.drag_destino[1], (255, 220, 90), qtd=12)
             self._gerar_particulas(self.drag_destino[0], self.drag_destino[1], (200, 110, 255), qtd=10)
-            try:
-                tocar_sfx("Acerto.wav", volume_relativo=1.0)
-            except Exception:
-                pass
         elif dist_dest <= self.drag_raio_destino:
             self._definir_resultado(1.25, "✨ GLIFO ATIVADO COM SUCESSO (+25%)", sucesso=True, desempenho=0.85, chance_erro=0.0)
             self._gerar_particulas(self.drag_destino[0], self.drag_destino[1], (180, 130, 255), qtd=8)
-            try:
-                tocar_sfx("Acerto.wav", volume_relativo=0.85)
-            except Exception:
-                pass
         elif dist_dest <= self.drag_raio_destino * 1.5:
             self._definir_resultado(1.05, "RITUAL PARCIAL (+5%)", sucesso=True, desempenho=0.60, chance_erro=0.20)
-            try:
-                tocar_sfx("Interface.wav", volume_relativo=0.7)
-            except Exception:
-                pass
         else:
             self._definir_resultado(0.75, "❌ RITUAL INCOMPLETO (-25%)", sucesso=False, desempenho=0.0, chance_erro=1.0)
-            try:
-                tocar_sfx("Dano.wav", volume_relativo=0.5)
-            except Exception:
-                pass
 
     def _finalizar_lutador_combo(self, errou: bool = False):
         if self.combo_atual == 0:

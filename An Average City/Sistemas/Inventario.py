@@ -9,30 +9,34 @@ class Consumivel:
         self.nome = nome
         self.descricao = descricao
         self.quantidade = 1
+        self.tipo = "consumivel"
+        self.atributos_bonus = {}
         self.rec_hp = rec_hp
         self.rec_mp = rec_mp
         self.arquivo_imagem = arquivo_imagem or obter_arquivo_imagem_item(nome)
 
     def usar(self, alvo=None):
-        if self.quantidade > 0:
-            alvo_final = alvo if alvo is not None else _obter_personagem_padrao()
-            fator = 2 if getattr(alvo_final, "tem_talento", lambda t: False)("S2") else 1
-            alvo_final.hp = min(alvo_final.max_hp, alvo_final.hp + (self.rec_hp * fator))
-            alvo_final.mp = min(alvo_final.max_mp, alvo_final.mp + (self.rec_mp * fator))
-            self.quantidade -= 1
+        if self.quantidade <= 0:
+            return False
+        alvo_final = alvo if alvo is not None else _obter_personagem_padrao()
+        fator = 2 if getattr(alvo_final, "tem_talento", lambda t: False)("S2") else 1
+        alvo_final.hp = min(alvo_final.max_hp, alvo_final.hp + (self.rec_hp * fator))
+        alvo_final.mp = min(alvo_final.max_mp, alvo_final.mp + (self.rec_mp * fator))
+        self.quantidade -= 1
 
-            try:
-                from Sistemas.GerenciadorAudio import tocar_sfx
-                nome_norm = (self.nome or "").lower()
-                if any(termo in nome_norm for termo in ["marmita", "comida", "refeicao", "refeição", "alimento", "pao", "pão"]):
-                    tocar_sfx("Comer.wav")
-                else:
-                    tocar_sfx("Beber.wav")
-            except Exception:
-                pass
+        try:
+            from Sistemas.GerenciadorAudio import tocar_sfx
+            nome_norm = (self.nome or "").lower()
+            if any(termo in nome_norm for termo in ["marmita", "comida", "refeicao", "refeição", "alimento", "pao", "pão"]):
+                tocar_sfx("Comer.wav")
+            else:
+                tocar_sfx("Beber.wav")
+        except Exception:
+            pass
 
-            from Sistemas.Conquistas import sistema_conquistas
-            sistema_conquistas.desbloquear("alquimista")
+        from Sistemas.Conquistas import sistema_conquistas
+        sistema_conquistas.desbloquear("alquimista")
+        return True
 
 class Material:
     def __init__(self, nome, descricao, arquivo_imagem=None):
@@ -42,7 +46,7 @@ class Material:
         self.tipo = "material"
         self.arquivo_imagem = arquivo_imagem or obter_arquivo_imagem_item(nome)
 
-    def usar(self):
+    def usar(self, alvo=None):
         return False
 
 class ItemBilhete:
@@ -103,8 +107,8 @@ MAPA_SPRITES_ITENS = {
     "poção de vida": "Pocao Cura.png",
     "pocao de mana": "Pocao Mana.png",
     "poção de mana": "Pocao Mana.png",
-    "pocao de vida reforcada": "Pocao Cura.png",
-    "poção de vida reforçada": "Pocao Cura.png",
+    "pocao de vida reforcada": "Pocao Recuperacao.png",
+    "poção de vida reforçada": "Pocao Recuperacao.png",
     "cha de mana concentrado": "Cha.png",
     "chá de mana concentrado": "Cha.png",
     "cafe expresso revigorante": "Cafe.png",
@@ -166,6 +170,7 @@ MAPA_SPRITES_ITENS = {
 
 ARTES_OFICIAIS_INVENTARIO = {
     "Pocao Cura.png",
+    "Pocao Recuperacao.png",
     "Pocao Mana.png",
     "Cha.png",
     "Cafe.png",
@@ -334,9 +339,13 @@ CATALOGO_EQUIPAMENTOS = obter_catalogo_equipamentos()
 def obter_todos_itens_catalogo():
     dados = carregar_dados_itens()
     if isinstance(dados, dict):
-        if "itens" in dados:
-            return list(dados["itens"])
         todos = []
+        for chave in ("consumiveis", "materiais", "especiais", "equipamentos"):
+            lista = dados.get(chave)
+            if isinstance(lista, list):
+                todos.extend(lista)
+        if todos:
+            return todos
         for v in dados.values():
             if isinstance(v, list):
                 todos.extend(v)
@@ -353,14 +362,6 @@ def obter_item_por_id_ou_nome(identificador):
         if item.get("id", "").lower() == id_alvo or item.get("nome", "").lower() == id_alvo:
             return dict(item)
     return None
-
-def obter_itens_por_tipo(tipo):
-    t = str(tipo).strip().lower()
-    return [i for i in obter_todos_itens_catalogo() if i.get("tipo", "").lower() == t]
-
-def obter_itens_por_categoria(categoria):
-    c = str(categoria).strip().lower()
-    return [i for i in obter_todos_itens_catalogo() if i.get("categoria", "").lower() == c]
 
 
 def _normalizar_categoria(categoria, nome=""):
@@ -477,7 +478,21 @@ class Equipamento:
         return True
 
     def usar(self, alvo=None):
-        return inventario_global.equipar(self)
+        return inventario_global.equipar(self, jogador=alvo)
+
+
+class _SlotsEquipamentoJogador:
+    """Armazena os slots de equipamentos vestidos por um jogador adicional."""
+
+    def __init__(self, jogador=None):
+        self.jogador = jogador
+        self.equipamento_slot = None
+        self.capacete_slot = None
+        self.peitoral_slot = None
+        self.calca_slot = None
+        self.bota_slot = None
+        self.amuletos_slots = []
+        self.equipamento_selecionado = None
 
 
 class SistemaInventario:
@@ -494,8 +509,47 @@ class SistemaInventario:
         self.amuletos_slots = []
         self.equipamentos_inventario = []
         self.equipamento_selecionado = None
+        self._slots_extras = {}
         self.item_bilhete = ItemBilhete(quantidade=1)
         self.item_polidor = ItemPolidor(quantidade=0)
+
+    def _eh_jogador_principal(self, jogador):
+        if jogador is None:
+            return True
+        padrao = _obter_personagem_padrao()
+        return padrao is not None and jogador is padrao
+
+    def _obter_registro(self, jogador=None, criar=True):
+        if self._eh_jogador_principal(jogador):
+            return self
+        chave = id(jogador)
+        reg = self._slots_extras.get(chave)
+        if reg is None and criar:
+            reg = _SlotsEquipamentoJogador(jogador)
+            self._slots_extras[chave] = reg
+        return reg
+
+    def _todos_registros(self):
+        return [self] + list(self._slots_extras.values())
+
+    def definir_equipamento_selecionado(self, equipamento, jogador=None):
+        reg = self._obter_registro(jogador)
+        reg.equipamento_selecionado = equipamento
+
+    def obter_dono_equipamento(self, equipamento):
+        if equipamento is None:
+            return None
+        for reg in self._todos_registros():
+            slots_normais = (
+                reg.equipamento_slot,
+                reg.capacete_slot,
+                reg.peitoral_slot,
+                reg.calca_slot,
+                reg.bota_slot,
+            )
+            if any(eq is equipamento for eq in slots_normais) or any(am is equipamento for am in reg.amuletos_slots):
+                return _obter_personagem_padrao() if reg is self else reg.jogador
+        return None
 
     @property
     def capacete(self):
@@ -577,14 +631,8 @@ class SistemaInventario:
     def obter_polidores_itens(self):
         return self.item_polidor.quantidade
 
-    def obter_polidores(self):
-        return self.item_polidor.quantidade
-
     def adicionar_polidor_itens(self, quantidade=1):
         self.item_polidor.quantidade += max(0, int(quantidade))
-
-    def adicionar_polidor(self, quantidade=1):
-        self.adicionar_polidor_itens(quantidade)
 
     def consumir_polidor_itens(self, quantidade=1):
         qtd = max(0, int(quantidade))
@@ -593,24 +641,27 @@ class SistemaInventario:
             return True
         return False
 
-    def obter_equipamento_alvo(self):
-        if self.equipamento_selecionado is not None and self.equipamento_selecionado in self.todos_equipamentos_equipados():
-            return self.equipamento_selecionado
-        if self.equipamento_slot is not None:
-            return self.equipamento_slot
-        equipados = self.todos_equipamentos_equipados()
+    def obter_equipamento_alvo(self, jogador=None):
+        reg = self._obter_registro(jogador, criar=False)
+        if reg is None:
+            return None
+        equipados = self.todos_equipamentos_equipados(jogador=jogador)
+        if reg.equipamento_selecionado is not None and reg.equipamento_selecionado in equipados:
+            return reg.equipamento_selecionado
+        if reg.equipamento_slot is not None:
+            return reg.equipamento_slot
         if equipados:
             return equipados[0]
         return None
 
-    def usar_polidor_itens(self, equipamento=None):
-        alvo = equipamento if equipamento is not None else self.obter_equipamento_alvo()
+    def usar_polidor_itens(self, equipamento=None, jogador=None):
+        alvo = equipamento if equipamento is not None else self.obter_equipamento_alvo(jogador=jogador)
         if alvo is None or self.item_polidor.quantidade <= 0:
             return False
         return self.item_polidor.usar(alvo)
 
-    def usar_polidor(self, equipamento=None):
-        return self.usar_polidor_itens(equipamento)
+    def usar_polidor(self, equipamento=None, jogador=None):
+        return self.usar_polidor_itens(equipamento, jogador=jogador)
 
     def adicionar_consumivel(self, nome, descricao, rec_hp, rec_mp):
         for c in self.consumiveis:
@@ -626,23 +677,24 @@ class SistemaInventario:
                 return
         self.materiais.append(Material(nome, descricao))
 
-    def pode_equipar(self, equipamento, substituir=True):
+    def pode_equipar(self, equipamento, substituir=True, jogador=None):
         if not isinstance(equipamento, Equipamento):
             return False
+        reg = self._obter_registro(jogador)
         cat = getattr(equipamento, "categoria", "arma")
         if cat == "amuleto":
-            if any(a.nome == equipamento.nome for a in self.amuletos_slots):
+            if any(a.nome == equipamento.nome for a in reg.amuletos_slots):
                 return False
-            if len(self.amuletos_slots) >= self.MAX_AMULETOS:
+            if len(reg.amuletos_slots) >= self.MAX_AMULETOS:
                 return False
             return True
         if not substituir:
             mapa_slot = {
-                "arma": self.equipamento_slot,
-                "capacete": self.capacete_slot,
-                "peitoral": self.peitoral_slot,
-                "calca": self.calca_slot,
-                "bota": self.bota_slot,
+                "arma": reg.equipamento_slot,
+                "capacete": reg.capacete_slot,
+                "peitoral": reg.peitoral_slot,
+                "calca": reg.calca_slot,
+                "bota": reg.bota_slot,
             }
             return mapa_slot.get(cat) is None
         return True
@@ -655,28 +707,33 @@ class SistemaInventario:
         "bota": "bota_slot",
     }
 
-    def equipar(self, equipamento):
+    def equipar(self, equipamento, jogador=None):
         if equipamento is None:
             return False
         from Sistemas.Conquistas import sistema_conquistas
+        reg = self._obter_registro(jogador)
         cat = getattr(equipamento, "categoria", "arma")
 
+        dono_anterior = self.obter_dono_equipamento(equipamento)
+        if dono_anterior is not None and self._obter_registro(dono_anterior, criar=False) is not reg:
+            self.desequipar(equipamento, jogador=dono_anterior)
+
         if cat == "amuleto":
-            if any(a.nome == equipamento.nome for a in self.amuletos_slots):
+            if any(a.nome == equipamento.nome for a in reg.amuletos_slots):
                 return False
-            if len(self.amuletos_slots) >= self.MAX_AMULETOS:
+            if len(reg.amuletos_slots) >= self.MAX_AMULETOS:
                 return False
             if equipamento in self.equipamentos_inventario:
                 self.equipamentos_inventario.remove(equipamento)
-            self.amuletos_slots.append(equipamento)
-            self.equipamento_selecionado = equipamento
+            reg.amuletos_slots.append(equipamento)
+            reg.equipamento_selecionado = equipamento
             sistema_conquistas.desbloquear('moda_em_primeiro_lugar')
             return True
 
         attr_slot = self._MAPA_ATRIBUTO_SLOT.get(cat, "equipamento_slot")
-        atual = getattr(self, attr_slot)
+        atual = getattr(reg, attr_slot)
         if atual is equipamento:
-            self.equipamento_selecionado = equipamento
+            reg.equipamento_selecionado = equipamento
             return True
 
         indice_origem = None
@@ -691,57 +748,74 @@ class SistemaInventario:
         elif indice_origem is not None:
             self.equipamentos_inventario.pop(indice_origem)
 
-        setattr(self, attr_slot, equipamento)
-        self.equipamento_selecionado = equipamento
+        setattr(reg, attr_slot, equipamento)
+        reg.equipamento_selecionado = equipamento
         sistema_conquistas.desbloquear('moda_em_primeiro_lugar')
         return True
 
-    def desequipar(self, equipamento_ou_categoria):
+    def _desequipar_no_registro(self, reg, equipamento_ou_categoria):
         alvo = None
         if isinstance(equipamento_ou_categoria, Equipamento):
             alvo = equipamento_ou_categoria
-            if alvo is self.equipamento_slot:
-                self.equipamento_slot = None
-            elif alvo is self.capacete_slot:
-                self.capacete_slot = None
-            elif alvo is self.peitoral_slot:
-                self.peitoral_slot = None
-            elif alvo is self.calca_slot:
-                self.calca_slot = None
-            elif alvo is self.bota_slot:
-                self.bota_slot = None
-            elif alvo in self.amuletos_slots:
-                self.amuletos_slots.remove(alvo)
+            if alvo is reg.equipamento_slot:
+                reg.equipamento_slot = None
+            elif alvo is reg.capacete_slot:
+                reg.capacete_slot = None
+            elif alvo is reg.peitoral_slot:
+                reg.peitoral_slot = None
+            elif alvo is reg.calca_slot:
+                reg.calca_slot = None
+            elif alvo is reg.bota_slot:
+                reg.bota_slot = None
+            elif alvo in reg.amuletos_slots:
+                reg.amuletos_slots.remove(alvo)
             else:
-                return False
+                return None
         elif isinstance(equipamento_ou_categoria, str):
             cat = _normalizar_categoria(equipamento_ou_categoria)
-            if cat == "capacete" and self.capacete_slot:
-                alvo, self.capacete_slot = self.capacete_slot, None
-            elif cat == "peitoral" and self.peitoral_slot:
-                alvo, self.peitoral_slot = self.peitoral_slot, None
-            elif cat == "calca" and self.calca_slot:
-                alvo, self.calca_slot = self.calca_slot, None
-            elif cat == "bota" and self.bota_slot:
-                alvo, self.bota_slot = self.bota_slot, None
-            elif cat == "amuleto" and self.amuletos_slots:
-                alvo = self.amuletos_slots.pop(0)
-            elif cat == "arma" and self.equipamento_slot:
-                alvo, self.equipamento_slot = self.equipamento_slot, None
+            if cat == "capacete" and reg.capacete_slot:
+                alvo, reg.capacete_slot = reg.capacete_slot, None
+            elif cat == "peitoral" and reg.peitoral_slot:
+                alvo, reg.peitoral_slot = reg.peitoral_slot, None
+            elif cat == "calca" and reg.calca_slot:
+                alvo, reg.calca_slot = reg.calca_slot, None
+            elif cat == "bota" and reg.bota_slot:
+                alvo, reg.bota_slot = reg.bota_slot, None
+            elif cat == "amuleto" and reg.amuletos_slots:
+                alvo = reg.amuletos_slots.pop(0)
+            elif cat == "arma" and reg.equipamento_slot:
+                alvo, reg.equipamento_slot = reg.equipamento_slot, None
+        return alvo
+
+    def desequipar(self, equipamento_ou_categoria, jogador=None):
+        alvo = None
+        reg_alvo = None
+        if jogador is not None:
+            reg = self._obter_registro(jogador, criar=False)
+            if reg is not None:
+                alvo = self._desequipar_no_registro(reg, equipamento_ou_categoria)
+                reg_alvo = reg
+        else:
+            for reg in self._todos_registros():
+                alvo = self._desequipar_no_registro(reg, equipamento_ou_categoria)
+                if alvo is not None:
+                    reg_alvo = reg
+                    break
 
         if alvo is not None:
             if alvo not in self.equipamentos_inventario:
                 self.equipamentos_inventario.append(alvo)
-            if self.equipamento_selecionado is alvo:
-                self.equipamento_selecionado = self.obter_equipamento_alvo()
+            if reg_alvo is not None and reg_alvo.equipamento_selecionado is alvo:
+                dono_reg = None if reg_alvo is self else reg_alvo.jogador
+                reg_alvo.equipamento_selecionado = self.obter_equipamento_alvo(jogador=dono_reg)
             return True
         return False
 
-    def adicionar_equipamento(self, equipamento, auto_equipar=True):
+    def adicionar_equipamento(self, equipamento, auto_equipar=True, jogador=None):
         if not isinstance(equipamento, Equipamento):
             return None
-        if auto_equipar and self.pode_equipar(equipamento, substituir=False):
-            self.equipar(equipamento)
+        if auto_equipar and self.pode_equipar(equipamento, substituir=False, jogador=jogador):
+            self.equipar(equipamento, jogador=jogador)
         else:
             if equipamento not in self.equipamentos_inventario:
                 self.equipamentos_inventario.append(equipamento)
@@ -774,68 +848,85 @@ class SistemaInventario:
         for _ in range(max(0, int(quantidade))):
             self.adicionar_material("Sucata", "Material para melhorar equipamentos.")
 
-    def comprar_equipamento_loja(self, categoria=None, custo=None):
+    def comprar_equipamento_loja(self, categoria=None, custo=None, jogador=None):
         custo_final = self.custo_compra_equipamento() if custo is None else max(0, int(custo))
         if self.materiais_totais() < custo_final:
             return None
         if custo_final > 0:
             self.consumir_materiais(custo_final)
         novo_eq = self.gerar_equipamento_aleatorio(categoria=categoria)
-        self.adicionar_equipamento(novo_eq, auto_equipar=True)
+        self.adicionar_equipamento(novo_eq, auto_equipar=True, jogador=jogador)
         return novo_eq
 
-    def obter_slots_equipamento(self):
+    def obter_slots_equipamento(self, jogador=None):
+        reg = self._obter_registro(jogador, criar=False)
+        if reg is None:
+            return [
+                ("ARMA", None), ("CAP", None), ("PEIT", None), ("CALÇ", None), ("BOTA", None),
+                ("AMU1", None), ("AMU2", None), ("AMU3", None),
+            ]
         return [
-            ("ARMA", self.equipamento_slot),
-            ("CAP", self.capacete_slot),
-            ("PEIT", self.peitoral_slot),
-            ("CALÇ", self.calca_slot),
-            ("BOTA", self.bota_slot),
-            ("AMU1", self.amuletos_slots[0] if len(self.amuletos_slots) > 0 else None),
-            ("AMU2", self.amuletos_slots[1] if len(self.amuletos_slots) > 1 else None),
-            ("AMU3", self.amuletos_slots[2] if len(self.amuletos_slots) > 2 else None),
+            ("ARMA", reg.equipamento_slot),
+            ("CAP", reg.capacete_slot),
+            ("PEIT", reg.peitoral_slot),
+            ("CALÇ", reg.calca_slot),
+            ("BOTA", reg.bota_slot),
+            ("AMU1", reg.amuletos_slots[0] if len(reg.amuletos_slots) > 0 else None),
+            ("AMU2", reg.amuletos_slots[1] if len(reg.amuletos_slots) > 1 else None),
+            ("AMU3", reg.amuletos_slots[2] if len(reg.amuletos_slots) > 2 else None),
         ]
 
-    def todos_equipamentos_equipados(self):
+    def todos_equipamentos_equipados(self, jogador=None, incluir_todos=False):
         equips = []
-        for eq in (self.equipamento_slot, self.capacete_slot, self.peitoral_slot, self.calca_slot, self.bota_slot):
-            if eq is not None:
-                equips.append(eq)
-        for am in self.amuletos_slots:
-            if am is not None:
-                equips.append(am)
+        registros = self._todos_registros() if incluir_todos else [self._obter_registro(jogador, criar=False)]
+        for reg in registros:
+            if reg is None:
+                continue
+            for eq in (reg.equipamento_slot, reg.capacete_slot, reg.peitoral_slot, reg.calca_slot, reg.bota_slot):
+                if eq is not None:
+                    equips.append(eq)
+            for am in reg.amuletos_slots:
+                if am is not None:
+                    equips.append(am)
         return equips
 
-    def obter_bonus_atributo(self, atributo):
+    def obter_bonus_atributo(self, atributo, jogador=None):
         total = 0
-        for eq in self.todos_equipamentos_equipados():
+        for eq in self.todos_equipamentos_equipados(jogador=jogador):
             total += int(eq.atributos_bonus.get(atributo, 0))
         return total
 
-    def obter_todos_bonus_atributos(self):
+    def obter_todos_bonus_atributos(self, jogador=None):
         totais = {"For": 0, "Agi": 0, "Con": 0, "Sab": 0, "Int": 0, "Sor": 0}
-        for eq in self.todos_equipamentos_equipados():
+        for eq in self.todos_equipamentos_equipados(jogador=jogador):
             for k, v in eq.atributos_bonus.items():
                 totais[k] = totais.get(k, 0) + int(v)
         return totais
 
-    def obter_bonus_defesa(self):
+    def obter_bonus_defesa(self, jogador=None):
         """Retorna o bônus total de armadura e defesa plana concedido pelos equipamentos equipados."""
         total = 0
-        for eq in self.todos_equipamentos_equipados():
+        for eq in self.todos_equipamentos_equipados(jogador=jogador):
             total += int(eq.atributos_bonus.get("Def", 0))
             total += int(eq.atributos_bonus.get("Armadura", 0))
             total += int(eq.atributos_bonus.get("Defesa", 0))
         return total
 
-    def limpar_equipamentos(self):
-        """Desequipa todos os itens de todos os slots de equipamento."""
-        self.equipamento_slot = None
-        self.capacete_slot = None
-        self.peitoral_slot = None
-        self.calca_slot = None
-        self.bota_slot = None
-        self.amuletos_slots = []
+    def limpar_equipamentos(self, jogador=None):
+        """Desequipa todos os itens de todos os slots de equipamento (ou apenas do jogador informado)."""
+        registros = self._todos_registros() if jogador is None else [self._obter_registro(jogador, criar=False)]
+        for reg in registros:
+            if reg is None:
+                continue
+            reg.equipamento_slot = None
+            reg.capacete_slot = None
+            reg.peitoral_slot = None
+            reg.calca_slot = None
+            reg.bota_slot = None
+            reg.amuletos_slots = []
+            reg.equipamento_selecionado = None
+        if jogador is None:
+            self._slots_extras.clear()
 
     def adicionar_item_por_id(self, item_id, quantidade=1):
         item = obter_item_por_id_ou_nome(item_id)
@@ -869,14 +960,8 @@ class SistemaInventario:
     def resetar(self):
         self.consumiveis.clear()
         self.materiais.clear()
-        self.equipamento_slot = None
-        self.capacete_slot = None
-        self.peitoral_slot = None
-        self.calca_slot = None
-        self.bota_slot = None
-        self.amuletos_slots.clear()
+        self.limpar_equipamentos()
         self.equipamentos_inventario.clear()
-        self.equipamento_selecionado = None
         self.item_bilhete = ItemBilhete(quantidade=1)
         self.item_polidor = ItemPolidor(quantidade=0)
 
@@ -889,12 +974,13 @@ class SistemaInventario:
         itens.extend(self.equipamentos_inventario)
         return itens
 
-    def custo_melhoria(self, equipamento=None):
-        alvo = equipamento if equipamento is not None else self.obter_equipamento_alvo()
+    def custo_melhoria(self, equipamento=None, jogador=None):
+        alvo = equipamento if equipamento is not None else self.obter_equipamento_alvo(jogador=jogador)
         if not alvo:
             return 0
         custo = alvo.nivel * 2
-        if getattr(_obter_personagem_padrao(), "tem_talento", lambda t: False)("S2"):
+        alvo_jogador = jogador if jogador is not None else _obter_personagem_padrao()
+        if getattr(alvo_jogador, "tem_talento", lambda t: False)("S2"):
             custo = max(1, custo // 2)
         return custo
 

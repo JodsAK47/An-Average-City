@@ -1,10 +1,9 @@
 import os
-import math
 import random
 from typing import Optional, Tuple
 import pygame
 
-from Sistemas.SistemaUI import TelaBase, Botao
+from Sistemas.SistemaUI import TelaBase
 from Sistemas.Fontes import obter_fonte
 from Sistemas.Recursos import caminho_cenario, caminho_imagem
 
@@ -33,6 +32,12 @@ class GerenciadorGameOver(TelaBase):
             "primaria": (0, 195, 240),
             "borda": (0, 140, 180),
             "tag": "VERSO: AGENTE",
+            "img": "GameOver Agente.png",
+        },
+        "cyberpunk": {
+            "primaria": (245, 210, 40),
+            "borda": (0, 235, 255),
+            "tag": "VERSO: CYBERPUNK",
             "img": "GameOver Agente.png",
         },
     }

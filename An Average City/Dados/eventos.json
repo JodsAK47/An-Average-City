@@ -228,7 +228,7 @@
   },
   {
     "nome": "Uma Pausa para comprar mantimentos",
-    "tipo": "Ajuda",
+    "tipo": "ajuda",
     "descricao": "O barista te oferece produtos e um balcão seguro enquanto a próxima luta não começa.",
     "atributo-chave": "For",
     "dificuldade": 10,

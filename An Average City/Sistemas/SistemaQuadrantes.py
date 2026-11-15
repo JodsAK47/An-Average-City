@@ -4,7 +4,7 @@ Divide a tela em dois quadrantes (Leste e Oeste) e gerencia para qual lado
 as entidades/inimigos estão viradas com base no seu ponto na tela.
 """
 
-from typing import Tuple, Union, Optional, Dict, Any
+from typing import Tuple, Optional, Dict, Any
 import pygame
 
 

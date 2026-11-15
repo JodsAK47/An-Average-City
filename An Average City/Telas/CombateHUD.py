@@ -3,13 +3,11 @@ Módulo auxiliar para renderização da HUD, barras de status e efeitos visuais 
 Desacopla a responsabilidade puramente visual da lógica de turnos e combate.
 """
 
-import math
 from typing import Optional, List, Tuple, Any, Callable
 import pygame
 from Sistemas.Fontes import quebrar_texto
 from Sistemas.SistemaEfeitos import (
     desenhar_icones_entidade,
-    desenhar_tooltip_efeito,
     carregar_icone_efeito,
     entidade_anula_debuff_foco,
     obter_icone_recurso_entidade,
