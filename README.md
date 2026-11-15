@@ -10,7 +10,7 @@ O projeto é um RPG por turnos com foco em combate, seleção de classes, árvor
 
 A estrutura atual do projeto está organizada em módulos e telas, com a lógica principal localizada em:
 
-- [An Average City/Main.py](An%20Average%20City/Main.py)
+- [An Average City/Sistemas/MotorJogo.py](An%20Average%20City/Sistemas/MotorJogo.py)
 - [An Average City/Telas](An%20Average%20City/Telas)
 - [An Average City/Sistemas](An%20Average%20City/Sistemas)
 - [An Average City/Entidades](An%20Average%20City/Entidades)
@@ -24,8 +24,9 @@ A estrutura atual do projeto está organizada em módulos e telas, com a lógica
 - Seleção de classes e seleção de verso
 - Fluxo principal do jogo em estados
 - Combate por turnos com ordem de ação dinâmica
-- Sistema de esquiva interativa durante o ataque inimigo
-- Fases e geração de inimigos por template
+- Minigames interativos de ataque por classe (Físico, Distância, Magia e Invocador) e de esquiva durante o ataque inimigo
+- Animações de ataque por tipo (teleporte com pêndulo para Físico, recuo com disparo de projéteis com suporte a `"giro"` para Distância/Magia e balanço para Invocação)
+- Estrutura de **9 fases normais + Chefe Final (10 partidas)**, com geração aleatória de inimigos por faixa de fase (1–3, 4–6 e 7–9)
 - Várias telas do jogo: menu, combate, descanso, loja, conquistas, configurações, game over e vitória
 
 ### Progressão e RPG
@@ -40,7 +41,7 @@ A estrutura atual do projeto está organizada em módulos e telas, com a lógica
 ### Inventário e economia
 
 - Inventário com consumíveis, materiais e equipamentos
-- Equipamentos por categoria: arma, capacete, peitoral, calça, bota e amuleto
+- Equipamentos por categoria: arma, capacete, peitoral, calça, bota e amuleto (com troca de posição entre mochila e slot equipado sem perda de itens)
 - Melhoria e polimento de itens
 - Loja com compra e venda
 - Loja segura e loja clandestina
@@ -56,7 +57,7 @@ A estrutura atual do projeto está organizada em módulos e telas, com a lógica
 
 ### Conteúdo extra
 
-- Modo cooperativo de 2 jogadores
+- Modo cooperativo de 2 jogadores com escalonamento próprio de inimigos, chefe, IA e recuperação pós-batalha
 - Acesso restrito por Member Card
 - Eventos neutros com testes de atributo e recompensas/penalidades
 - Sistema de conquistas e feedback visual
@@ -105,28 +106,40 @@ A estrutura atual do projeto está organizada em módulos e telas, com a lógica
 
 ### Pré-requisitos
 
-- Python 3.13
-- Biblioteca pygame
+- Python 3.10+ (Recomendado 3.13)
+- Dependências listadas em requirements.txt
 
-### Instalação
-
-```bash
-pip install pygame
-```
-
-### Execução
-
-No diretório do projeto:
+### Instalação de dependências
 
 ```bash
-python Main.py
+pip install -r requirements.txt
 ```
 
-O projeto esta em uma pasta com subdiretório, [An Average City/Main.py](An%20Average%20City/Main.py), execute a partir da pasta correta:
+### Execução Padronizada (Direto da Raiz)
+
+O jogo conta com um ponto de entrada padronizado (`main.py`) que configura caminhos e diretórios automaticamente:
+
+```bash
+python main.py
+# ou
+py main.py
+```
+
+### Execução dos Testes Automatizados
+
+```bash
+python main.py --test
+# ou
+py -m unittest discover tests
+```
+
+### Execução Alternativa (Subpasta)
+
+Também é possível executar diretamente a partir da subpasta do jogo:
 
 ```bash
 cd "An Average City"
-python Main.py
+python Sistemas/MotorJogo.py
 ```
 
 ## 📁 Estrutura principal
@@ -135,20 +148,37 @@ python Main.py
 An-Avarage-City/
 ├── README.md
 ├── README(Start).md
+├── main.py
 ├── An Average City/
-│   ├── Main.py
 │   ├── Entidades/
 │   ├── Gameplay/
 │   ├── Sistemas/
+│   │   ├── MotorJogo.py
 │   ├── Telas/
 │   ├── Saves/
 │   ├── Dados/
 │   └── Sprites/
+├── tests/
 └── OSTs/
 ```
 
 ## 📝 Observação
 
 Este README foi atualizado para refletir o estado real do projeto conforme a implementação atual no código. O arquivo anterior estava desatualizado e descrevia uma versão mais antiga do jogo.
+
+---
+
+## 👥 Autores & Equipe do Projeto
+
+Desenvolvido para a disciplina de **Programação Orientada a Objetos** no **IFRN Campus Caicó**:
+- **Jusfran Medeiros do Nascimento** (*JodsAK47*)
+- **Luis Felipe Torres Josué** (*Gold*)
+- **Martiniano Dantas**
+
+---
+
+## 📄 Licença
+
+Este projeto é desenvolvido para fins educacionais e estudo de desenvolvimento de jogos 2D, lógica de programação e arquitetura de software orientada a objetos.
 
 Projeto desenvolvido como estudo de programação orientada a objetos, lógica de jogos e desenvolvimento com Python e Pygame.
