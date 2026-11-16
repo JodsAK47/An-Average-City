@@ -19,6 +19,7 @@ if not pygame.get_init():
 pygame.display.set_mode((1000, 800))
 
 from Sistemas.SaveSystem import save_global
+from Sistemas.Conquistas import sistema_conquistas
 from Telas.TelaVerso import GerenciadorVerso
 
 
@@ -30,6 +31,8 @@ class TestVersoCyberpunk(unittest.TestCase):
         self.enterContext(patch.multiple(
             save_global,
             conquistas=[],
+            versos_concluidos=[],
+            david_martins_derrotado=False,
             progresso_versos={},
             habilidades_desabilitadas={},
             pontos=0,
@@ -46,19 +49,22 @@ class TestVersoCyberpunk(unittest.TestCase):
         tela.atualizar_eventos(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1), posicao)
         return tela.atualizar_eventos(pygame.event.Event(pygame.MOUSEBUTTONUP, button=1), posicao)
 
-    def test_apenas_as_tres_conquistas_dos_chefes_revelam_cyberpunk(self):
-        for quantidade in range(4):
-            for conquistas in combinations(CONQUISTAS_CHEFES, quantidade):
-                with self.subTest(conquistas=conquistas):
-                    save_global.conquistas[:] = ["chefe_derrotado", "vitoria_cyberpunk", *conquistas]
-                    tela = GerenciadorVerso(self.superficie)
-                    esperado = ["Sobrevivente", "Agente", "Feiticeiro"]
-                    if quantidade == 3:
-                        esperado.append("Cyberpunk")
-                    self.assertEqual(tela.versos, esperado)
-                    self.assertEqual(set(tela.esferas_rects), set(esperado))
+    def test_apenas_derrotar_david_revela_cyberpunk_independente_das_conquistas(self):
+        for david_derrotado in (False, True):
+            for quantidade in range(4):
+                for conquistas in combinations(CONQUISTAS_CHEFES, quantidade):
+                    with self.subTest(david_derrotado=david_derrotado, conquistas=conquistas):
+                        save_global.david_martins_derrotado = david_derrotado
+                        save_global.conquistas[:] = ["chefe_derrotado", "vitoria_cyberpunk", *conquistas]
+                        tela = GerenciadorVerso(self.superficie)
+                        esperado = ["Sobrevivente", "Agente", "Feiticeiro"]
+                        if david_derrotado:
+                            esperado.append("Cyberpunk")
+                        self.assertEqual(tela.versos, esperado)
+                        self.assertEqual(set(tela.esferas_rects), set(esperado))
 
     def test_area_do_verso_oculto_nao_permite_selecao(self):
+        save_global.conquistas[:] = CONQUISTAS_CHEFES
         tela = GerenciadorVerso(self.superficie)
         for modo in ("menu", "visualizacao"):
             with self.subTest(modo=modo):
@@ -68,8 +74,8 @@ class TestVersoCyberpunk(unittest.TestCase):
                 self.assertIsNone(tela.habilidade_foco)
         self.salvar.assert_not_called()
 
-    def test_terceira_conquista_revela_na_mesma_tela_e_recupera_talentos(self):
-        save_global.conquistas[:] = CONQUISTAS_CHEFES[:2]
+    def test_vitoria_sobre_david_revela_na_mesma_tela_e_recupera_talentos(self):
+        save_global.conquistas[:] = CONQUISTAS_CHEFES
         save_global.progresso_versos["Cyberpunk"] = ["C1", "C2", "C4"]
         save_global.habilidades_desabilitadas["Cyberpunk"] = ["C2"]
         tela = GerenciadorVerso(self.superficie)
@@ -77,7 +83,9 @@ class TestVersoCyberpunk(unittest.TestCase):
         self.assertEqual(tela.progresso_por_verso["Cyberpunk"], ["C1", "C2", "C4"])
         self.assertTrue(tela.arvores_por_verso["Cyberpunk"])
 
-        save_global.desbloquear_conquista(CONQUISTAS_CHEFES[2])
+        with patch.object(sistema_conquistas, "_notificar_progresso_easter_egg"), \
+                patch.object(sistema_conquistas, "verificar_conquistas_especiais", return_value=False):
+            self.assertTrue(sistema_conquistas.registrar_vitoria_david())
         tela.sincronizar_habilidades_ativas()
         self.assertIn("Cyberpunk", tela.versos)
         self.clicar(tela, tela.esferas_rects["Cyberpunk"].center)
@@ -88,6 +96,7 @@ class TestVersoCyberpunk(unittest.TestCase):
 
     def test_perder_requisitos_oculta_selecao_sem_apagar_progresso(self):
         save_global.conquistas[:] = CONQUISTAS_CHEFES
+        save_global.david_martins_derrotado = True
         save_global.progresso_versos["Cyberpunk"] = ["C1"]
         tela = GerenciadorVerso(self.superficie)
         self.clicar(tela, tela.esferas_rects["Cyberpunk"].center)
@@ -95,7 +104,7 @@ class TestVersoCyberpunk(unittest.TestCase):
         tela.habilidade_foco = tela.arvores_por_verso["Cyberpunk"][0]
         tela.aviso = "Ultimate desbloqueada para Cyberpunk!"
 
-        save_global.conquistas.remove("chefe_charlie")
+        save_global.david_martins_derrotado = False
         tela.sincronizar_habilidades_ativas()
         self.assertNotIn("Cyberpunk", tela.versos)
         self.assertNotIn("Cyberpunk", tela.esferas_rects)
@@ -109,6 +118,7 @@ class TestVersoCyberpunk(unittest.TestCase):
 
     def test_reset_do_save_oculta_novamente_o_verso(self):
         save_global.conquistas[:] = CONQUISTAS_CHEFES
+        save_global.david_martins_derrotado = True
         tela = GerenciadorVerso(self.superficie)
         self.clicar(tela, tela.esferas_rects["Cyberpunk"].center)
         save_global.resetar_tudo()
@@ -119,6 +129,7 @@ class TestVersoCyberpunk(unittest.TestCase):
 
     def test_confirmacao_desbloqueada_aplica_talentos_solo_e_cooperativo(self):
         save_global.conquistas[:] = CONQUISTAS_CHEFES
+        save_global.david_martins_derrotado = True
         save_global.progresso_versos["Cyberpunk"] = ["C1", "C4"]
         segundo_jogador = SimpleNamespace(talentos=set(), ultimates_desbloqueadas=set())
         for alvo in (None, segundo_jogador):

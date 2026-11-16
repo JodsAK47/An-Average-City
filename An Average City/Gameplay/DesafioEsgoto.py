@@ -53,7 +53,7 @@ class GerenciadorDesafioEsgoto(TelaBase):
             self.verso_tela = GerenciadorVerso(self.tela)
             self.verso_tela.modo = "visualizacao"
             self.verso_tela.alvo_personagem = personagem
-            self.verso_tela.aviso = "Escolha seu Verso para enfrentar David Martins"
+            self.verso_tela.aviso = "Escolha seu Verso para enfrentar David Martinez"
             self.classes_tela = GerenciadorClasses(self.tela)
             self.preparacao = GerenciadorPreparacaoEsgoto(self.tela)
             self.loja = GerenciadorLoja(self.tela)
@@ -105,7 +105,7 @@ class GerenciadorDesafioEsgoto(TelaBase):
 
         self.loja.configurar_loja("barista", sucesso=True)
         self.loja.titulo_tela = "SUPRIMENTOS DOS ESGOTOS"
-        self.loja.subtitulo_tela = "Troque sucatas por provisões e equipamentos antes de enfrentar David Martins."
+        self.loja.subtitulo_tela = "Troque sucatas por provisões e equipamentos antes de enfrentar David Martinez."
         self.loja.btn_sair.definir_texto("VOLTAR À PREPARAÇÃO")
         self.inventario.jogadores = [personagem]
         self.inventario.btn_continuar.definir_texto("VOLTAR À PREPARAÇÃO")
@@ -133,7 +133,7 @@ class GerenciadorDesafioEsgoto(TelaBase):
         self.combate.fundo_luta_redimensionado = None
         self.combate.fundo_luta_tamanho = None
         self.combate.musica_luta = MUSICA_DESAFIO
-        self.combate.mensagem_log = "David Martins aguarda nas profundezas dos esgotos!"
+        self.combate.mensagem_log = "David Martinez aguarda nas profundezas dos esgotos!"
         gerenciador_musica.tocar(MUSICA_DESAFIO)
         self.etapa = "combate"
         return True
@@ -165,7 +165,7 @@ class GerenciadorDesafioEsgoto(TelaBase):
                 return self.encerrar()
             if resultado in self.verso_tela.versos:
                 self.verso = resultado
-                self.classes_tela.aviso = f"{resultado} | Escolha sua classe para enfrentar David Martins"
+                self.classes_tela.aviso = f"{resultado} | Escolha sua classe para enfrentar David Martinez"
                 self.etapa = "classe"
         elif self.etapa == "classe":
             resultado = self.classes_tela.atualizar_eventos(evento, posicao_mouse)

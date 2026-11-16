@@ -200,7 +200,7 @@
   {
     "max_hp": 65,
     "max_mp": 15,
-    "arquivo_imagem": "Maldição 4.png",
+    "arquivo_imagem": "Maxbot.png",
     "nome": "MaxBot",
     "ataques": [
       "Gelo",
@@ -260,8 +260,8 @@
   {
     "max_hp": 44,
     "max_mp": 10,
-    "arquivo_imagem": "Torreta.png",
-    "nome": "Mercenário Maelstrom",
+    "arquivo_imagem": "Maelstrom.png",
+    "nome": "Maelstrom",
     "ataques": [
       "Choque de Cromo",
       "Tiro de Pistola"
@@ -279,8 +279,8 @@
   {
     "max_hp": 65,
     "max_mp": 16,
-    "arquivo_imagem": "pixil_cyber.png",
-    "nome": "Cyberpsicopata",
+    "arquivo_imagem": "Bozo.png",
+    "nome": "Bozo",
     "ataques": [
       "Corte Mantis Inimigo",
       "Sobrecarga Neural"
@@ -298,7 +298,7 @@
   {
     "max_hp": 155,
     "max_mp": 40,
-    "arquivo_imagem": "Confinamento.png",
+    "arquivo_imagem": "Adam Smasher.png",
     "nome": "Adam Smasher",
     "ataques": [
       "Canhão de Ombro",
@@ -319,8 +319,8 @@
   {
     "max_hp": 620,
     "max_mp": 42,
-    "arquivo_imagem": "pixil_cyber.png",
-    "nome": "David Martins",
+    "arquivo_imagem": "David Martinez.png",
+    "nome": "David Martinez",
     "ataques": [
       "Soco de David",
       "Rajada de Sandevistan",

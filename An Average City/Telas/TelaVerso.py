@@ -91,7 +91,7 @@ class GerenciadorVerso(TelaBase):
 
     def atualizar_versos_disponiveis(self):
         self.versos = ["Sobrevivente", "Agente", "Feiticeiro"]
-        if save_global.derrotou_chefes_iniciais():
+        if save_global.david_martins_derrotado:
             self.versos.append("Cyberpunk")
 
         esferas = {

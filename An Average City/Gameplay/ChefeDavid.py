@@ -5,7 +5,7 @@ from Gameplay.GeracaoFases import BANCO_INIMIGOS
 
 
 def criar_david(x=740, y=400):
-    dados = next(template for template in BANCO_INIMIGOS if template.get("nome") == "David Martins")
+    dados = next(template for template in BANCO_INIMIGOS if template.get("nome") == "David Martinez")
     david = Inimigo(
         x=x,
         y=y,

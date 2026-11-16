@@ -145,7 +145,7 @@ python Sistemas/MotorJogo.py
 ## 📁 Estrutura principal
 
 ```text
-An-Avarage-City/
+An Average City/
 ├── README.md
 ├── README(Start).md
 ├── main.py

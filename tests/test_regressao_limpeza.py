@@ -324,9 +324,7 @@ class TestRegressaoLimpeza(unittest.TestCase):
         self.assertEqual(SPRITES_POR_VERSO["Cyberpunk"], "CYBERC.png")
 
         surf = pygame.Surface((1000, 800))
-        with patch("Telas.TelaVerso.save_global.conquistas", [
-            "chefe_sukuna", "chefe_charlie", "chefe_estraga_prazeres",
-        ]):
+        with patch("Telas.TelaVerso.save_global.david_martins_derrotado", True):
             tela_verso = GerenciadorVerso(surf)
         self.assertIn("Cyberpunk", tela_verso.versos)
         self.assertIn("Cyberpunk", tela_verso.esferas_rects)

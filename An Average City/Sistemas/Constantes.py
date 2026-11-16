@@ -6,6 +6,8 @@ Padroniza identificadores de Versos, Classes, Atributos e evita duplicação de 
 import unicodedata
 from enum import Enum
 
+NOME_JOGO = "An Average City"
+
 LARGURA_TELA = 1000
 ALTURA_TELA = 800
 

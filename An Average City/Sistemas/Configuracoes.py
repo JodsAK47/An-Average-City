@@ -2,6 +2,7 @@ import json
 import os
 from typing import Tuple, List, Optional
 import pygame
+from Sistemas.Constantes import NOME_JOGO
 from Sistemas.Recursos import caminho_saves, caminho_dados
 
 ARQUIVO_CONFIG = caminho_saves("config.json")
@@ -154,6 +155,7 @@ class GerenciadorConfiguracoes:
         flags = pygame.FULLSCREEN if self.tela_cheia else pygame.RESIZABLE
         tamanho = (0, 0) if self.tela_cheia else (self.largura, self.altura)
         nova_superficie = pygame.display.set_mode(tamanho, flags)
+        pygame.display.set_caption(NOME_JOGO)
         return nova_superficie
 
     def obter_volume_geral(self) -> float:

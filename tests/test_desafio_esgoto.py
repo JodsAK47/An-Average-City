@@ -40,6 +40,7 @@ class TestDesafioEsgoto(unittest.TestCase):
         self.enterContext(patch.multiple(
             save_global,
             conquistas=list(CONQUISTAS_CHEFES),
+            david_martins_derrotado=False,
             progresso_versos={},
             habilidades_desabilitadas={},
         ))
@@ -144,16 +145,17 @@ class TestDesafioEsgoto(unittest.TestCase):
 
     def test_david_e_exclusivo_e_combate_usa_cenario_e_musica_do_esgoto(self):
         david = criar_david()
-        self.assertEqual((david.nome, david.tipo, david.especial), ("David Martins", "chefe", True))
+        self.assertEqual((david.nome, david.tipo, david.especial), ("David Martinez", "chefe", True))
+        self.assertEqual(david.arquivo_imagem, "David Martinez.png")
         self.assertEqual(david.mp, david.max_mp)
         self.assertTrue(any(david.obter_habilidade(nome).custo_mp == 0 for nome in david.ataques))
-        self.assertNotIn("David Martins", [dados["nome"] for dados in listar_inimigos_disponiveis(incluir_chefes=True)])
+        self.assertNotIn("David Martinez", [dados["nome"] for dados in listar_inimigos_disponiveis(incluir_chefes=True)])
         self.assertEqual(GeradorFase().gerar_chefe_verso("Cyberpunk").nome, "Adam Smasher")
-        desafio = self.preparar("Cyberpunk", "Distância")
+        desafio = self.preparar("Agente", "Distância")
         self.assertTrue(desafio.iniciar_combate())
         self.assertEqual(desafio.etapa, "combate")
         inimigos = [entidade for entidade in desafio.combate.ordem_turnos if desafio.combate.eh_inimigo(entidade)]
-        self.assertEqual([inimigo.nome for inimigo in inimigos], ["David Martins"])
+        self.assertEqual([inimigo.nome for inimigo in inimigos], ["David Martinez"])
         self.assertEqual(desafio.combate.musica_luta, "Batalha Esgoto.mp3")
         self.musica.assert_called_with("Batalha Esgoto.mp3")
         esperado = pygame.image.load(caminho_cenario("Batalha Esgotos.png")).convert()

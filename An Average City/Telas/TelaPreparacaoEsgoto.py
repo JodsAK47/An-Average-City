@@ -54,7 +54,7 @@ class GerenciadorPreparacaoEsgoto(TelaBase):
                 cor_texto=TEXTO_SECUNDARIO, fonte_tamanho=13,
             ),
             "lutar": Botao(
-                centro_x + 15, 640, 370, 65, "ENFRENTAR DAVID MARTINS",
+                centro_x + 15, 640, 370, 65, "ENFRENTAR DAVID MARTINEZ",
                 (25, 115, 115), (30, 165, 160), 370, 65,
                 cor_texto=TEXTO, fonte_tamanho=16,
             ),
@@ -64,7 +64,7 @@ class GerenciadorPreparacaoEsgoto(TelaBase):
         self.verso = verso
         self.classe = classe
         self.resultado = None
-        self.botoes["lutar"].definir_texto("ENFRENTAR DAVID MARTINS")
+        self.botoes["lutar"].definir_texto("ENFRENTAR DAVID MARTINEZ")
         for botao in self.botoes.values():
             botao.pressionado = False
 
@@ -104,10 +104,10 @@ class GerenciadorPreparacaoEsgoto(TelaBase):
 
         x = self.painel.x + 45
         self._texto("DESAFIO DOS ESGOTOS", (x, 80), self.fonte_secao, CIANO)
-        self._texto("DAVID MARTINS", (x, 116), self.fonte_titulo)
+        self._texto("DAVID MARTINEZ", (x, 116), self.fonte_titulo)
         mensagens = {
-            "vitoria": ("David Martins foi derrotado. Você pode se preparar para outro confronto.", (105, 230, 150)),
-            "derrota": ("David Martins venceu. Reorganize seu equipamento antes de tentar novamente.", (255, 145, 130)),
+            "vitoria": ("David Martinez foi derrotado. Você pode se preparar para outro confronto.", (105, 230, 150)),
+            "derrota": ("David Martinez venceu. Reorganize seu equipamento antes de tentar novamente.", (255, 145, 130)),
             "fugiu": ("Você recuou da luta. Prepare-se antes de voltar à arena.", (245, 215, 115)),
         }
         mensagem, cor_mensagem = mensagens.get(

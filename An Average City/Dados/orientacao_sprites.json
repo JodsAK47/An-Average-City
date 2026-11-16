@@ -60,6 +60,26 @@
         "orientacao_nativa": "direita",
         "descricao": "Rei das Maldições Sukuna (desenhado com pose e olhar para a direita)"
     },
+    "David Martinez.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "David Martinez (olhar e postura voltados para a direita)"
+    },
+    "Adam Smasher.png": {
+        "orientacao_nativa": "frontal",
+        "descricao": "Adam Smasher (rosto e armadura em postura frontal)"
+    },
+    "Bozo.png": {
+        "orientacao_nativa": "frontal",
+        "descricao": "Bozo (rosto e postura frontais)"
+    },
+    "Maxbot.png": {
+        "orientacao_nativa": "frontal",
+        "descricao": "MaxBot (capacete e armadura em postura frontal)"
+    },
+    "Maelstrom.png": {
+        "orientacao_nativa": "direita",
+        "descricao": "Maelstrom (olhar e postura voltados para a direita)"
+    },
     "Maldição 4.png": {
         "orientacao_nativa": "direita",
         "descricao": "Maldição Grau 4 (olhos e boca orientados para a direita)"

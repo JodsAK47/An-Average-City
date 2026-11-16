@@ -163,7 +163,7 @@ class TestConquistasEspeciais(unittest.TestCase):
     def test_descricao_nao_revela_os_requisitos(self):
         descricao = self.sistema.mapa_conquistas["easter_egg"].como_liberar.lower()
         self.assertTrue(descricao)
-        for pista in ("sobrevivente", "agente", "feiticeiro", "cyberpunk", "david", "martins", "zere", "zerar"):
+        for pista in ("sobrevivente", "agente", "feiticeiro", "cyberpunk", "david", "martins", "martinez", "zere", "zerar"):
             self.assertNotIn(pista, descricao)
 
     def test_platina_exige_todas_as_outras_incluindo_easter_egg(self):
@@ -249,15 +249,18 @@ class TestConquistasEspeciais(unittest.TestCase):
         self.assertEqual(set(save_global.versos_concluidos), {"Sobrevivente", "Cyberpunk"})
 
     def test_david_conta_imediatamente_na_vitoria_mas_nao_na_derrota_simultanea(self):
-        derrota = self.preparar_vitoria(partida=1, total=1, campanha=False, nome_chefe="David Martins")
-        personagem.hp = 0
-        derrota.atualizar((0, 0), (False, False, False))
-        self.assertFalse(save_global.david_martins_derrotado)
-        vitoria = self.preparar_vitoria(partida=1, total=1, campanha=False, nome_chefe="David Martins")
-        vitoria.atualizar((0, 0), (False, False, False))
-        self.assertTrue(save_global.david_martins_derrotado)
-        self.assertEqual(save_global.versos_concluidos, [])
-        self.assertGreater(vitoria.cooldown_feedback, 0)
+        for nome_chefe in ("David Martinez", "David Martins", "David"):
+            with self.subTest(nome_chefe=nome_chefe):
+                save_global.david_martins_derrotado = False
+                derrota = self.preparar_vitoria(partida=1, total=1, campanha=False, nome_chefe=nome_chefe)
+                personagem.hp = 0
+                derrota.atualizar((0, 0), (False, False, False))
+                self.assertFalse(save_global.david_martins_derrotado)
+                vitoria = self.preparar_vitoria(partida=1, total=1, campanha=False, nome_chefe=nome_chefe)
+                vitoria.atualizar((0, 0), (False, False, False))
+                self.assertTrue(save_global.david_martins_derrotado)
+                self.assertEqual(save_global.versos_concluidos, [])
+                self.assertGreater(vitoria.cooldown_feedback, 0)
 
     def test_sair_do_desafio_restaura_personagem_sem_desfazer_conquista(self):
         save_global.conquistas[:] = ["chefe_sukuna", "chefe_charlie", "chefe_estraga_prazeres"]
@@ -265,7 +268,7 @@ class TestConquistasEspeciais(unittest.TestCase):
         atributos_anteriores = personagem.atributos
         desafio = GerenciadorDesafioEsgoto(self.superficie)
         self.assertTrue(desafio.iniciar())
-        desafio.verso = "Cyberpunk"
+        desafio.verso = "Feiticeiro"
         self.assertTrue(desafio.confirmar_classe("Magia"))
         self.assertTrue(desafio.iniciar_combate())
         for inimigo in desafio.combate.ordem_turnos:

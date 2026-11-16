@@ -11,6 +11,7 @@ except Exception:
     pass
 
 import pygame
+from Sistemas.Constantes import NOME_JOGO
 from Telas import (
     GerenciadorMenu,
     GerenciadorIntro,
@@ -57,7 +58,7 @@ tela_cheia = sistema_config.obter_tela_cheia()
 tela_real = sistema_config.aplicar_video()
 if tela_real is None:
     tela_real = pygame.display.set_mode((LARGURA, ALTURA), pygame.RESIZABLE)
-pygame.display.set_caption("An Average City")
+pygame.display.set_caption(NOME_JOGO)
 relogio = pygame.time.Clock()
 
 intro_tela = GerenciadorIntro(tela)

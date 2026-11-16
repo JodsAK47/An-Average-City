@@ -2906,7 +2906,7 @@ class GerenciadorJogo(TelaBase):
 
                 from Sistemas.Inventario import inventario_global
                 inimigos_derrotados = [e for e in self.ordem_turnos if self.eh_inimigo(e)]
-                if any(getattr(e, "nome", "").strip().lower() in ("david", "david martins")
+                if any(getattr(e, "nome", "").strip().lower() in ("david", "david martins", "david martinez")
                        for e in inimigos_derrotados):
                     sistema_conquistas.registrar_vitoria_david()
                 self.ultimo_chefe_derrotado = None

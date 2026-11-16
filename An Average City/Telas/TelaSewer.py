@@ -199,7 +199,7 @@ class GerenciadorSewerTela(TelaBase):
 
         if (not self.modal_aberto and save_global.derrotou_chefes_iniciais()
                 and self.rect_porta_restrita.collidepoint(posicao_mouse)):
-            texto = self.fonte_tooltip.render("ENTRAR NAS GALERIAS // Desafio de David Martins", True, CIANO)
+            texto = self.fonte_tooltip.render("ENTRAR NAS GALERIAS // Desafio de David Martinez", True, CIANO)
             caixa = texto.get_rect(midtop=(self.rect_porta_restrita.centerx, self.rect_porta_restrita.bottom + 12)).inflate(16, 10)
             caixa.clamp_ip(self.tela.get_rect())
             pygame.draw.rect(self.tela, COR_FUNDO, caixa, border_radius=5)
