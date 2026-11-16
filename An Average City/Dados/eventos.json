@@ -1,0 +1,310 @@
+[
+  {
+    "nome": "Um Estranho te convida para beber",
+    "tipo": "neutro",
+    "descricao": "Um estranho te convida para beber.",
+    "atributo-chave": "Sab",
+    "dificuldade": 10,
+    "vitoria": {
+      "resumo": "+35 HP, +15 MP, +1 Sab e +1 Con.",
+      "narrativa": "Você aceitou a bebida com cautela e soube conduzir a conversa. O estranho ficou impressionado, compartilhou conselhos valiosos e uma bebida revigorante.",
+      "efeitos": [
+        "Recuperou 35 de Vida e 15 de Mana",
+        "Ganhou +1 de Sabedoria",
+        "Ganhou +1 de Constituição"
+      ],
+      "mensagem": "⚑ 🎲 SUCESSO! Bebida revigorante: +35 HP, +15 MP, +1 Sab e +1 Con!",
+      "hp": 35,
+      "mp": 15,
+      "atributos": {
+        "Sab": 1,
+        "Con": 1
+      },
+      "quantidade_inimigos": null,
+      "multiplicador_forca": 1.0,
+      "multiplicador_recompensa": 1.0
+    },
+    "derrota": {
+      "resumo": "Bebida adulterada (-20 HP e -5 MP).",
+      "narrativa": "A bebida era forte demais e estava adulterada. Sua cabeça começou a rodar e seu corpo fraquejou antes do confronto.",
+      "efeitos": [
+        "Sofreu efeito tóxico (-20 HP)",
+        "Perdeu energia mágica (-5 MP)"
+      ],
+      "mensagem": "⚑ 🎲 FALHA! A bebida estava adulterada: -20 HP e -5 MP!",
+      "hp": -20,
+      "mp": -5,
+      "quantidade_inimigos": null,
+      "multiplicador_forca": 1.0,
+      "multiplicador_recompensa": 1.0
+    }
+  },
+  {
+    "nome": "A porta do achados e perdidos ficou aberta",
+    "tipo": "neutro",
+    "descricao": "Tentar invadir é perigoso mas pode trazer coisas boas",
+    "atributo-chave": "Agi",
+    "dificuldade": 10,
+    "vitoria": {
+      "resumo": "+1 For, +2 Sucatas, +Poção de Vida, +Bilhete e +Polidor de Itens.",
+      "narrativa": "Com passos silenciosos e precisos, você entrou na sala e vasculhou as gavetas sem fazer alarde, encontrando suprimentos valiosos deixados para trás.",
+      "efeitos": [
+        "Ganhou +1 de Força",
+        "Encontrou 2 Sucatas de metal",
+        "Encontrou uma Poção de Vida",
+        "Encontrou um Bilhete do Dormitório",
+        "Encontrou um Polidor de Itens"
+      ],
+      "mensagem": "⚑ 🎲 SUCESSO! Cofre aberto: +1 For, +2 Sucatas, +Poção, +Bilhete e +Polidor de Itens!",
+      "atributos": {
+        "For": 1
+      },
+      "materiais": [
+        {
+          "nome": "Sucata",
+          "descricao": "Melhora equips.",
+          "quantidade": 2
+        }
+      ],
+      "consumiveis": [
+        {
+          "nome": "Poção de Vida",
+          "descricao": "Restaura 30 HP",
+          "hp": 30,
+          "mp": 0,
+          "quantidade": 1
+        }
+      ],
+      "bilhetes_dormitorio": 1,
+      "polidores_itens": 1,
+      "quantidade_inimigos": null,
+      "multiplicador_forca": 1.0,
+      "multiplicador_recompensa": 1.0
+    },
+    "derrota": {
+      "resumo": "Alarme dispara (-15 HP e 3 inimigos fortalecidos).",
+      "narrativa": "Ao tentar alcançar os pertences no fundo, uma prateleira de ferro desabou com estrondo. O alarme disparou e guardas extras vieram correndo!",
+      "efeitos": [
+        "Sofreu ferimentos na confusão (-15 HP)",
+        "Três guardas em alerta surgiram para a batalha"
+      ],
+      "mensagem": "⚑ 🎲 FALHA! O alarme disparou: -15 HP e 3 guardas alertados!",
+      "hp": -15,
+      "quantidade_inimigos": 3,
+      "multiplicador_forca": 1.15,
+      "multiplicador_recompensa": 1.0
+    }
+  },
+  {
+    "nome": "Comprar com o perigo",
+    "tipo": "neutro",
+    "descricao": "Um vendedor clandestino quer te vender algo.",
+    "atributo-chave": "Sab",
+    "dificuldade": 10,
+    "vitoria": {
+      "resumo": "Negócio seguro! Acesso à Loja do Perigo para comprar e vender equipamentos.",
+      "narrativa": "Você manteve a guarda alta e impôs respeito. Impressionado, o negociante clandestino aceitou fazer negócios honestos com você.",
+      "efeitos": [
+        "Ganhou +1 de Força e +1 de Sorte",
+        "Equipamento aprimorado em 1 nível",
+        "Adquiriu um novo Equipamento na loja clandestina",
+        "Recebeu uma Poção de Vida"
+      ],
+      "mensagem": "⚑ 🎲 SUCESSO! Negócio fechado: Equipamento melhorado, +Equipamento, +Poção, +1 For e +1 Sor!",
+      "atributos": {
+        "For": 1,
+        "Sor": 1
+      },
+      "melhorar_equipamento": true,
+      "equipamentos_aleatorios": 1,
+      "consumiveis": [
+        {
+          "nome": "Poção de Vida",
+          "descricao": "Restaura 30 HP",
+          "hp": 30,
+          "mp": 0,
+          "quantidade": 1
+        }
+      ],
+      "quantidade_inimigos": null,
+      "multiplicador_forca": 1.0,
+      "multiplicador_recompensa": 1.0
+    },
+    "derrota": {
+      "resumo": "Você foi ROUBADO! Perde equipamentos/materiais, sofre -20 HP e emboscada.",
+      "narrativa": "O vendedor era um trapaceiro violento! Seus comparsas armaram uma emboscada, roubaram seus equipamentos e fugiram nas sombras!",
+      "efeitos": [
+        "Sofreu ferimentos no golpe (-20 HP)",
+        "Perdeu materiais da mochila",
+        "Inimigos chegam fortalecidos e em emboscada"
+      ],
+      "mensagem": "⚑ 🎲 FALHA! O Perigo te roubou seus pertences e armou emboscada: -20 HP!",
+      "hp": -20,
+      "perder_materiais": 1,
+      "quantidade_inimigos": null,
+      "multiplicador_forca": 1.15,
+      "multiplicador_recompensa": 1.0,
+      "roubar_equipamento": true
+    }
+  },
+  {
+    "nome": "Alguem na entrada do bar te chama",
+    "tipo": "neutro",
+    "descricao": "Apenas a sombra é visivel proximo a porta do bar.",
+    "atributo-chave": "Sab",
+    "dificuldade": 10,
+    "vitoria": {
+      "resumo": "+1 Ponto de Atributo, +1 For, +20 HP, +40 XP e atalho (1 inimigo).",
+      "narrativa": "A figura oculta nas sombras era um antigo veterano de guerra. Ele reconheceu seu potencial, ensinou técnicas secretas e indicou um atalho limpo.",
+      "efeitos": [
+        "Ganhou 1 Ponto de Atributo",
+        "Ganhou +1 de Força",
+        "Recuperou 20 de Vida",
+        "Recebeu 40 de Experiência",
+        "Enfrentará apenas 1 adversário"
+      ],
+      "mensagem": "⚑ 🎲 SUCESSO! Treino secreto: +1 Ponto Atributo, +1 For, +20 HP, +40 XP e atalho!",
+      "pontos_atributo": 1,
+      "hp": 20,
+      "atributos": {
+        "For": 1
+      },
+      "xp": 40,
+      "quantidade_inimigos": 1,
+      "multiplicador_forca": 1.0,
+      "multiplicador_recompensa": 1.0
+    },
+    "derrota": {
+      "resumo": "Emboscada nas sombras (-15 HP, -5 MP e 3 inimigos).",
+      "narrativa": "Era uma cilada covarde. Assim que você se aproximou da porta escura, agressores saltaram dos cantos do beco te espancando de surpresa!",
+      "efeitos": [
+        "Sofreu agressão de surpresa (-15 HP e -5 MP)",
+        "Cercado por 3 adversários hostis"
+      ],
+      "mensagem": "⚑ 🎲 FALHA! Era uma armadilha no beco: -15 HP, -5 MP e 3 inimigos!",
+      "hp": -15,
+      "mp": -5,
+      "quantidade_inimigos": 3,
+      "multiplicador_forca": 1.0,
+      "multiplicador_recompensa": 1.0
+    }
+  },
+  {
+    "nome": "Duelar até cair",
+    "tipo": "neutro",
+    "descricao": "Um combate mano a mano valendo o dobro te é oferecido.",
+    "atributo-chave": "For",
+    "dificuldade": 10,
+    "vitoria": {
+      "resumo": "+1 For, +20 HP e Duelo 1x1 valendo o DOBRO de XP e Pontos!",
+      "narrativa": "Você aceitou o duelo individual com bravura. Com um golpe magistral, você derrubou a guarda do rival, garantindo o dobro de recompensas pelo combate!",
+      "efeitos": [
+        "Ganhou +1 de Força",
+        "Recuperou 20 de Vida com o ímpeto da vitória",
+        "Recompensas da batalha multiplicadas em dobro"
+      ],
+      "mensagem": "⚑ 🎲 SUCESSO! Duelo 1x1 com vantagem: +1 For, +20 HP e Recompensa em DOBRO!",
+      "hp": 20,
+      "atributos": {
+        "For": 1
+      },
+      "quantidade_inimigos": 1,
+      "multiplicador_forca": 1.2,
+      "multiplicador_recompensa": 2.0
+    },
+    "derrota": {
+      "resumo": "Golpe baixo (-20 HP e duelo 1x1 mais difícil sem bônus).",
+      "narrativa": "O adversário não possuía qualquer honra. Antes que as regras fossem ditas, ele desferiu um golpe traiçoeiro na sua costela e avançou furioso!",
+      "efeitos": [
+        "Sofreu um ataque covarde (-20 HP)",
+        "Adversário parte para cima com ferocidade ampliada"
+      ],
+      "mensagem": "⚑ 🎲 FALHA! Golpe baixo antes do duelo: -20 HP e oponente feroz sem bônus!",
+      "hp": -20,
+      "quantidade_inimigos": 1,
+      "multiplicador_forca": 1.35,
+      "multiplicador_recompensa": 1.0
+    }
+  },
+  {
+    "nome": "Uma Pausa para comprar mantimentos",
+    "tipo": "ajuda",
+    "descricao": "O barista te oferece produtos e um balcão seguro enquanto a próxima luta não começa.",
+    "atributo-chave": "For",
+    "dificuldade": 10,
+    "vitoria": {
+      "resumo": "+35 HP, +15 MP, +Equipamento, +Poção de Vida, +Sucata e +1 For.",
+      "narrativa": "O barista acolhe você com um sorriso caloroso e oferece produtos frescos e mantimentos de primeira qualidade sem qualquer risco.",
+      "efeitos": [
+        "Recuperou 35 de Vida e 15 de Mana",
+        "Ganhou +1 de Força",
+        "Adquiriu um Equipamento com o comerciante",
+        "Recebeu uma Poção de Vida",
+        "Recebeu Sucata para melhorias"
+      ],
+      "mensagem": "⚑ ☕ O barista te atendeu com carinho: +35 HP, +15 MP, +Equipamento, +Poção, +Sucata e +1 For!",
+      "hp": 35,
+      "mp": 15,
+      "atributos": {
+        "For": 1
+      },
+      "equipamentos_aleatorios": 1,
+      "consumiveis": [
+        {
+          "nome": "Poção de Vida",
+          "descricao": "Restaura 30 HP",
+          "hp": 30,
+          "mp": 0,
+          "quantidade": 1
+        }
+      ],
+      "materiais": [
+        {
+          "nome": "Sucata",
+          "descricao": "Melhora equips.",
+          "quantidade": 1
+        }
+      ],
+      "quantidade_inimigos": null,
+      "multiplicador_forca": 1.0,
+      "multiplicador_recompensa": 1.0
+    },
+    "derrota": {
+      "resumo": "+35 HP, +15 MP, +Equipamento, +Poção de Vida, +Sucata e +1 For.",
+      "narrativa": "O barista acolhe você com um sorriso caloroso e oferece produtos frescos e mantimentos de primeira qualidade sem qualquer risco.",
+      "efeitos": [
+        "Recuperou 35 de Vida e 15 de Mana",
+        "Ganhou +1 de Força",
+        "Adquiriu um Equipamento com o comerciante",
+        "Recebeu uma Poção de Vida",
+        "Recebeu Sucata para melhorias"
+      ],
+      "mensagem": "⚑ ☕ O barista te atendeu com carinho: +35 HP, +15 MP, +Equipamento, +Poção, +Sucata e +1 For!",
+      "hp": 35,
+      "mp": 15,
+      "atributos": {
+        "For": 1
+      },
+      "equipamentos_aleatorios": 1,
+      "consumiveis": [
+        {
+          "nome": "Poção de Vida",
+          "descricao": "Restaura 30 HP",
+          "hp": 30,
+          "mp": 0,
+          "quantidade": 1
+        }
+      ],
+      "materiais": [
+        {
+          "nome": "Sucata",
+          "descricao": "Melhora equips.",
+          "quantidade": 1
+        }
+      ],
+      "quantidade_inimigos": null,
+      "multiplicador_forca": 1.0,
+      "multiplicador_recompensa": 1.0
+    }
+  }
+]

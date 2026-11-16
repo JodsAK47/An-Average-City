@@ -58,7 +58,7 @@ A estrutura atual do projeto está organizada em módulos e telas, com a lógica
 ### Conteúdo extra
 
 - Modo cooperativo de 2 jogadores com escalonamento próprio de inimigos, chefe, IA e recuperação pós-batalha
-- Acesso restrito por Member Card
+- Member Card colecionável com aviso de que o sistema não aceita mais o vale
 - Eventos neutros com testes de atributo e recompensas/penalidades
 - Sistema de conquistas e feedback visual
 
@@ -145,7 +145,7 @@ python Sistemas/MotorJogo.py
 ## 📁 Estrutura principal
 
 ```text
-An-Avarage-City/
+An Average City/
 ├── README.md
 ├── README(Start).md
 ├── main.py

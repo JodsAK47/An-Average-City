@@ -1,0 +1,9 @@
+{
+    "largura": 1000,
+    "altura": 800,
+    "tela_cheia": false,
+    "volume_geral": 1.0,
+    "volume_musica": 0.5,
+    "volume_sfx": 0.7,
+    "mutado": false
+}

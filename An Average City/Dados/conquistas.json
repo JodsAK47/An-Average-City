@@ -1,0 +1,157 @@
+[
+    {
+        "id": "primeiro_sangue",
+        "nome": "Primeiro Sangue",
+        "como_liberar": "Derrote qualquer inimigo em um combate.",
+        "icone": "Primeiro Abate.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "vitoria_sobrevivente",
+        "nome": "Sobrevivente Nato",
+        "como_liberar": "Vença uma batalha usando o verso Sobrevivente.",
+        "icone": "Posso Fazer Isso O Dia Todo.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "vitoria_agente",
+        "nome": "Agente Secreto",
+        "como_liberar": "Vença uma batalha usando o verso Agente.",
+        "icone": "Agente Radiante.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "vitoria_feiticeiro",
+        "nome": "Feiticeiro Supremo",
+        "como_liberar": "Vença uma batalha usando o verso Feiticeiro.",
+        "icone": "Feiticeiro Supremo.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "vitoria_cyberpunk",
+        "nome": "Edgerunner Lendário",
+        "como_liberar": "Vença uma batalha usando o verso Cyberpunk.",
+        "icone": "Cyber Psicose.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "critico_devastador",
+        "nome": "Golpe Preciso",
+        "como_liberar": "Acerte um golpe crítico devastador em um oponente.",
+        "icone": "Que Critico.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "mestre_esquiva",
+        "nome": "Reflexos de Aço",
+        "como_liberar": "Acerte o centro das barras no minigame de esquiva.",
+        "icone": "Esquiva tatica.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "fuga_estrategica",
+        "nome": "Fuga Tática",
+        "como_liberar": "Fuja com sucesso de uma batalha perigosa.",
+        "icone": "Fuga Tatica.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "primeiro_talento",
+        "nome": "Despertar do Poder",
+        "como_liberar": "Desbloqueie sua primeira habilidade na árvore de talentos.",
+        "icone": "Primeiro Talento.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "ultimate_desbloqueada",
+        "nome": "Técnica Definitiva",
+        "como_liberar": "Desbloqueie uma habilidade Ultimate na árvore de talentos.",
+        "icone": "Ultimate Pronta.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "alquimista",
+        "nome": "Alquimista de Campo",
+        "como_liberar": "Consuma uma poção de vida ou mana no inventário ou acampamento.",
+        "icone": "Alquimia.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "ferreiro",
+        "nome": "Mestre Ferreiro",
+        "como_liberar": "Aprimore seu equipamento no acampamento usando materiais.",
+        "icone": "Ferreiro.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "cooperativo",
+        "nome": "Irmãos de Armas",
+        "como_liberar": "Inicie uma batalha no modo cooperativo de 2 Jogadores.",
+        "icone": "Mão Amiga.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "mana_esgotada",
+        "nome": "Seca Arcana",
+        "como_liberar": "Faça um inimigo ou chefe esgotar completamente toda a sua mana.",
+        "icone": "Esgotado.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "chefe_derrotado",
+        "nome": "Lenda dos Versos",
+        "como_liberar": "Derrote o Chefe Final na partida 10 e vença o jogo!",
+        "icone": "Lenda.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "chefe_sukuna",
+        "nome": "Sem boca para falar",
+        "como_liberar": "Derrote o Rei das Maldições, Sukuna, em combate.",
+        "icone": "Sukuna.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "chefe_charlie",
+        "nome": "Sem Vontade para quebrar",
+        "como_liberar": "Derrote o chefe Charlie em combate.",
+        "icone": "Charlie.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "chefe_estraga_prazeres",
+        "nome": "Sem Mente Para Pensar",
+        "como_liberar": "Derrote a chefe Estraga Prazeres em combate.",
+        "icone": "Killjoy.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "acontece_com_todos",
+        "nome": "Acontece Com Todos",
+        "como_liberar": "Seja derrotado pela primeira vez em um combate.",
+        "icone": "Acontece Com Todos.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "moda_em_primeiro_lugar",
+        "nome": "Moda Em Primeiro Lugar",
+        "como_liberar": "Equipe qualquer item de equipamento no inventário ou vista uma nova skin.",
+        "icone": "Moda Em Primeiro Lugar.png",
+        "desbloqueada": false
+    },
+    {
+        "id": "easter_egg",
+        "nome": "Easter Egg",
+        "como_liberar": "Alguns segredos só se revelam a quem explora a cidade.",
+        "icone": "EasterEgg.png",
+        "oculta": true,
+        "desbloqueada": false
+    },
+    {
+        "id": "platina",
+        "nome": "Platina",
+        "como_liberar": "Obtenha todas as outras conquistas do jogo.",
+        "icone": "Platina.png",
+        "desbloqueada": false
+    }
+]

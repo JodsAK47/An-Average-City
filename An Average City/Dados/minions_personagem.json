@@ -1,0 +1,192 @@
+{
+  "Abelha Soldado": {
+    "nome": "Abelha Soldado",
+    "verso": "Sobrevivente",
+    "arquivo_imagem": "Abelha.png",
+    "inverter_horizontal": true,
+    "max_hp": 28,
+    "max_mp": 10,
+    "descricao": "Inseto feroz que ataca em enxame com ferrões venenosos.",
+    "atributos": {
+      "For": 3,
+      "Agi": 6,
+      "Con": 2,
+      "Sab": 4,
+      "Int": 2,
+      "Sor": 3
+    },
+    "ataques": [
+      "Ferrão Veloz",
+      "Rasante do Enxame"
+    ]
+  },
+  "Pássaro Olhudo": {
+    "nome": "Pássaro Olhudo",
+    "verso": "Sobrevivente",
+    "arquivo_imagem": "Passaro_Olhudo.png",
+    "inverter_horizontal": true,
+    "max_hp": 42,
+    "max_mp": 12,
+    "descricao": "Criatura territorial de pernas longas e bicada devastadora.",
+    "atributos": {
+      "For": 6,
+      "Agi": 4,
+      "Con": 5,
+      "Sab": 5,
+      "Int": 3,
+      "Sor": 2
+    },
+    "ataques": [
+      "Bicada Perfurante",
+      "Olhar Hipnótico"
+    ]
+  },
+  "Torreta Sentinela": {
+    "nome": "Torreta Sentinela",
+    "verso": "Agente",
+    "arquivo_imagem": "Torreta.png",
+    "inverter_horizontal": false,
+    "max_hp": 36,
+    "max_mp": 12,
+    "descricao": "Unidade mecânica autônoma de suporte e fogo contínuo.",
+    "atributos": {
+      "For": 4,
+      "Agi": 5,
+      "Con": 4,
+      "Sab": 5,
+      "Int": 4,
+      "Sor": 3
+    },
+    "ataques": [
+      "Rajada Sentinela",
+      "Disparo Supressor",
+      "Descarga Elétrica"
+    ]
+  },
+  "Drone Caçador": {
+    "nome": "Drone Caçador",
+    "verso": "Agente",
+    "arquivo_imagem": "Drone.png",
+    "inverter_horizontal": true,
+    "max_hp": 32,
+    "max_mp": 14,
+    "descricao": "Drone tático equipado com feixes térmicos e pulso EMP.",
+    "atributos": {
+      "For": 4,
+      "Agi": 7,
+      "Con": 3,
+      "Sab": 6,
+      "Int": 5,
+      "Sor": 4
+    },
+    "ataques": [
+      "Laser Tático",
+      "Pulso EMP"
+    ]
+  },
+  "Cão Divino": {
+    "nome": "Cão Divino",
+    "verso": "Feiticeiro",
+    "arquivo_imagem": "Cachorro.png",
+    "inverter_horizontal": false,
+    "max_hp": 34,
+    "max_mp": 10,
+    "descricao": "Shikigami lupino invocado a partir das sombras.",
+    "atributos": {
+      "For": 6,
+      "Agi": 7,
+      "Con": 3,
+      "Sab": 5,
+      "Int": 4,
+      "Sor": 5
+    },
+    "ataques": [
+      "Presas das Sombras",
+      "Investida Lupina"
+    ]
+  },
+  "Nue": {
+    "nome": "Nue",
+    "verso": "Feiticeiro",
+    "arquivo_imagem": "Nue.png",
+    "inverter_horizontal": false,
+    "max_hp": 38,
+    "max_mp": 15,
+    "descricao": "Shikigami alado envolto em relâmpagos amaldiçoados.",
+    "atributos": {
+      "For": 5,
+      "Agi": 6,
+      "Con": 4,
+      "Sab": 6,
+      "Int": 6,
+      "Sor": 3
+    },
+    "ataques": [
+      "Asas de Relâmpago",
+      "Trovão Amaldiçoado"
+    ]
+  },
+  "Mahoraga": {
+    "nome": "Mahoraga",
+    "verso": "Feiticeiro",
+    "arquivo_imagem": "Mahoraga.png",
+    "inverter_horizontal": false,
+    "max_hp": 65,
+    "max_mp": 20,
+    "descricao": "General Divino supremo capaz de se adaptar a qualquer fenômeno.",
+    "atributos": {
+      "For": 9,
+      "Agi": 7,
+      "Con": 7,
+      "Sab": 8,
+      "Int": 8,
+      "Sor": 5
+    },
+    "ataques": [
+      "Espada do Extermínio",
+      "Adaptação Absoluta"
+    ]
+  },
+  "Drone Netrunner": {
+    "nome": "Drone Netrunner",
+    "verso": "Cyberpunk",
+    "arquivo_imagem": "Torreta.png",
+    "inverter_horizontal": false,
+    "max_hp": 32,
+    "max_mp": 14,
+    "descricao": "Drone leve equipado com cyberdeck para ataques elétricos e invasão.",
+    "atributos": {
+      "For": 3,
+      "Agi": 6,
+      "Con": 3,
+      "Sab": 6,
+      "Int": 5,
+      "Sor": 3
+    },
+    "ataques": [
+      "Pulso Netrunner",
+      "Varredura de Rede"
+    ]
+  },
+  "Unidade Militech": {
+    "nome": "Unidade Militech",
+    "verso": "Cyberpunk",
+    "arquivo_imagem": "Hound.png",
+    "inverter_horizontal": false,
+    "max_hp": 52,
+    "max_mp": 16,
+    "descricao": "Autômato tático corporativo de alta blindagem e fogo pesado.",
+    "atributos": {
+      "For": 7,
+      "Agi": 5,
+      "Con": 6,
+      "Sab": 6,
+      "Int": 4,
+      "Sor": 3
+    },
+    "ataques": [
+      "Rajada Pesada",
+      "Míssil Termobárico"
+    ]
+  }
+}

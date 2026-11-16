@@ -1,0 +1,93 @@
+import pygame
+from Sistemas.Recursos import caminho_imagem
+from Entidades.EntidadeCombate import EntidadeCombate
+
+class Personagem(EntidadeCombate):
+    def __init__(self, x, y, nome_imagem="pixil.png", nome="Jogador 1"):
+        super().__init__(nome=nome, max_hp=100, max_mp=10, is_player=True)
+
+        self.nivel = 1
+        self.xp = 0
+        self.pontos_atributo = 0
+        self.ataques = []
+        self.ultimates_desbloqueadas = set()
+        self.minions = []
+        self.estatisticas_minions = {
+            "invocacoes": 0,
+            "dano_total_minions": 0,
+            "abates_minions": 0,
+        }
+
+        self.talentos = set()
+        self.nome_imagem = nome_imagem
+        self.arquivo_imagem = nome_imagem
+
+        try:
+            self.imagem_original = pygame.image.load(caminho_imagem(nome_imagem))
+            w_orig, h_orig = self.imagem_original.get_size()
+            altura_desejada = 115
+            largura_desejada = int(w_orig * (altura_desejada / max(1, h_orig)))
+            self.imagem_base = pygame.transform.scale(self.imagem_original, (largura_desejada, altura_desejada))
+            from Sistemas.SistemaOrientacao import sistema_orientacao
+            self.imagem = sistema_orientacao.aplicar_orientacao(self.imagem_base, nome_imagem, "leste")
+        except (pygame.error, FileNotFoundError) as e:
+            print(f"⚠️ Erro ao carregar imagem: {e}")
+            self.imagem_base = pygame.Surface((100, 115))
+            self.imagem_base.fill((0, 200, 100))
+            self.imagem = self.imagem_base.copy()
+
+        self.rect = self.imagem.get_rect(topleft=(x, y))
+        self.convertida = False
+
+    def tem_talento(self, id_talento):
+        return id_talento in self.talentos
+
+    def obter_bonus_equipamento(self, atributo):
+        from Sistemas.Inventario import inventario_global
+        return inventario_global.obter_bonus_atributo(atributo, jogador=self)
+
+    def trocar_skin(self, nova_imagem):
+        self.nome_imagem = nova_imagem
+        self.arquivo_imagem = nova_imagem
+        try:
+            self.imagem_original = pygame.image.load(caminho_imagem(nova_imagem))
+            w_orig, h_orig = self.imagem_original.get_size()
+            altura_desejada = 115
+            largura_desejada = int(w_orig * (altura_desejada / max(1, h_orig)))
+            self.imagem_base = pygame.transform.scale(self.imagem_original, (largura_desejada, altura_desejada))
+            from Sistemas.SistemaOrientacao import sistema_orientacao
+            self.imagem = sistema_orientacao.aplicar_orientacao(self.imagem_base, nova_imagem, self.direcao_olhar)
+            self.rect.size = self.imagem.get_size()
+            self.convertida = False
+        except (pygame.error, FileNotFoundError) as e:
+            print(f"⚠️ Erro ao carregar nova skin '{nova_imagem}': {e}")
+
+    def resetar(self, resetar_cheats: bool = False):
+        if resetar_cheats:
+            talentos_salvos = set()
+            ultimates_salvas = set()
+            skin_salva = 'pixil.png'
+            god_mode_salvo = False
+        else:
+            talentos_salvos = set(getattr(self, 'talentos', set()))
+            ultimates_salvas = set(getattr(self, 'ultimates_desbloqueadas', set()))
+            skin_salva = getattr(self, 'nome_imagem', 'pixil.png')
+            god_mode_salvo = getattr(self, 'god_mode', False)
+        nome_salvo = getattr(self, 'nome', 'Jogador 1')
+        self.__init__(self.rect.x, self.rect.y, nome_imagem=skin_salva, nome=nome_salvo)
+        self.talentos = talentos_salvos
+        self.ultimates_desbloqueadas = ultimates_salvas
+        self.god_mode = god_mode_salvo
+
+    def desenhar(self, tela):
+        if not self.convertida:
+            try:
+                self.imagem = self.imagem.convert_alpha()
+            except pygame.error:
+                pass
+            self.convertida = True
+
+        tela.blit(self.imagem, self.rect)
+
+personagem = Personagem(150, 350, "pixil.png", nome="Jogador 1")
+personagem.is_player = True
